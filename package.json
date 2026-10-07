@@ -1,28 +1,40 @@
 {
-  "name": "deudieo-flower",
+  "name": "nhholdings",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev --webpack --hostname 127.0.0.1 --port 3120",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1 --port 3120",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/commerce.test.ts",
+    "test:browser": "node --env-file=.env.local tests/cloud-integration.cjs",
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.2",
-    "next": "14.2.35",
-    "react": "^18",
-    "react-dom": "^18",
-    "zustand": "^5.0.14"
+    "@electric-sql/pglite": "0.5.8",
+    "exceljs": "^4.4.0",
+    "next": "16.4.0",
+    "pg": "^8.16.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.35",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

@@ -1,0 +1,22 @@
+import {identity,isOwner} from './auth';
+import {createHash,createHmac,timingSafeEqual,randomBytes,createCipheriv,createDecipheriv} from 'node:crypto';
+import {NextRequest,NextResponse} from 'next/server';
+export class MarketError extends Error {constructor(message:string,public status=400){super(message);}}
+export const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
+export function equal(a:string,b:string){const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
+function secret(){const s=process.env.SESSION_SECRET;if(!s||s.length<32)throw new MarketError('서버 보안 키를 설정해주세요.',503);return s;}
+export const orderToken=(id:string)=>createHmac('sha256',secret()).update(`order:${id}`).digest('hex');
+export async function adminAuthenticated(req:NextRequest){return isOwner(await identity(req));}
+export async function requireAdmin(req:NextRequest){if(!await adminAuthenticated(req))throw new MarketError('운영자 로그인이 필요합니다.',401);}
+export function marketOrigin(){const configured=process.env.MARKET_ORIGIN;if(process.env.MARKET_MODE==='live'&&!configured)throw new MarketError('운영 사이트 HTTPS 주소를 설정해주세요.',503);const value=configured??'http://127.0.0.1:3110';let url:URL;try{url=new URL(value);}catch{throw new MarketError('사이트 주소 설정을 확인해주세요.',503);}if(url.origin!==value||!['http:','https:'].includes(url.protocol)||(process.env.MARKET_MODE==='live'&&url.protocol!=='https:'))throw new MarketError('사이트 주소와 HTTPS 설정을 확인해주세요.',503);return value;}
+export function requireOrigin(req:NextRequest){const allowed=[marketOrigin(),process.env.VERCEL_URL?`https://${process.env.VERCEL_URL}`:'',...(process.env.ALLOWED_ORIGINS??'').split(',')].filter(Boolean);if(!allowed.includes(req.headers.get('origin')??''))throw new MarketError('허용되지 않은 요청 출처입니다.',403);}
+export async function readBytes(req:Request,max:number){if(Number(req.headers.get('content-length')??0)>max)throw new MarketError('요청이 너무 큽니다.',413);const reader=req.body?.getReader(),chunks:Uint8Array[]=[];let size=0;if(reader){try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>max){await reader.cancel();throw new MarketError('요청이 너무 큽니다.',413);}chunks.push(value);}}finally{reader.releaseLock();}}return Buffer.concat(chunks);}
+export async function body(req:NextRequest){const raw=(await readBytes(req,100_000)).toString('utf8');try{const value=JSON.parse(raw);if(!value||typeof value!=='object'||Array.isArray(value))throw new Error();return value as Record<string,unknown>;}catch{throw new MarketError('올바른 JSON 요청이 필요합니다.');}}
+export function textValue(value:unknown,label:string,max=200,optional=false){if(typeof value!=='string'||(!optional&&!value.trim())||value.length>max)throw new MarketError(`${label}을 확인해주세요.`);return value.trim();}
+export function integer(value:unknown,label:string,min=0,max=100_000_000){if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min||value>max)throw new MarketError(`${label}을 확인해주세요.`);return value;}
+export function seal(value:string){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(hash(secret()),'hex'),iv);return Buffer.concat([iv,cipher.update(value,'utf8'),cipher.final(),cipher.getAuthTag()]).toString('base64');}
+export function unseal(value:string){const b=Buffer.from(value,'base64'),decipher=createDecipheriv('aes-256-gcm',Buffer.from(hash(secret()),'hex'),b.subarray(0,12));decipher.setAuthTag(b.subarray(-16));return Buffer.concat([decipher.update(b.subarray(12,-16)),decipher.final()]).toString('utf8');}
+// ponytail: process-local limits suit a single local server; use a shared limiter before multi-instance deployment.
+const attempts=new Map<string,{count:number;until:number}>();
+export function limit(key:string,max=30){const now=Date.now();if(attempts.size>5000)for(const [k,v]of attempts)if(v.until<now)attempts.delete(k);const item=attempts.get(key);if(!item||item.until<now){attempts.set(key,{count:1,until:now+60_000});return;}if(++item.count>max)throw new MarketError('잠시 후 다시 시도해주세요.',429);}
+export function failure(error:unknown){if(error instanceof MarketError)return NextResponse.json({error:error.message},{status:error.status});console.error('[market]',error instanceof Error?error.name:'UnknownError');return NextResponse.json({error:'처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'},{status:500});}

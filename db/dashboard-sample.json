@@ -1,0 +1,4557 @@
+{
+  "documents": [
+    {
+      "kind": "source",
+      "id": "tistory",
+      "data": {
+        "data": {
+          "observedAt": "2026-10-07T04:04:02.608Z",
+          "posts": 128,
+          "publishedPosts": [
+            {
+              "url": "https://doto1.tistory.com/169",
+              "title": "169",
+              "modifiedAt": "2026-10-07T04:04:02.608Z"
+            },
+            {
+              "url": "https://doto1.tistory.com/168",
+              "title": "168",
+              "modifiedAt": "2026-10-07T04:04:02.608Z"
+            }
+          ],
+          "monthly": []
+        },
+        "checkedAt": "2026-10-07T04:04:02.608Z",
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-05",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-05",
+      "data": {
+        "month": "2026-05",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-06",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-06",
+      "data": {
+        "month": "2026-06",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-07",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-07",
+      "data": {
+        "month": "2026-07",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-08",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-08",
+      "data": {
+        "month": "2026-08",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-09",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-09",
+      "data": {
+        "month": "2026-09",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "tistory:platform:2026-10",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "analytics",
+      "id": "2026-10",
+      "data": {
+        "month": "2026-10",
+        "observedAt": "2026-10-07T04:04:02.608Z",
+        "ga": {
+          "users": 18240,
+          "sessions": 24380,
+          "views": 42670,
+          "revenue": 480000
+        },
+        "search": {
+          "clicks": 7320,
+          "impressions": 164800,
+          "ctr": 0.04441747572815534,
+          "position": 11.4
+        },
+        "queries": [
+          {
+            "keys": [
+              "누리 서비스"
+            ],
+            "clicks": 620,
+            "impressions": 9800,
+            "ctr": 0.0633,
+            "position": 5.3
+          },
+          {
+            "keys": [
+              "홀덤 매장 관리"
+            ],
+            "clicks": 412,
+            "impressions": 10420,
+            "ctr": 0.0395,
+            "position": 8.2
+          },
+          {
+            "keys": [
+              "고객 관리 방법"
+            ],
+            "clicks": 280,
+            "impressions": 8680,
+            "ctr": 0.0323,
+            "position": 12.1
+          }
+        ]
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "source",
+      "id": "mind",
+      "data": {
+        "data": {
+          "observedAt": "2026-10-07T04:04:02.608Z",
+          "users": 1280,
+          "posts": 86,
+          "diamondGrants": 340,
+          "monthly": [
+            {
+              "month": "2026-05",
+              "signups": 140
+            },
+            {
+              "month": "2026-06",
+              "signups": 167
+            },
+            {
+              "month": "2026-07",
+              "signups": 194
+            },
+            {
+              "month": "2026-08",
+              "signups": 221
+            },
+            {
+              "month": "2026-09",
+              "signups": 248
+            },
+            {
+              "month": "2026-10",
+              "signups": 275
+            }
+          ]
+        },
+        "error": null,
+        "checkedAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "source",
+      "id": "holdem",
+      "data": {
+        "data": {
+          "observedAt": "2026-10-07T04:04:02.608Z",
+          "users": 640,
+          "sourceBusinesses": 3,
+          "excludedBusinesses": 1,
+          "buyins": 980,
+          "sessions": 54,
+          "partners": [
+            {
+              "id": "sample-arena",
+              "name": "누리 아레나 직영점",
+              "active": true,
+              "excluded": false
+            },
+            {
+              "id": "sample-partner",
+              "name": "리버 홀덤 라운지",
+              "active": true,
+              "excluded": false
+            },
+            {
+              "id": "sample-holdem-test",
+              "name": "HOLDEM 자동 테스트 매장",
+              "active": false,
+              "excluded": true
+            }
+          ],
+          "monthly": [
+            {
+              "month": "2026-05",
+              "businessId": "sample-arena",
+              "records": 98,
+              "storedReceipts": 4800000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 160000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-05",
+              "businessId": "sample-partner",
+              "records": 63,
+              "storedReceipts": 3600000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-arena",
+              "records": 112,
+              "storedReceipts": 5190000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 143000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-partner",
+              "records": 72,
+              "storedReceipts": 3780000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-arena",
+              "records": 126,
+              "storedReceipts": 5580000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 126000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-partner",
+              "records": 81,
+              "storedReceipts": 3960000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-arena",
+              "records": 140,
+              "storedReceipts": 5970000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 109000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-partner",
+              "records": 90,
+              "storedReceipts": 4140000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-arena",
+              "records": 154,
+              "storedReceipts": 6360000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 92000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-partner",
+              "records": 99,
+              "storedReceipts": 4320000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-arena",
+              "records": 168,
+              "storedReceipts": 6750000,
+              "storedAddonReceipts": 420000,
+              "storedUnpaid": 75000,
+              "legacyRecords": 0
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-partner",
+              "records": 108,
+              "storedReceipts": 4500000,
+              "storedAddonReceipts": 210000,
+              "storedUnpaid": 60000,
+              "legacyRecords": 0
+            }
+          ]
+        },
+        "error": null,
+        "checkedAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "source",
+      "id": "crm",
+      "data": {
+        "data": {
+          "observedAt": "2026-10-07T04:04:02.608Z",
+          "customers": 240,
+          "sourceBusinesses": 4,
+          "excludedBusinesses": 1,
+          "ledgerRecords": 486,
+          "partners": [
+            {
+              "id": "sample-building",
+              "name": "누리 센트럴 빌딩",
+              "industry": "building",
+              "active": true,
+              "excluded": false
+            },
+            {
+              "id": "sample-rental",
+              "name": "누리 렌탈 직영점",
+              "industry": "rental",
+              "active": true,
+              "excluded": false
+            },
+            {
+              "id": "sample-crm-client",
+              "name": "온유 파트너 사업장",
+              "industry": "salon",
+              "active": true,
+              "excluded": false
+            },
+            {
+              "id": "sample-crm-test",
+              "name": "CRM 체험 사업장",
+              "industry": "academy",
+              "active": true,
+              "excluded": true
+            }
+          ],
+          "corporatePartners": [
+            {
+              "id": "sample-party-1",
+              "name": "연두 디자인",
+              "businessId": "sample-building",
+              "active": true
+            },
+            {
+              "id": "sample-party-2",
+              "name": "한빛 법률사무소",
+              "businessId": "sample-building",
+              "active": true
+            },
+            {
+              "id": "sample-party-3",
+              "name": "새봄 파트너스",
+              "businessId": "sample-building",
+              "active": true
+            },
+            {
+              "id": "sample-party-4",
+              "name": "누리 센트럴 관리단",
+              "businessId": "sample-building",
+              "active": true
+            }
+          ],
+          "monthly": [
+            {
+              "month": "2026-05",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 8100000,
+              "records": 24
+            },
+            {
+              "month": "2026-05",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 7700000,
+              "records": 21
+            },
+            {
+              "month": "2026-05",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 2400000,
+              "records": 8
+            },
+            {
+              "month": "2026-05",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 3600000,
+              "records": 32
+            },
+            {
+              "month": "2026-05",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 8420000,
+              "records": 24
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 8000000,
+              "records": 21
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 2530000,
+              "records": 8
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 3780000,
+              "records": 32
+            },
+            {
+              "month": "2026-06",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 8740000,
+              "records": 24
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 8300000,
+              "records": 21
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 2660000,
+              "records": 8
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 3960000,
+              "records": 32
+            },
+            {
+              "month": "2026-07",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 9060000,
+              "records": 24
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 8600000,
+              "records": 21
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 2790000,
+              "records": 8
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 4140000,
+              "records": 32
+            },
+            {
+              "month": "2026-08",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 9380000,
+              "records": 24
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 8900000,
+              "records": 21
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 2920000,
+              "records": 8
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 4320000,
+              "records": 32
+            },
+            {
+              "month": "2026-09",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-building",
+              "metric": "building_charge",
+              "amount": 9700000,
+              "records": 24
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-building",
+              "metric": "building_cash",
+              "amount": 9200000,
+              "records": 21
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-building",
+              "metric": "building_expense",
+              "amount": 3050000,
+              "records": 8
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-rental",
+              "metric": "rental_charge",
+              "amount": 4500000,
+              "records": 32
+            },
+            {
+              "month": "2026-10",
+              "businessId": "sample-rental",
+              "metric": "rental_discount",
+              "amount": 120000,
+              "records": 4
+            }
+          ],
+          "operations": [
+            {
+              "businessId": "sample-building",
+              "customers": 46,
+              "buildings": 1,
+              "units": 28,
+              "activeContracts": 24,
+              "openWorkOrders": 3,
+              "pendingFactoryOrders": 0,
+              "outstanding": 620000
+            },
+            {
+              "businessId": "sample-rental",
+              "customers": 114,
+              "buildings": 0,
+              "units": 0,
+              "activeContracts": 0,
+              "openWorkOrders": 0,
+              "pendingFactoryOrders": 0,
+              "outstanding": 0
+            }
+          ],
+          "expenseDetails": [
+            {
+              "id": "sample-electric-2026-05",
+              "businessId": "sample-building",
+              "month": "2026-05",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-05",
+              "businessId": "sample-building",
+              "month": "2026-05",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            },
+            {
+              "id": "sample-electric-2026-06",
+              "businessId": "sample-building",
+              "month": "2026-06",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-06",
+              "businessId": "sample-building",
+              "month": "2026-06",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            },
+            {
+              "id": "sample-electric-2026-07",
+              "businessId": "sample-building",
+              "month": "2026-07",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-07",
+              "businessId": "sample-building",
+              "month": "2026-07",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            },
+            {
+              "id": "sample-electric-2026-08",
+              "businessId": "sample-building",
+              "month": "2026-08",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-08",
+              "businessId": "sample-building",
+              "month": "2026-08",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            },
+            {
+              "id": "sample-electric-2026-09",
+              "businessId": "sample-building",
+              "month": "2026-09",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-09",
+              "businessId": "sample-building",
+              "month": "2026-09",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            },
+            {
+              "id": "sample-electric-2026-10",
+              "businessId": "sample-building",
+              "month": "2026-10",
+              "supply": 1400000,
+              "vat": 140000,
+              "category": "전기료",
+              "vendor": "샘플 전력공급사"
+            },
+            {
+              "id": "sample-clean-2026-10",
+              "businessId": "sample-building",
+              "month": "2026-10",
+              "supply": 600000,
+              "vat": 60000,
+              "category": "청소비",
+              "vendor": "샘플 클린파트너"
+            }
+          ]
+        },
+        "error": null,
+        "checkedAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "source",
+      "id": "market",
+      "data": {
+        "data": {
+          "observedAt": "2026-10-07T04:04:02.608Z",
+          "mode": "sample",
+          "products": 8,
+          "realOrders": 164,
+          "excludedOrders": 0,
+          "truncated": false,
+          "customers": 340,
+          "sourceBusinesses": 0,
+          "orders": 164,
+          "monthly": [
+            {
+              "month": "2026-05",
+              "metric": "sample_orders",
+              "amount": 5200000,
+              "records": 21
+            },
+            {
+              "month": "2026-06",
+              "metric": "sample_orders",
+              "amount": 5620000,
+              "records": 24
+            },
+            {
+              "month": "2026-07",
+              "metric": "sample_orders",
+              "amount": 6040000,
+              "records": 27
+            },
+            {
+              "month": "2026-08",
+              "metric": "sample_orders",
+              "amount": 6460000,
+              "records": 30
+            },
+            {
+              "month": "2026-09",
+              "metric": "sample_orders",
+              "amount": 6880000,
+              "records": 33
+            },
+            {
+              "month": "2026-10",
+              "metric": "sample_orders",
+              "amount": 7300000,
+              "records": 36
+            }
+          ],
+          "operations": {
+            "pendingShipments": 8,
+            "claims": 2
+          }
+        },
+        "error": null,
+        "checkedAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "ownership",
+      "id": "crm:sample-building",
+      "data": {
+        "owned": true
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "ownership",
+      "id": "crm:sample-rental",
+      "data": {
+        "owned": true
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "ownership",
+      "id": "holdem:sample-arena",
+      "data": {
+        "owned": true
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-05",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-05",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-05",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-05",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-06",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-06",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-06",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-06",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-07",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-07",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-07",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-07",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-08",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-08",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-08",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-08",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-09",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-09",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-09",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-09",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "mind:platform:2026-10",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:platform:2026-10",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:platform:2026-10",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "market:platform:2026-10",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-05",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-05",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-05",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-05",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-06",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-06",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-06",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-06",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-07",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-07",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-07",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-07",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-08",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-08",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-08",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-08",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-09",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-09",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-09",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-09",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-building:2026-10",
+      "data": {
+        "service": "crm",
+        "business": "sample-building",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "crm:sample-rental:2026-10",
+      "data": {
+        "service": "crm",
+        "business": "sample-rental",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "coverage",
+      "id": "holdem:sample-arena:2026-10",
+      "data": {
+        "service": "holdem",
+        "business": "sample-arena",
+        "month": "2026-10",
+        "complete": true,
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "4ce2db80-646e-4af1-ae0e-382ebb883741",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "title": "검사 결과 페이지 점검",
+        "status": "doing",
+        "due": "2026-10-08",
+        "assignee": "박누리",
+        "note": "모바일 결과 화면과 회원 문의를 확인합니다.",
+        "priority": "normal",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "2fae5355-d5db-47c4-8ad6-f38a0e7e9d07",
+      "data": {
+        "service": "holdem",
+        "business": "platform",
+        "title": "직영 매장 수납 대조",
+        "status": "todo",
+        "due": "2026-10-07",
+        "assignee": "김누리",
+        "note": "결제·미수·애드온 기록을 대조합니다.",
+        "priority": "normal",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "9e353fa0-67d7-4056-abde-cee4053024ca",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "title": "10월 관리비 자료 확인",
+        "status": "doing",
+        "due": "2026-10-09",
+        "assignee": "이누리",
+        "note": "검침표, 비용 증빙, 부과 초안을 확인합니다.",
+        "priority": "normal",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "368db2d2-dee1-4b63-8b2d-35be0fc22845",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "title": "배송 지연 주문 확인",
+        "status": "todo",
+        "due": "2026-10-06",
+        "assignee": "최누리",
+        "note": "출고 예정 주문과 송장 상태를 확인합니다.",
+        "priority": "high",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "3c2f39c8-2b3a-452d-8406-0a5648c95aea",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "title": "공용 조명 수리 완료 확인",
+        "status": "done",
+        "due": "2026-10-05",
+        "assignee": "이누리",
+        "note": "수리 사진과 비용 증빙을 보관합니다.",
+        "priority": "normal",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "task",
+      "id": "5efecd16-3f3d-4cb6-8fad-54c2822cbffe",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "title": "콘텐츠 배포 일정 조정",
+        "status": "hold",
+        "due": "2026-10-12",
+        "assignee": "박누리",
+        "note": "채널 계정 연결 뒤 공개 일정을 확정합니다.",
+        "priority": "normal",
+        "createdAt": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-blog",
+      "data": {
+        "service": "mind",
+        "channel": "blog",
+        "label": "누리 블로그 · 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.608Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-instagram",
+      "data": {
+        "service": "mind",
+        "channel": "instagram",
+        "label": "누리 인스타그램 · 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.608Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-threads",
+      "data": {
+        "service": "mind",
+        "channel": "threads",
+        "label": "누리 Threads · 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.608Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-x",
+      "data": {
+        "service": "mind",
+        "channel": "x",
+        "label": "누리 X · 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.608Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-content-blog",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "channel": "blog",
+        "title": "일상 속 나를 이해하는 작은 습관",
+        "body": "[샘플 초안]\nNURI MIND의 일상 속 나를 이해하는 작은 습관를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.",
+        "media": "https://example.com/sample.jpg",
+        "status": "published",
+        "createdAt": "2026-10-07T04:04:02.608Z",
+        "ai": true,
+        "account": "sample-blog",
+        "scheduledAt": null,
+        "externalId": "sample-published-blog",
+        "publishedAt": "2026-10-07T04:04:02.608Z",
+        "error": null,
+        "campaignId": "sample-original"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-content-instagram",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "일상 속 나를 이해하는 작은 습관",
+        "body": "[샘플] 일상 속 나를 이해하는 작은 습관\nNURI MIND의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내",
+        "media": "https://example.com/sample.jpg",
+        "status": "draft",
+        "createdAt": "2026-10-07T04:04:02.608Z",
+        "ai": true,
+        "account": "sample-instagram",
+        "scheduledAt": null,
+        "externalId": null,
+        "publishedAt": null,
+        "error": null,
+        "campaignId": "sample-original"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-content-threads",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "channel": "threads",
+        "title": "일상 속 나를 이해하는 작은 습관",
+        "body": "[샘플] 일상 속 나를 이해하는 작은 습관\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. NURI MIND에서 시작해 보세요.",
+        "media": "https://example.com/sample.jpg",
+        "status": "scheduled",
+        "createdAt": "2026-10-07T04:04:02.608Z",
+        "ai": true,
+        "account": "sample-threads",
+        "scheduledAt": "2026-10-08T01:00:00.000Z",
+        "externalId": null,
+        "publishedAt": null,
+        "error": null,
+        "campaignId": "sample-original"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-content-x",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "channel": "x",
+        "title": "일상 속 나를 이해하는 작은 습관",
+        "body": "[샘플] 일상 속 나를 이해하는 작은 습관 — NURI MIND의 서비스 소식을 확인하세요.",
+        "media": "https://example.com/sample.jpg",
+        "status": "review",
+        "createdAt": "2026-10-07T04:04:02.608Z",
+        "ai": true,
+        "account": "sample-x",
+        "scheduledAt": null,
+        "externalId": null,
+        "publishedAt": null,
+        "error": "샘플: 토큰 만료. 실제 모드에서는 계정을 확인한 뒤 재예약하세요.",
+        "campaignId": "sample-original"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "plan",
+      "id": "sample-plan",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "topic": "자기 이해와 서비스 활용 팁",
+        "context": "공개 서비스 소개만 사용",
+        "tone": "친근하고 명확하게",
+        "channels": [
+          "blog",
+          "threads",
+          "x"
+        ],
+        "days": 7,
+        "enabled": false,
+        "autoPublish": false,
+        "nextAt": "2026-10-12T00:00:00.000Z",
+        "lastResult": "샘플 반복 기획 · 활성화 전"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "audit-note",
+      "id": "sample",
+      "data": {
+        "note": "모든 수치·이름·상태는 가상 샘플"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "sample",
+      "id": "initialized",
+      "data": {
+        "at": "2026-10-07T04:04:02.608Z"
+      },
+      "updated": "2026-10-07T04:04:02.608Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-mind-blog",
+      "data": {
+        "id": "sample-v2-mind-blog",
+        "campaignId": "sample-v2-mind",
+        "service": "mind",
+        "business": "platform",
+        "channel": "blog",
+        "title": "작은 습관으로 시작하는 자기 이해",
+        "body": "작은 습관으로 시작하는 자기 이해\n\n하루의 작은 기록으로 나를 알아가는 시간을 가져보세요. 오늘 느낀 감정과 그 이유를 한 문장으로 남겨보는 것부터 시작할 수 있습니다.\n\n[샘플 콘텐츠] 공개 전에 실제 운영 정보와 내용을 확인해 주세요.",
+        "media": "",
+        "status": "published",
+        "createdAt": "2026-10-06T04:04:02.943Z",
+        "ai": true,
+        "account": "sample-blog",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-07T03:04:02.943Z",
+        "externalId": "sample-sample-v2-mind-blog",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-mind"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-mind-instagram",
+      "data": {
+        "id": "sample-v2-mind-instagram",
+        "campaignId": "sample-v2-mind",
+        "service": "mind",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "작은 습관으로 시작하는 자기 이해",
+        "body": "하루의 작은 기록으로 나를 알아가는 시간을 가져보세요. 오늘 느낀 감정과 그 이유를 한 문장으로 남겨보는 것부터 시작할 수 있습니다.\n\n#누리 #일상과비즈니스",
+        "media": "https://example.com/sample.jpg",
+        "status": "published",
+        "createdAt": "2026-10-06T04:04:02.945Z",
+        "ai": true,
+        "account": "sample-instagram",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-07T02:04:02.945Z",
+        "externalId": "sample-sample-v2-mind-instagram",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-mind"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-mind-threads",
+      "data": {
+        "id": "sample-v2-mind-threads",
+        "campaignId": "sample-v2-mind",
+        "service": "mind",
+        "business": "platform",
+        "channel": "threads",
+        "title": "작은 습관으로 시작하는 자기 이해",
+        "body": "하루의 작은 기록으로 나를 알아가는 시간을 가져보세요. 오늘 느낀 감정과 그 이유를 한 문장으로 남겨보는 것부터 시작할 수 있습니다.",
+        "media": "",
+        "status": "published",
+        "createdAt": "2026-10-06T04:04:02.946Z",
+        "ai": true,
+        "account": "sample-threads",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-07T01:04:02.946Z",
+        "externalId": "sample-sample-v2-mind-threads",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-mind"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-mind-x",
+      "data": {
+        "id": "sample-v2-mind-x",
+        "campaignId": "sample-v2-mind",
+        "service": "mind",
+        "business": "platform",
+        "channel": "x",
+        "title": "작은 습관으로 시작하는 자기 이해",
+        "body": "하루의 작은 기록으로 나를 알아가는 시간을 가져보세요. 오늘 느낀 감정과 그 이유를 한 문장으로 남겨보는 것부터 시작할 수 있습니다.",
+        "media": "",
+        "status": "published",
+        "createdAt": "2026-10-06T04:04:02.948Z",
+        "ai": true,
+        "account": "sample-x",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-07T00:04:02.948Z",
+        "externalId": "sample-sample-v2-mind-x",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-mind"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-holdem-blog",
+      "data": {
+        "service": "holdem",
+        "channel": "blog",
+        "label": "누리 홀덤 · 블로그 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-holdem-blog",
+      "data": {
+        "campaignId": "sample-v2-holdem",
+        "service": "holdem",
+        "business": "platform",
+        "channel": "blog",
+        "title": "이번 주 직영점 운영 안내",
+        "body": "이번 주 직영점 운영 안내\n\n이번 주 직영점 운영 일정을 안내합니다. 방문 전 매장별 운영 시간과 참가 안내를 확인해 주세요.\n\n[샘플 콘텐츠] 공개 전에 실제 운영 정보와 내용을 확인해 주세요.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-05T04:04:02.951Z",
+        "ai": true,
+        "account": "sample-holdem-blog",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-holdem-instagram",
+      "data": {
+        "service": "holdem",
+        "channel": "instagram",
+        "label": "누리 홀덤 · Instagram 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-holdem-instagram",
+      "data": {
+        "campaignId": "sample-v2-holdem",
+        "service": "holdem",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "이번 주 직영점 운영 안내",
+        "body": "이번 주 직영점 운영 일정을 안내합니다. 방문 전 매장별 운영 시간과 참가 안내를 확인해 주세요.\n\n#누리 #일상과비즈니스",
+        "media": "https://example.com/sample.jpg",
+        "status": "published",
+        "createdAt": "2026-10-05T04:04:02.953Z",
+        "ai": true,
+        "account": "sample-holdem-instagram",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-07T00:04:02.953Z",
+        "externalId": "sample-sample-v2-holdem-instagram",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-holdem-threads",
+      "data": {
+        "service": "holdem",
+        "channel": "threads",
+        "label": "누리 홀덤 · Threads 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-holdem-threads",
+      "data": {
+        "campaignId": "sample-v2-holdem",
+        "service": "holdem",
+        "business": "platform",
+        "channel": "threads",
+        "title": "이번 주 직영점 운영 안내",
+        "body": "이번 주 직영점 운영 일정을 안내합니다. 방문 전 매장별 운영 시간과 참가 안내를 확인해 주세요.",
+        "media": "",
+        "status": "scheduled",
+        "createdAt": "2026-10-05T04:04:02.956Z",
+        "ai": true,
+        "account": "sample-holdem-threads",
+        "scheduledAt": "2026-10-07T06:14:02.956Z",
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-holdem-x",
+      "data": {
+        "service": "holdem",
+        "channel": "x",
+        "label": "누리 홀덤 · X 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-holdem-x",
+      "data": {
+        "campaignId": "sample-v2-holdem",
+        "service": "holdem",
+        "business": "platform",
+        "channel": "x",
+        "title": "이번 주 직영점 운영 안내",
+        "body": "이번 주 직영점 운영 일정을 안내합니다. 방문 전 매장별 운영 시간과 참가 안내를 확인해 주세요.",
+        "media": "",
+        "status": "scheduled",
+        "createdAt": "2026-10-05T04:04:02.959Z",
+        "ai": true,
+        "account": "sample-holdem-x",
+        "scheduledAt": "2026-10-07T06:19:02.959Z",
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-crm-blog",
+      "data": {
+        "service": "crm",
+        "channel": "blog",
+        "label": "누리 CRM · 블로그 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-crm-blog",
+      "data": {
+        "id": "sample-v2-crm-blog",
+        "campaignId": "sample-v2-crm",
+        "service": "crm",
+        "business": "platform",
+        "channel": "blog",
+        "title": "10월 관리비 정산 체크리스트",
+        "body": "10월 관리비 정산 체크리스트\n\n10월 정산 전에 검침표, 비용 증빙, 계약 변경 내역을 확인해 보세요. 확인한 항목을 업무에 남기면 다음 정산에서도 이어서 관리할 수 있습니다.\n\n[샘플 콘텐츠] 공개 전에 실제 운영 정보와 내용을 확인해 주세요.",
+        "media": "",
+        "status": "published",
+        "createdAt": "2026-10-04T04:04:02.962Z",
+        "ai": true,
+        "account": "sample-crm-blog",
+        "scheduledAt": null,
+        "publishedAt": "2026-10-06T23:04:02.962Z",
+        "externalId": "sample-sample-v2-crm-blog",
+        "checkedAt": "2026-10-07T04:04:02.937Z",
+        "checkStatus": "visible",
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-crm"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-crm-instagram",
+      "data": {
+        "service": "crm",
+        "channel": "instagram",
+        "label": "누리 CRM · Instagram 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-crm-instagram",
+      "data": {
+        "id": "sample-v2-crm-instagram",
+        "campaignId": "sample-v2-crm",
+        "service": "crm",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "10월 관리비 정산 체크리스트",
+        "body": "10월 정산 전에 검침표, 비용 증빙, 계약 변경 내역을 확인해 보세요. 확인한 항목을 업무에 남기면 다음 정산에서도 이어서 관리할 수 있습니다.\n\n#누리 #일상과비즈니스",
+        "media": "https://example.com/sample.jpg",
+        "status": "draft",
+        "createdAt": "2026-10-04T04:04:02.965Z",
+        "ai": true,
+        "account": "sample-crm-instagram",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-crm"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-crm-threads",
+      "data": {
+        "service": "crm",
+        "channel": "threads",
+        "label": "누리 CRM · Threads 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-crm-threads",
+      "data": {
+        "id": "sample-v2-crm-threads",
+        "campaignId": "sample-v2-crm",
+        "service": "crm",
+        "business": "platform",
+        "channel": "threads",
+        "title": "10월 관리비 정산 체크리스트",
+        "body": "10월 정산 전에 검침표, 비용 증빙, 계약 변경 내역을 확인해 보세요. 확인한 항목을 업무에 남기면 다음 정산에서도 이어서 관리할 수 있습니다.",
+        "media": "",
+        "status": "review",
+        "createdAt": "2026-10-04T04:04:02.967Z",
+        "ai": true,
+        "account": "sample-crm-threads",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": true,
+        "error": "샘플: 계정 토큰이 만료되었습니다. 채널에서 게시 여부를 먼저 확인하세요.",
+        "generationId": "sample-generation-crm"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-crm-x",
+      "data": {
+        "service": "crm",
+        "channel": "x",
+        "label": "누리 CRM · X 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-crm-x",
+      "data": {
+        "id": "sample-v2-crm-x",
+        "campaignId": "sample-v2-crm",
+        "service": "crm",
+        "business": "platform",
+        "channel": "x",
+        "title": "10월 관리비 정산 체크리스트",
+        "body": "10월 정산 전에 검침표, 비용 증빙, 계약 변경 내역을 확인해 보세요. 확인한 항목을 업무에 남기면 다음 정산에서도 이어서 관리할 수 있습니다.",
+        "media": "",
+        "status": "scheduled",
+        "createdAt": "2026-10-04T04:04:02.970Z",
+        "ai": true,
+        "account": "sample-crm-x",
+        "scheduledAt": "2026-10-07T07:19:02.970Z",
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-crm"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-market-blog",
+      "data": {
+        "service": "market",
+        "channel": "blog",
+        "label": "누리 마켓 · 블로그 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-market-blog",
+      "data": {
+        "id": "sample-v2-market-blog",
+        "campaignId": "sample-v2-market",
+        "service": "market",
+        "business": "platform",
+        "channel": "blog",
+        "title": "누리 오리지널 굿즈 안내",
+        "body": "누리 오리지널 굿즈 안내\n\n일상에서 오래 쓰는 물건을 고민합니다. 누리 오리지널 굿즈의 구성과 이용 안내를 공식 스토어에서 확인해 보세요.\n\n[샘플 콘텐츠] 공개 전에 실제 운영 정보와 내용을 확인해 주세요.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-03T04:04:02.973Z",
+        "ai": true,
+        "account": "sample-market-blog",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-market"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-market-instagram",
+      "data": {
+        "service": "market",
+        "channel": "instagram",
+        "label": "누리 마켓 · Instagram 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-market-instagram",
+      "data": {
+        "id": "sample-v2-market-instagram",
+        "campaignId": "sample-v2-market",
+        "service": "market",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "누리 오리지널 굿즈 안내",
+        "body": "일상에서 오래 쓰는 물건을 고민합니다. 누리 오리지널 굿즈의 구성과 이용 안내를 공식 스토어에서 확인해 보세요.\n\n#누리 #일상과비즈니스",
+        "media": "https://example.com/sample.jpg",
+        "status": "scheduled",
+        "createdAt": "2026-10-03T04:04:02.976Z",
+        "ai": true,
+        "account": "sample-market-instagram",
+        "scheduledAt": "2026-10-07T08:09:02.976Z",
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-market"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-market-threads",
+      "data": {
+        "service": "market",
+        "channel": "threads",
+        "label": "누리 마켓 · Threads 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-market-threads",
+      "data": {
+        "id": "sample-v2-market-threads",
+        "campaignId": "sample-v2-market",
+        "service": "market",
+        "business": "platform",
+        "channel": "threads",
+        "title": "누리 오리지널 굿즈 안내",
+        "body": "일상에서 오래 쓰는 물건을 고민합니다. 누리 오리지널 굿즈의 구성과 이용 안내를 공식 스토어에서 확인해 보세요.",
+        "media": "",
+        "status": "scheduled",
+        "createdAt": "2026-10-03T04:04:02.980Z",
+        "ai": true,
+        "account": "sample-market-threads",
+        "scheduledAt": "2026-10-07T08:14:02.980Z",
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-market"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-market-x",
+      "data": {
+        "service": "market",
+        "channel": "x",
+        "label": "누리 마켓 · X 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-market-x",
+      "data": {
+        "id": "sample-v2-market-x",
+        "campaignId": "sample-v2-market",
+        "service": "market",
+        "business": "platform",
+        "channel": "x",
+        "title": "누리 오리지널 굿즈 안내",
+        "body": "일상에서 오래 쓰는 물건을 고민합니다. 누리 오리지널 굿즈의 구성과 이용 안내를 공식 스토어에서 확인해 보세요.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-03T04:04:02.983Z",
+        "ai": true,
+        "account": "sample-market-x",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null,
+        "generationId": "sample-generation-market"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-tistory-blog",
+      "data": {
+        "campaignId": "sample-v2-tistory",
+        "service": "tistory",
+        "business": "platform",
+        "channel": "blog",
+        "title": "업무 기록을 콘텐츠로 남기는 방법",
+        "body": "업무 기록을 콘텐츠로 남기는 방법\n\n매일의 업무 기록에서 공개할 수 있는 내용을 골라 하나의 주제로 정리해 보세요. 독자가 바로 활용할 수 있는 체크리스트로 마무리하면 좋습니다.\n\n[샘플 콘텐츠] 공개 전에 실제 운영 정보와 내용을 확인해 주세요.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-02T04:04:02.985Z",
+        "ai": true,
+        "account": "sample-tistory-blog",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-tistory-instagram",
+      "data": {
+        "service": "tistory",
+        "channel": "instagram",
+        "label": "doto1 · Instagram 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-tistory-instagram",
+      "data": {
+        "campaignId": "sample-v2-tistory",
+        "service": "tistory",
+        "business": "platform",
+        "channel": "instagram",
+        "title": "업무 기록을 콘텐츠로 남기는 방법",
+        "body": "매일의 업무 기록에서 공개할 수 있는 내용을 골라 하나의 주제로 정리해 보세요. 독자가 바로 활용할 수 있는 체크리스트로 마무리하면 좋습니다.\n\n#누리 #일상과비즈니스",
+        "media": "https://example.com/sample.jpg",
+        "status": "draft",
+        "createdAt": "2026-10-02T04:04:02.989Z",
+        "ai": true,
+        "account": "sample-tistory-instagram",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-tistory-threads",
+      "data": {
+        "service": "tistory",
+        "channel": "threads",
+        "label": "doto1 · Threads 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-tistory-threads",
+      "data": {
+        "campaignId": "sample-v2-tistory",
+        "service": "tistory",
+        "business": "platform",
+        "channel": "threads",
+        "title": "업무 기록을 콘텐츠로 남기는 방법",
+        "body": "매일의 업무 기록에서 공개할 수 있는 내용을 골라 하나의 주제로 정리해 보세요. 독자가 바로 활용할 수 있는 체크리스트로 마무리하면 좋습니다.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-02T04:04:02.993Z",
+        "ai": true,
+        "account": "sample-tistory-threads",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "channel",
+      "id": "sample-tistory-x",
+      "data": {
+        "service": "tistory",
+        "channel": "x",
+        "label": "doto1 · X 샘플",
+        "verifiedAt": "2026-10-07T04:04:02.937Z",
+        "userId": "sample-user",
+        "username": "nuri_sample"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-v2-tistory-x",
+      "data": {
+        "campaignId": "sample-v2-tistory",
+        "service": "tistory",
+        "business": "platform",
+        "channel": "x",
+        "title": "업무 기록을 콘텐츠로 남기는 방법",
+        "body": "매일의 업무 기록에서 공개할 수 있는 내용을 골라 하나의 주제로 정리해 보세요. 독자가 바로 활용할 수 있는 체크리스트로 마무리하면 좋습니다.",
+        "media": "",
+        "status": "draft",
+        "createdAt": "2026-10-02T04:04:02.998Z",
+        "ai": true,
+        "account": "sample-tistory-x",
+        "scheduledAt": null,
+        "publishedAt": null,
+        "externalId": null,
+        "checkedAt": null,
+        "checkStatus": null,
+        "uncertain": false,
+        "error": null
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "sample",
+      "id": "publishing-v2",
+      "data": {
+        "at": "2026-10-07T04:04:02.937Z"
+      },
+      "updated": "2026-10-07T04:04:02.937Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "mind:all",
+      "data": {
+        "service": "mind",
+        "channel": "all",
+        "tone": "차분하고 구체적인 한국어",
+        "instructions": "자기 이해를 주제로 짧은 실천 방법을 안내하세요. 진단이나 치료 효과를 단정하지 마세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "holdem:all",
+      "data": {
+        "service": "holdem",
+        "channel": "all",
+        "tone": "차분하고 구체적인 한국어",
+        "instructions": "실제 확인한 운영 일정과 이용 안내만 작성하세요. 수익이나 승률을 보장하는 표현은 쓰지 마세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "crm:all",
+      "data": {
+        "service": "crm",
+        "channel": "all",
+        "tone": "차분하고 구체적인 한국어",
+        "instructions": "업무 담당자가 바로 사용할 수 있는 체크리스트로 작성하세요. 고객 이름과 실제 계약 금액은 공개하지 마세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "market:all",
+      "data": {
+        "service": "market",
+        "channel": "all",
+        "tone": "차분하고 구체적인 한국어",
+        "instructions": "공개된 상품 설명과 관리 방법을 안내하세요. 확인되지 않은 재고나 할인은 만들지 마세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "tistory:all",
+      "data": {
+        "service": "tistory",
+        "channel": "all",
+        "tone": "차분하고 구체적인 한국어",
+        "instructions": "업무 기록을 독자가 활용할 수 있는 단계별 글로 정리하세요. 마지막에 체크리스트를 넣으세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "prompt",
+      "id": "mind:instagram",
+      "data": {
+        "service": "mind",
+        "channel": "instagram",
+        "tone": "짧고 친근한 한국어",
+        "instructions": "첫 문장에 핵심을 전달하고 해시태그는 3개 이내로 작성하세요.",
+        "updatedAt": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "generation",
+      "id": "sample-generation-mind",
+      "data": {
+        "service": "mind",
+        "business": "platform",
+        "topic": "작은 습관으로 시작하는 자기 이해",
+        "channels": [
+          "blog",
+          "instagram",
+          "threads",
+          "x"
+        ],
+        "context": "[샘플] 공개 서비스 소개와 콘텐츠 기획 예시",
+        "instructions": "",
+        "rules": {
+          "blog": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "자기 이해를 주제로 짧은 실천 방법을 안내하세요. 진단이나 치료 효과를 단정하지 마세요."
+            ]
+          },
+          "instagram": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "자기 이해를 주제로 짧은 실천 방법을 안내하세요. 진단이나 치료 효과를 단정하지 마세요."
+            ]
+          },
+          "threads": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "자기 이해를 주제로 짧은 실천 방법을 안내하세요. 진단이나 치료 효과를 단정하지 마세요."
+            ]
+          },
+          "x": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "자기 이해를 주제로 짧은 실천 방법을 안내하세요. 진단이나 치료 효과를 단정하지 마세요."
+            ]
+          }
+        },
+        "startedAt": "2026-10-06T04:04:02.943Z",
+        "completedAt": "2026-10-06T04:04:02.943Z",
+        "status": "completed",
+        "ids": [
+          "sample-v2-mind-blog",
+          "sample-v2-mind-instagram",
+          "sample-v2-mind-threads",
+          "sample-v2-mind-x"
+        ],
+        "sample": true
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "generation",
+      "id": "sample-generation-crm",
+      "data": {
+        "service": "crm",
+        "business": "platform",
+        "topic": "10월 관리비 정산 체크리스트",
+        "channels": [
+          "blog",
+          "instagram",
+          "threads",
+          "x"
+        ],
+        "context": "[샘플] 공개 서비스 소개와 콘텐츠 기획 예시",
+        "instructions": "",
+        "rules": {
+          "blog": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "업무 담당자가 바로 사용할 수 있는 체크리스트로 작성하세요. 고객 이름과 실제 계약 금액은 공개하지 마세요."
+            ]
+          },
+          "instagram": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "업무 담당자가 바로 사용할 수 있는 체크리스트로 작성하세요. 고객 이름과 실제 계약 금액은 공개하지 마세요."
+            ]
+          },
+          "threads": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "업무 담당자가 바로 사용할 수 있는 체크리스트로 작성하세요. 고객 이름과 실제 계약 금액은 공개하지 마세요."
+            ]
+          },
+          "x": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "업무 담당자가 바로 사용할 수 있는 체크리스트로 작성하세요. 고객 이름과 실제 계약 금액은 공개하지 마세요."
+            ]
+          }
+        },
+        "startedAt": "2026-10-04T04:04:02.962Z",
+        "completedAt": "2026-10-04T04:04:02.962Z",
+        "status": "completed",
+        "ids": [
+          "sample-v2-crm-blog",
+          "sample-v2-crm-instagram",
+          "sample-v2-crm-threads",
+          "sample-v2-crm-x"
+        ],
+        "sample": true
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "generation",
+      "id": "sample-generation-market",
+      "data": {
+        "service": "market",
+        "business": "platform",
+        "topic": "누리 오리지널 굿즈 안내",
+        "channels": [
+          "blog",
+          "instagram",
+          "threads",
+          "x"
+        ],
+        "context": "[샘플] 공개 서비스 소개와 콘텐츠 기획 예시",
+        "instructions": "",
+        "rules": {
+          "blog": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "공개된 상품 설명과 관리 방법을 안내하세요. 확인되지 않은 재고나 할인은 만들지 마세요."
+            ]
+          },
+          "instagram": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "공개된 상품 설명과 관리 방법을 안내하세요. 확인되지 않은 재고나 할인은 만들지 마세요."
+            ]
+          },
+          "threads": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "공개된 상품 설명과 관리 방법을 안내하세요. 확인되지 않은 재고나 할인은 만들지 마세요."
+            ]
+          },
+          "x": {
+            "tone": "차분하고 구체적인 한국어",
+            "instructions": [
+              "공개된 상품 설명과 관리 방법을 안내하세요. 확인되지 않은 재고나 할인은 만들지 마세요."
+            ]
+          }
+        },
+        "startedAt": "2026-10-03T04:04:02.973Z",
+        "completedAt": "2026-10-03T04:04:02.973Z",
+        "status": "completed",
+        "ids": [
+          "sample-v2-market-blog",
+          "sample-v2-market-instagram",
+          "sample-v2-market-threads",
+          "sample-v2-market-x"
+        ],
+        "sample": true
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "sample",
+      "id": "automation-v3",
+      "data": {
+        "at": "2026-10-07T04:04:03.003Z"
+      },
+      "updated": "2026-10-07T04:04:03.003Z"
+    }
+  ],
+  "money": [
+    {
+      "id": "502ed115-10dd-4db4-b7fd-91c3cd15e8bf",
+      "day": "2026-05-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-05",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "c95f6b3d-c986-453f-aaf8-a3888d48b428",
+      "day": "2026-05-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-05",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "8ef7b760-746c-4f21-a789-1f786c54ab00",
+      "day": "2026-06-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-06",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "dfd61bc0-1270-4dd5-a24f-bc82cc1712b5",
+      "day": "2026-06-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-06",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "3b6e742d-a1d3-43f2-80d6-a1eb27a7391f",
+      "day": "2026-07-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-07",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "1a972597-90e9-4c8f-aaa4-4eaf26011025",
+      "day": "2026-07-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-07",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "a0e650aa-645f-4c3c-b47b-8c6167425ec5",
+      "day": "2026-08-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-08",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "1f8f4c6a-aeb8-49db-b844-213db5bdf8dd",
+      "day": "2026-08-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-08",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "69f755ee-9d07-47cd-b34d-ec924c1dec7e",
+      "day": "2026-09-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-09",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "c61a3c2c-6345-49ef-b555-78d234637e14",
+      "day": "2026-09-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-09",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "6b20b8a6-7143-422a-94f6-907bd9f3f35c",
+      "day": "2026-10-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "income",
+      "amount": 480000,
+      "category": "광고 수익",
+      "partner": "샘플 광고 플랫폼",
+      "reference": "SAMPLE-BLOG-2026-10",
+      "note": "가상 블로그 광고 수익",
+      "voided": 0
+    },
+    {
+      "id": "98062649-e42a-4b54-ae47-c6ce7a74ed14",
+      "day": "2026-10-12",
+      "service": "tistory",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 120000,
+      "category": "콘텐츠 제작",
+      "partner": "샘플 제작팀",
+      "reference": "SAMPLE-BLOG-COST-2026-10",
+      "note": "가상 콘텐츠 제작비",
+      "voided": 0
+    },
+    {
+      "id": "91ed9101-dd78-41ec-a1ab-421da9106efa",
+      "day": "2026-05-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 3200000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-05-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ae052ad4-a0fe-4ad2-83e5-a24c1d00a84e",
+      "day": "2026-05-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 896000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-05-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "cbf658d1-fbb6-4abb-9e23-353b37d6d670",
+      "day": "2026-05-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 416000,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-05-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9169a2e7-c8de-42db-84ee-dc62ccfe9369",
+      "day": "2026-05-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 240000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-05-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a61c0313-9ac5-405b-9e2d-a9d46d96a7c5",
+      "day": "2026-05-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-05-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "87319f61-3e4d-4ffe-833c-5d14d69b98e9",
+      "day": "2026-05-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 5600000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-05-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "953d85bc-c96d-4aac-a2a1-5bb1ac4de902",
+      "day": "2026-05-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1568000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-05-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e9635eb0-ac2b-4815-ba27-ec2c1ef65610",
+      "day": "2026-05-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 728000,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-05-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "35966805-47bf-48b4-af91-b6a09c1e4dad",
+      "day": "2026-05-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 240000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-05-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "3fab2b6c-9b1e-4420-9e7d-78e8fcdf3a0b",
+      "day": "2026-05-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-05-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "84a80f2f-28a8-49a5-9070-49f55751f3ad",
+      "day": "2026-05-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 8400000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-05-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "518149f7-a7d0-4b33-85e6-5fb007b79123",
+      "day": "2026-05-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2352000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-05-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "d9d420bf-deab-43d0-9117-6afa7e1ceabc",
+      "day": "2026-05-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1092000,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-05-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "559961b7-d6ff-45e1-b792-ed1f54d4a280",
+      "day": "2026-05-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 240000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-05-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ed801124-ec8f-4259-a651-911de6b3882d",
+      "day": "2026-05-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-05-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "15f80357-f944-48af-8381-75c5a8762508",
+      "day": "2026-05-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 6400000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-05-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "d3b0f7ae-0260-4973-a153-b67f6b8b1aea",
+      "day": "2026-05-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1792000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-05-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "cfd4e37c-8028-4246-a100-278260ded3a0",
+      "day": "2026-05-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 832000,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-05-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "16715bd2-f192-4cb1-8a59-6337df4fe200",
+      "day": "2026-05-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 240000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-05-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0e0c04ec-4af6-4c33-a5d0-a5455c84c6f3",
+      "day": "2026-05-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-05-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ec97810c-cfd2-47ef-9454-62760360d22d",
+      "day": "2026-06-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 3570000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-06-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "d0f087aa-2c2c-48f9-a571-4a5c227e3d81",
+      "day": "2026-06-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 999600,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-06-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a08120ba-0370-4c9d-8355-ee8a94289517",
+      "day": "2026-06-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 464100,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-06-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "1f069c00-0f97-40f2-a316-5d272f26feee",
+      "day": "2026-06-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 253000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-06-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "fcd30b68-56f3-457a-b23a-0e68ea9623d2",
+      "day": "2026-06-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-06-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "606716e0-e9c2-40b4-b1b0-3a7e9176380c",
+      "day": "2026-06-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 5970000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-06-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ca4336f4-8add-4ebd-a909-9a589e542f74",
+      "day": "2026-06-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1671600,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-06-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "cc4ef068-d9b1-41b0-9943-39767f46f3e2",
+      "day": "2026-06-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 776100,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-06-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0a63ce77-e916-49b0-9de3-a2b62745c3a1",
+      "day": "2026-06-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 253000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-06-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "5a9224c7-c922-4a41-9bfc-028971b24b40",
+      "day": "2026-06-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-06-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "4c07e819-2879-4cdc-9d8e-df05ad8c23aa",
+      "day": "2026-06-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 8770000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-06-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "74950b53-ca14-4d0c-b759-6b7552efaf4c",
+      "day": "2026-06-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2455600,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-06-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "eabb0e49-c21c-41a3-97d8-0e44fe4b2733",
+      "day": "2026-06-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1140100,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-06-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9c9d39a8-610b-4393-98c7-0f2db9f263d8",
+      "day": "2026-06-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 253000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-06-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "06520e67-be2a-4244-bb9b-fb2cc6937200",
+      "day": "2026-06-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-06-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "5efcf0c7-e170-4cb5-a834-e4904e6d3184",
+      "day": "2026-06-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 6770000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-06-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e1149ba6-c668-4ba1-9750-12cf1240ce28",
+      "day": "2026-06-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1895600,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-06-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "964ba734-a279-40d5-9887-84da43053391",
+      "day": "2026-06-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 880100,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-06-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "03633645-a2d2-486d-b56c-f478d089ca3f",
+      "day": "2026-06-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 253000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-06-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "c0e157cf-b438-4654-a0d8-1be69660a093",
+      "day": "2026-06-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-06-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "72a3fd25-9599-4b06-9210-ef0fa2d7b760",
+      "day": "2026-07-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 3940000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-07-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "4fa4e877-2c75-4a49-93df-848d1de29b39",
+      "day": "2026-07-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1103200,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-07-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "f5bff5ff-94fb-489b-a9eb-80d18c0a9663",
+      "day": "2026-07-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 512200,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-07-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "03851bfe-cb6c-4f17-b44f-06b9abcfaeb5",
+      "day": "2026-07-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 266000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-07-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "84927f54-42bc-481b-850f-a1918a425958",
+      "day": "2026-07-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-07-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "99ac1ef4-190c-4442-ab87-82187ffa9b88",
+      "day": "2026-07-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 6340000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-07-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "7f319f2b-04bf-423d-a5fe-f4bfb66e55d2",
+      "day": "2026-07-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1775200,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-07-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a8d50adc-f842-4b2c-8225-79d3e70213fd",
+      "day": "2026-07-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 824200,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-07-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e2fb78f5-1692-4ff0-9486-a842602a01cb",
+      "day": "2026-07-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 266000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-07-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0b1cec20-3c24-4e74-95ee-2a9d63be428e",
+      "day": "2026-07-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-07-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9991334e-1cae-40a4-b1e7-fb38c7849df6",
+      "day": "2026-07-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 9140000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-07-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "24a017a7-369f-4038-86d5-420c430c16c9",
+      "day": "2026-07-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2559200,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-07-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "1fb78ffd-d45b-45d5-b6f2-08cb1f0dc3cd",
+      "day": "2026-07-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1188200,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-07-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "4a38f816-32af-4975-9d89-28f851c0ab39",
+      "day": "2026-07-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 266000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-07-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "2f9972e0-7e2c-4163-874f-e04b2fcbfc35",
+      "day": "2026-07-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-07-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ca55e825-8c81-490e-8713-a0eca635dfa0",
+      "day": "2026-07-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 7140000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-07-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a5b77934-5b3e-4461-95d0-098d3014d417",
+      "day": "2026-07-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1999200,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-07-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "f6e8a479-4a7a-4208-8503-d4f92aa82d15",
+      "day": "2026-07-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 928200,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-07-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "b7e6ce3c-24d2-4995-9da3-34b4cab8d4fb",
+      "day": "2026-07-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 266000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-07-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e97e0d6b-6ac1-4338-9dc9-4b724453b94b",
+      "day": "2026-07-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-07-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9583cb8f-a513-45aa-aef3-fe7e8f27bb16",
+      "day": "2026-08-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 4310000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-08-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9a77894b-1f3e-45f2-a488-a8908e0651ac",
+      "day": "2026-08-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1206800,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-08-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "bc779cdd-7600-4f3a-a51a-a590787719bd",
+      "day": "2026-08-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 560300,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-08-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "975e9766-4c23-4201-82de-d2a6167fa30a",
+      "day": "2026-08-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 279000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-08-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a971f665-f403-4004-a971-ebfc6f5c244c",
+      "day": "2026-08-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-08-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9f2df0a7-f5d8-470f-88a4-d7df8f8ce627",
+      "day": "2026-08-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 6710000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-08-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0e39cde2-e1d4-4a57-bd7d-c4cf30e59ec1",
+      "day": "2026-08-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1878800,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-08-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "94225e22-aea8-4229-9651-ce0d24c6ea7c",
+      "day": "2026-08-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 872300,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-08-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "39edd64b-b0ef-425d-88be-6e5a30902936",
+      "day": "2026-08-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 279000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-08-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "46998cf2-4bfd-42d4-9d96-1c72ff01ed91",
+      "day": "2026-08-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-08-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e244b3e0-f992-40f9-89b6-c0424684d9ae",
+      "day": "2026-08-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 9510000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-08-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "56611300-4fde-4171-ae3b-5f695de08104",
+      "day": "2026-08-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2662800,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-08-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "43e83307-ad45-40da-bf7e-727217138deb",
+      "day": "2026-08-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1236300,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-08-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "efb9cc69-4530-4570-86a9-f4c8665b74c4",
+      "day": "2026-08-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 279000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-08-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a4d0b1f6-cc5a-4801-a111-3a5c5b96e758",
+      "day": "2026-08-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-08-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "32ab6701-1626-4c40-8b56-5e08619b82d6",
+      "day": "2026-08-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 7510000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-08-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e4d06a9e-b51a-4978-8d64-92f34965c99e",
+      "day": "2026-08-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2102800,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-08-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "ad9ca20d-e400-4486-86d7-ed02e3516d24",
+      "day": "2026-08-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 976300,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-08-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "96a1b357-b7e4-415d-bef4-5f41e1825f07",
+      "day": "2026-08-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 279000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-08-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "2608033f-1437-4a75-a374-a9680f5c6fb8",
+      "day": "2026-08-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-08-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "c3557dfd-4a42-46f4-8d12-65c15f2f0c68",
+      "day": "2026-09-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 4680000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-09-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "169754f7-9eae-4eb3-9a79-a46f0228a386",
+      "day": "2026-09-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1310400,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-09-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e5c0e2a6-c963-4aaf-a481-90131ee4b06f",
+      "day": "2026-09-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 608400,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-09-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9e18de34-5c6e-442e-94eb-0cf09c0bab0e",
+      "day": "2026-09-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 292000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-09-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "12a8dadf-9c49-46d8-8742-dca4114fa035",
+      "day": "2026-09-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-09-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "c58f735d-31c2-4a59-b7f3-6bd27531c13d",
+      "day": "2026-09-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 7080000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-09-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "b036c688-9cc0-41d9-8a1c-c52f9b10888a",
+      "day": "2026-09-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1982400,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-09-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "d4664d80-f0ae-4e75-8d19-374b932a4995",
+      "day": "2026-09-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 920400,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-09-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "4ab79b51-b929-4872-836a-d6d7023b09ba",
+      "day": "2026-09-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 292000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-09-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "f07c1d81-1d5d-4550-bf63-a65bf5f9dd10",
+      "day": "2026-09-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-09-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "c6ad8e56-19b0-4f7e-b5df-b7f3759aa20b",
+      "day": "2026-09-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 9880000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-09-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "57d08769-547a-4667-9090-4f951fe950c0",
+      "day": "2026-09-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2766400,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-09-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "cbdcc593-1512-4e8b-9cd8-6212288a49fd",
+      "day": "2026-09-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1284400,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-09-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "51445bfa-edc4-466f-8fd8-e2fd2e532696",
+      "day": "2026-09-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 292000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-09-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0be69539-a528-4212-9e2b-f1fbef2e6cdc",
+      "day": "2026-09-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-09-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "5dad0fe3-dff9-4db7-89b9-f1641469fbaa",
+      "day": "2026-09-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 7880000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-09-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0ac2663b-b664-4043-bc09-19a753aed861",
+      "day": "2026-09-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2206400,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-09-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "b5a27c5b-d3b5-4524-a8cc-742e058db3c9",
+      "day": "2026-09-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1024400,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-09-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "e7ec9a2e-97cc-4161-8b27-047eee3204e1",
+      "day": "2026-09-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 292000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-09-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "79e77197-9450-47db-890a-a144b67124be",
+      "day": "2026-09-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-09-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "76d3fbf1-df2c-4d6d-a297-6392c7ee9434",
+      "day": "2026-10-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "income",
+      "amount": 5050000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-mind-2026-10-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "1358bfc6-f144-4f77-b501-31c46fe47d1b",
+      "day": "2026-10-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1414000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-mind-2026-10-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "75cfe7ee-1a52-41bd-b3a2-f42e06e1eb6a",
+      "day": "2026-10-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 656500,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-mind-2026-10-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "8cba1fa8-746b-4a53-ab5e-aeedf8286d78",
+      "day": "2026-10-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 305000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-mind-2026-10-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "a1b1daa1-9fd0-4923-8139-68a7a32952a3",
+      "day": "2026-10-12",
+      "service": "mind",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-mind-2026-10-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "311d9b74-6068-4de3-a48f-d7cd4565e3bc",
+      "day": "2026-10-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "income",
+      "amount": 7450000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-holdem-2026-10-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "dd762137-cb72-42f8-9e78-6a110c56dc6a",
+      "day": "2026-10-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2086000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-holdem-2026-10-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "61df8add-022e-4a55-b2a2-91458d96c04b",
+      "day": "2026-10-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 968500,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-holdem-2026-10-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "88a1545b-aafd-4e58-954f-105b42fbaf9a",
+      "day": "2026-10-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 305000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-holdem-2026-10-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "c75919e3-d184-4dd8-b5c1-59c281151dfd",
+      "day": "2026-10-12",
+      "service": "holdem",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-holdem-2026-10-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "1eeaf1f6-f816-4acb-b3d0-493779a15c70",
+      "day": "2026-10-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "income",
+      "amount": 10250000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-crm-2026-10-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "4b71b84c-b0ec-47aa-bdfe-2452afa6e60f",
+      "day": "2026-10-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2870000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-crm-2026-10-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "bca883a6-3bfe-4ff4-bbfd-51696fef02c5",
+      "day": "2026-10-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1332500,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-crm-2026-10-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "0f4a9e8d-28eb-4d87-a437-063edbb0c48a",
+      "day": "2026-10-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 305000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-crm-2026-10-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "7397f59e-bdba-41d4-b6aa-b873f055cd15",
+      "day": "2026-10-12",
+      "service": "crm",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-crm-2026-10-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "f8987720-3702-4603-9a17-49358240f8b1",
+      "day": "2026-10-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "income",
+      "amount": 8250000,
+      "category": "서비스 매출",
+      "partner": "샘플 누리 거래처",
+      "reference": "SAMPLE-market-2026-10-0",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "b206dd8d-2804-4ab0-b4c7-0da43ab6c8e0",
+      "day": "2026-10-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 2310000,
+      "category": "인건비",
+      "partner": "샘플 운영팀",
+      "reference": "SAMPLE-market-2026-10-1",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "7ed24b56-c9e5-4fd9-a3eb-ca68ed5ddbc0",
+      "day": "2026-10-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 1072500,
+      "category": "원가",
+      "partner": "샘플 공급사",
+      "reference": "SAMPLE-market-2026-10-2",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "9f491c71-0aad-4bf5-9ba3-62163727476d",
+      "day": "2026-10-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 305000,
+      "category": "서버 · API",
+      "partner": "샘플 호스팅",
+      "reference": "SAMPLE-market-2026-10-3",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    },
+    {
+      "id": "b002d964-b64f-4b52-8ad1-3ba35a990f65",
+      "day": "2026-10-12",
+      "service": "market",
+      "business": "platform",
+      "kind": "expense",
+      "amount": 140000,
+      "category": "마케팅",
+      "partner": "샘플 캠페인",
+      "reference": "SAMPLE-market-2026-10-4",
+      "note": "샘플 · VAT 제외 관리회계 예시",
+      "voided": 0
+    }
+  ]
+}

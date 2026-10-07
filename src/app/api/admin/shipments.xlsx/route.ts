@@ -1,0 +1,8 @@
+import {NextRequest,NextResponse} from 'next/server';
+import {getDB} from '@/lib/db';
+import {dispatchRows,audit} from '@/lib/commerce';
+import {parseInvoices,workbookBuffer} from '@/lib/excel';
+import {requireAdmin,requireOrigin,failure,MarketError,readBytes} from '@/lib/security';
+export const dynamic='force-dynamic';
+export async function GET(req:NextRequest){try{await requireAdmin(req);const db=await getDB(),kind=req.nextUrl.searchParams.get('kind')??'template';let buffer:Buffer;if(kind==='orders'){const rows=await dispatchRows(db);buffer=await workbookBuffer(['주문번호','수취인','연락처','우편번호','주소','배송메모','상품','수량'],rows);await audit(db,'shipment.exported',`${rows.length}건 / 개인정보 출고 양식 다운로드`);}else if(kind==='template')buffer=await workbookBuffer(['주문번호','택배사','송장번호'],[]);else throw new MarketError('다운로드 종류를 확인해주세요.');return new NextResponse(new Uint8Array(buffer),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="nuri-${kind}.xlsx"`,'Cache-Control':'no-store'}});}catch(e){return failure(e);}}
+export async function POST(req:NextRequest){try{requireOrigin(req);await requireAdmin(req);const bytes=await readBytes(req,3_100_000),form=await new Request(req.url,{method:'POST',headers:req.headers,body:new Uint8Array(bytes)}).formData(),file=form.get('file');if(!(file instanceof File)||!file.name.toLowerCase().endsWith('.xlsx')||file.size>3_000_000)throw new MarketError('3MB 이하의 XLSX 파일을 사용해주세요.');return NextResponse.json({rows:await parseInvoices(Buffer.from(await file.arrayBuffer()))});}catch(e){return failure(e);}}
