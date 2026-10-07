@@ -293,6 +293,7 @@
 .admin-shell td small,.admin-shell .table-empty{font-size:12px}
 .admin-shell .table-link,.admin-shell .search-small input{font-size:13px}
 .admin-shell .table-product strong{font-size:13px}
+.admin-shell .table-product{min-width:220px}
 .admin-shell .table-filters input,.admin-shell .table-filters select{min-height:40px;font-size:13px}
 .admin-shell .search-small{min-height:40px}
 .admin-shell .field{font-size:13px}
