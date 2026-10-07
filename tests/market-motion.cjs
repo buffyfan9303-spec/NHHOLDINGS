@@ -1,6 +1,31 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),{chromium}=require('@playwright/test');
 const base=process.env.TEST_ORIGIN||'http://127.0.0.1:3120';
+async function checkTextMotion(page,action){
+ await page.evaluate(()=>{window.textMotion=[];window.textMotionDone=false;const end=performance.now()+400;function sample(){for(const animation of document.getAnimations()){const effect=animation.effect;if(effect?.target?.matches('.main,.product-grid,.pdp-content,.pdp-image')||effect?.pseudoElement?.includes('market-'))window.textMotion.push(...effect.getKeyframes());}if(performance.now()<end)requestAnimationFrame(sample);else window.textMotionDone=true;}requestAnimationFrame(sample);});
+ await action();await page.waitForFunction(()=>window.textMotionDone);
+ const frames=await page.evaluate(()=>window.textMotion);assert(frames.length>0,'content transition was exercised');
+ assert(frames.every(frame=>!['transform','scale','width','height','fontSize'].some(key=>key in frame)),'content transition must not resize or transform readable text');
+}
+async function checkTouchBanner(browser,width){
+ const context=await browser.newContext({viewport:{width,height:900},isMobile:true,hasTouch:true}),page=await context.newPage();
+ try{
+  await page.goto(base+'/');await page.locator('.hero-campaign').waitFor();const cdp=await context.newCDPSession(page);
+  const active=()=>page.locator('.hero-controls button[aria-pressed=true]').getAttribute('aria-label');
+  async function gesture(from,to,cancel=false){await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from.x,y:from.y}]});for(let step=1;step<=8;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*step/8,y:from.y+(to.y-from.y)*step/8}]});await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});}
+  const box=await page.locator('.hero-campaign').boundingBox(),left={x:box.x+45,y:box.y+box.height*.7},right={x:box.x+box.width-45,y:left.y};
+  assert((await active()).startsWith('1번'));await gesture(right,left);await page.waitForFunction(()=>document.querySelector('.hero-controls button[aria-pressed=true]')?.getAttribute('aria-label').startsWith('2번'));await gesture(left,right);await page.waitForFunction(()=>document.querySelector('.hero-controls button[aria-pressed=true]')?.getAttribute('aria-label').startsWith('1번'));
+  await gesture(right,{x:right.x-20,y:right.y});assert((await active()).startsWith('1번'),'short gesture must not switch');
+  await gesture(right,left,true);assert((await active()).startsWith('1번'),'canceled gesture must not switch');
+  const link=await page.locator('.hero-frame.is-active .hero-link').boundingBox();await gesture({x:link.x+link.width-20,y:link.y+link.height/2},{x:link.x+10,y:link.y+link.height/2});assert.equal(new URL(page.url()).pathname,'/','swiping a banner link must not navigate');assert((await active()).startsWith('2번'));
+  await gesture(right,{x:right.x,y:right.y-110});assert((await active()).startsWith('2번'),'vertical scrolling must not switch');assert(await page.evaluate(()=>scrollY>0),'vertical page scrolling must remain native');
+  await page.reload();await page.locator('.hero-campaign').waitFor();await page.locator('.hero-frame.is-active .hero-link').tap();await page.waitForURL('**/search?category=clicker');
+  await page.goto(base+'/');await page.locator('.hero-campaign').waitFor();await page.getByRole('button',{name:'2번 배너:',exact:false}).tap();assert((await active()).startsWith('2번'),'selector tap must work');
+  await page.emulateMedia({reducedMotion:'reduce'});await gesture(right,left);assert((await active()).startsWith('1번'),'swipe must work with reduced motion');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),width+' touch overflow');
+  if(width===390)await page.screenshot({path:'artifacts/market/mobile-swipe-fixed.png'});
+ }finally{await context.close();}
+}
 async function main(){
  const catalog=await fetch(base+'/api/catalog').then(r=>r.json()),product=catalog.products.find(p=>p.category==='clicker'&&p.variants.some(v=>v.stock>0));assert(product);
  const browser=await chromium.launch({headless:true}),page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});let screens=0;
@@ -17,7 +42,9 @@ async function main(){
   await page.goto(base+'/product/'+product.slug);await page.locator('.pdp-info').waitFor();for(const label of ['리뷰','배송·교환','상품정보'])await page.locator('.pdp-tabs').getByRole('button',{name:label,exact:true}).click();await page.locator('.pdp-content h2').waitFor();await page.locator('.desktop-buy').getByRole('button',{name:'장바구니',exact:true}).click();await page.locator('dialog[open]').waitFor();await page.getByRole('button',{name:'창 닫기',exact:true}).click();await page.locator('dialog[open]').waitFor({state:'hidden'});
   await page.goto(base+'/');await page.locator('.hero-campaign').waitFor();await page.getByRole('button',{name:'2번 배너:',exact:false}).press('Enter');assert.equal(await page.locator('.hero-frame.is-active').evaluate(e=>getComputedStyle(e).transitionDuration),'0s');
   await page.emulateMedia({reducedMotion:'reduce'});for(const route of ['/','/search','/product/'+product.slug]){await page.goto(base+route);await page.locator('.header').waitFor();assert(await page.evaluate(()=>document.getAnimations().every(a=>a.playState!=='running')),route+' reduced motion');}await page.emulateMedia({reducedMotion:'no-preference'});
-  assert.deepEqual(errors,[]);const report={base,at:new Date().toISOString(),screens,consoleErrors:errors.length,checks:['dark storefront','banner inert slides and no control overlap','6 responsive widths','rapid category changes','product navigation and browser back','URL/category synchronization','search clear and empty state','detail tabs and cart dialog','keyboard immediate feedback','reduced motion']};fs.writeFileSync('artifacts/market/report.json',JSON.stringify(report,null,2));console.log(report);
+  for(const width of [390,1440]){await page.setViewportSize({width,height:960});await page.goto(base+'/');await page.locator('.collection-tabs').waitFor();await checkTextMotion(page,()=>page.locator('.collection-tabs').getByRole('button',{name:'클릭커',exact:true}).click());await page.goto(base+'/product/'+product.slug);await page.locator('.pdp-tabs').waitFor();await checkTextMotion(page,()=>page.locator('.pdp-tabs').getByRole('button',{name:'리뷰',exact:true}).click());}
+  for(const width of [320,390,430])await checkTouchBanner(browser,width);
+  assert.deepEqual(errors,[]);const report={base,at:new Date().toISOString(),screens,touchWidths:[320,390,430],consoleErrors:errors.length,checks:['dark storefront','banner inert slides and no control overlap','6 responsive widths','rapid category changes','product navigation and browser back','URL/category synchronization','search clear and empty state','detail tabs and cart dialog','keyboard immediate feedback','reduced motion','text transitions without resizing or transforms','native touch swipe both directions','short and canceled swipe ignored','swiping link does not navigate, tap does','vertical scrolling preserved']};fs.writeFileSync('artifacts/market/report.json',JSON.stringify(report,null,2));console.log(report);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.name+': '+e.message);process.exitCode=1;});

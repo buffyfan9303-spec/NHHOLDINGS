@@ -1,4 +1,4 @@
-/* Storefront identity. Native transitions are progressive enhancement. */
+/* Storefront identity. Content fades keep text at its rendered size. */
 .market-shell{--ink:#edf3ef;--muted:#a5b5ac;--blue:#a5ddc4;--line:#33413b;--soft:#202b25;--paper:#151d19;--error:#ffb4ad;--ease-out:cubic-bezier(.23,1,.32,1);min-height:100dvh;background:#111814;color:var(--ink);color-scheme:dark}
 .market-shell .preview-strip{height:auto;min-height:30px;padding:5px 16px;background:#23392e;color:#c7e7d6;font-size:11px;text-align:center}
 .market-shell .header{background:#111814f5;backdrop-filter:none;border-color:var(--line)}
@@ -10,8 +10,8 @@
 .market-shell .category-strip,.market-shell .pdp-tabs,.market-shell .bottom-nav,.market-shell .sticky-buy{background:#151e19;border-color:var(--line)}
 .market-shell .category-strip a{color:#b7c6bd;min-height:44px}.market-shell .category-strip a.active{color:var(--blue);border-color:var(--blue)}
 .market-shell .main{padding-top:24px}.market-shell .main,.market-shell .footer{width:calc(100% - 64px);max-width:1208px}
-.market-shell .hero-campaign{width:100%;aspect-ratio:2.08;border-radius:20px;background:#1e3127;border:1px solid #435b4d}
-.market-shell .hero-frame{animation:none;opacity:0;transform:scale(1.015);transition:opacity 260ms var(--ease-out),transform 260ms var(--ease-out);pointer-events:none}
+.market-shell .hero-campaign{width:100%;aspect-ratio:2.08;border-radius:20px;background:#1e3127;border:1px solid #435b4d;touch-action:pan-y pinch-zoom}
+.market-shell .hero-frame{animation:none;opacity:0;transform:none;transition:opacity 260ms var(--ease-out);pointer-events:none}
 .market-shell .hero-frame.is-active{opacity:1;transform:none;pointer-events:auto;z-index:1}
 .market-shell .hero-frame>picture{position:absolute;inset:0 0 0 38%;width:auto;height:auto;overflow:hidden}
 .market-shell .hero-frame>picture img{object-fit:cover;object-position:70% center}
@@ -57,11 +57,6 @@
 .market-shell .toast{background:#b9e8d0;color:#14301f}.market-shell .toast a{color:#234f37}
 .market-shell .payment-options .selected{background:#253d2d}.market-shell .access-key{background:#263b2d}
 .market-shell :is(button,a,summary):focus-visible{outline:2px solid #b8ecd1;outline-offset:4px}.market-shell :is(input,select,textarea):focus{outline:2px solid #b8ecd1}
-::view-transition{pointer-events:none}::view-transition-group(*){animation-duration:200ms;animation-timing-function:var(--ease-out)}
-::view-transition-old(root){display:none}::view-transition-new(root){animation:none}
-::view-transition-old(market-results),::view-transition-old(market-gallery),::view-transition-old(market-details){animation:market-fade-out 120ms ease both}
-::view-transition-new(market-results),::view-transition-new(market-gallery),::view-transition-new(market-details){animation:market-fade-in 200ms var(--ease-out) both}
-@keyframes market-fade-in{from{opacity:0}to{opacity:1}}@keyframes market-fade-out{from{opacity:1}to{opacity:0}}
 @media(hover:hover) and (pointer:fine){
  .market-shell .desktop-links a:hover,.market-shell .product-card:hover .product-copy h3 a{color:#b4e8cc}
  .market-shell .product-card:hover .product-visual img{transform:scale(1.03)}
@@ -90,5 +85,4 @@
 @media(prefers-reduced-motion:reduce){
  .market-shell *, .market-shell *::before,.market-shell *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
  .market-shell .hero-frame,.market-shell .product-card:hover .product-visual img,.market-shell .discovery-shortcuts>a:hover img,.market-shell .editorial-card:hover img,.market-shell .hero-link>span{transform:none!important}
- ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }
