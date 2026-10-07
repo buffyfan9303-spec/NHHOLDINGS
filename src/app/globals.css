@@ -274,3 +274,43 @@
 
 .nh-access-card{display:grid;gap:20px;text-align:center}.nh-access-card>img{margin:12px auto 0}.nh-access-card h1{font-size:23px;line-height:1.5;margin:0}.nh-access-card>p{color:#a8b2b0;font-size:14px;line-height:1.8;overflow-wrap:anywhere}.nh-access-card>a:last-child{color:#a9d8c7;font-size:14px;min-height:44px;display:grid;place-items:center}
 .wordmark>img{display:block;width:183px;height:auto}.header .wordmark{line-height:1}.admin-sidebar .wordmark>img{width:170px}.footer .wordmark>img{width:183px}@media(max-width:760px){.header .wordmark>img{width:146px}.admin-sidebar .wordmark>img{width:156px}}@media(max-width:360px){.header .wordmark>img{width:129px}}
+
+/* Store admin controls use readable working sizes across every menu. */
+.admin-shell{font-size:14px}
+.admin-shell .admin-sidebar>p{font-size:13px}
+.admin-shell .admin-sidebar nav>button{min-height:44px;font-size:14px}
+.admin-shell .admin-sidebar>a:not(.wordmark){font-size:13px}
+.admin-shell .admin-header>div:first-child>span,.admin-shell .mode-badge{font-size:12px}
+.admin-shell .admin-panel h2{font-size:18px}
+.admin-shell .admin-panel h3{font-size:15px}
+.admin-shell .admin-panel>.muted,.admin-shell .hint{font-size:13px}
+.admin-shell .metric-grid span{font-size:12px}
+.admin-shell .task-row,.admin-shell .coupon-row,.admin-shell .revenue-row{font-size:13px}
+.admin-shell .readiness-row{font-size:13px}
+.admin-shell .readiness-row strong,.admin-shell .coupon-row p,.admin-shell .coupon-row span{font-size:12px}
+.admin-shell table{font-size:13px}
+.admin-shell th{font-size:12px}
+.admin-shell td small,.admin-shell .table-empty{font-size:12px}
+.admin-shell .table-link,.admin-shell .search-small input{font-size:13px}
+.admin-shell .table-product strong{font-size:13px}
+.admin-shell .table-filters input,.admin-shell .table-filters select{min-height:40px;font-size:13px}
+.admin-shell .search-small{min-height:40px}
+.admin-shell .field{font-size:13px}
+.admin-shell .field input,.admin-shell .field select,.admin-shell .field textarea{font-size:14px}
+.admin-shell .text-button{font-size:13px}
+.admin-shell .compact{min-height:38px;padding:6px 12px;font-size:13px}
+.admin-shell .admin-alert{font-size:13px}
+.admin-shell .panel-heading h2{margin-right:auto}
+.admin-shell .event-row{font-size:12px}
+.admin-shell .event-row>span,.admin-shell .event-row>strong{min-width:0;font-size:12px;overflow-wrap:anywhere}
+.admin-shell .event-row p{min-width:0;font-size:12px;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .admin-shell .admin-sidebar nav>button{min-height:40px;font-size:13px}
+ .admin-shell .admin-header>div:first-child>span,.admin-shell .mode-badge{font-size:12px}
+ .admin-shell .admin-two{grid-template-columns:minmax(0,1fr);gap:17px}
+ .admin-shell .field-grid{grid-template-columns:minmax(0,1fr)}
+ .admin-shell .panel-heading{flex-wrap:wrap}
+ .admin-shell .panel-heading h2{flex:1 0 100%}
+ .admin-shell .search-small input{width:140px}
+ .admin-shell .table-wrap{max-width:100%;overflow-x:auto}
+}

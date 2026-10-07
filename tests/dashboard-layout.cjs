@@ -6,7 +6,7 @@ const base = process.env.TEST_ORIGIN || 'http://127.0.0.1:3120';
 const widths = [320,390,768,1024,1440,1920];
 const pages = {overview:'SNS·웹사이트 전체 현황',finance:'매출 · 비용 · 손익',businesses:'사업장 관리',tasks:'업무 관리',partners:'거래처',servers:'서버 · 연결 상태',reports:'리포트',content:'콘텐츠 작성 · 자동 업로드',prompts:'프롬프트 · 반복 설정',history:'콘텐츠 · 실행 내역'};
 const services = {mind:'NURI MIND',holdem:'NURI HOLDEM',crm:'NURI CRM',market:'NURI MARKET',tistory:'SNS'};
-const channels = {all:'',blog:'블로그',instagram:'인스타그램',threads:'Threads',x:'X'};
+const channels = {all:'',blog:'블로그',instagram:'인스타그램',threads:'Threads',x:'X',youtube:'YouTube',tiktok:'TikTok'};
 async function main(){
  const password = process.env.TEST_OWNER_PASSWORD;
  assert(password,'TEST_OWNER_PASSWORD is required');
