@@ -1,17 +1,43 @@
 import type {Database} from './db';
 import {getOrder,applyPaymentTx,mode,catalog,audit} from './commerce';
 import {MarketError,integer,textValue,seal,unseal,equal} from './security';
-type PGPayment={paymentKey:string;orderId:string;totalAmount:number;balanceAmount:number;currency:string;status:string;method:string;secret?:string;lastTransactionKey?:string;virtualAccount?:{bankCode:string;accountNumber:string;dueDate:string;expired:boolean};easyPay?:{provider:string};receipt?:{url:string};cashReceipt?:{receiptUrl:string}};
+type PGCancel={cancelAmount:number;cancelReason:string;cancelStatus:string;transactionKey?:string};
+type PGPayment={paymentKey:string;orderId:string;totalAmount:number;balanceAmount:number;currency:string;status:string;method:string;secret?:string;lastTransactionKey?:string;cancels?:PGCancel[];virtualAccount?:{bankCode:string;accountNumber:string;dueDate:string;expired:boolean};easyPay?:{provider:string};receipt?:{url:string};cashReceipt?:{receiptUrl:string}};
 export function pgDueDate(value:string){const explicit=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(value)?`${value}+09:00`:value;const date=new Date(explicit);if(!Number.isFinite(date.getTime()))throw new MarketError('PG 입금 기한 형식을 확인해주세요.',409);return date.toISOString();}
 async function pg(path:string,body?:unknown,idempotencyKey?:string):Promise<PGPayment>{
  const secret=process.env.TOSS_SECRET_KEY??'';if(mode()==='preview'||!secret.startsWith(mode()==='live'?'live_':'test_'))throw new MarketError('PG 연결 키가 설정되지 않았습니다.',503);
  let response:Response;try{response=await fetch(`https://api.tosspayments.com/v1/payments${path}`,{method:body?'POST':'GET',headers:{Authorization:`Basic ${Buffer.from(`${secret}:`).toString('base64')}`,'Content-Type':'application/json',...(idempotencyKey?{'Idempotency-Key':idempotencyKey}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(8000),cache:'no-store'});}catch{throw new MarketError('PG 응답을 확인하지 못했습니다. 재시도로 결제 상태를 대사해주세요.',503);}
- const data=await response.json();if(!response.ok)throw new MarketError(`결제사 처리 확인이 필요합니다. (${typeof data.code==='string'?data.code:'PG_ERROR'})`,409);return data as PGPayment;
+  const data=await response.json();if(!response.ok)throw new MarketError(`결제사 처리 확인이 필요합니다. (${typeof data.code==='string'?data.code:'PG_ERROR'})`,409);return data as PGPayment;
 }
 function validate(p:PGPayment,id:string,amount:number){if(p.orderId!==id||p.totalAmount!==amount||p.currency!=='KRW'||typeof p.paymentKey!=='string')throw new MarketError('PG 주문·금액 대사가 일치하지 않습니다.',409);}
+export async function cancelClaimPayment(input:{paymentKey:string;orderId:string;totalAmount:number;expectedBalance:number;cancelAmount:number;cancelReason:string;idempotencyKey:string;requestedAt:string}){
+ const check=(p:PGPayment)=>{validate(p,input.orderId,input.totalAmount);if(p.paymentKey!==input.paymentKey||!Number.isSafeInteger(p.balanceAmount))throw new MarketError('PG 결제 키 또는 환불 가능 잔액을 확인해주세요.',409);return p;};
+ const verify=(p:PGPayment)=>{
+  const matches=(p.cancels||[]).filter(c=>c.cancelReason===input.cancelReason);
+  if(matches.length>1)throw new MarketError('PG 취소 기록이 중복되어 수동 대사가 필요합니다.',409);
+  if(!matches.length)return false;
+  const cancel=matches[0],balance=input.expectedBalance-input.cancelAmount,expectedStatus=balance===0?'CANCELED':'PARTIAL_CANCELED';
+  if(cancel.cancelAmount!==input.cancelAmount||cancel.cancelStatus!=='DONE'||p.balanceAmount!==balance||p.status!==expectedStatus)throw new MarketError('PG 취소 금액·상태 대사가 일치하지 않습니다. 수동 확인이 필요합니다.',409);
+  return true;
+ };
+ let current=check(await pg(`/${encodeURIComponent(input.paymentKey)}`));
+ if(verify(current))return current;
+ if(current.balanceAmount!==input.expectedBalance)throw new MarketError('다른 PG 취소가 확인되어 자동 환불을 중지했습니다. 수동 대사가 필요합니다.',409);
+ if(!['DONE','PARTIAL_CANCELED'].includes(current.status))throw new MarketError('환불 가능한 PG 결제 상태가 아닙니다.',409);
+ const requestedAt=Date.parse(input.requestedAt);if(!Number.isFinite(requestedAt)||Date.now()-requestedAt>14*24*60*60_000)throw new MarketError('PG 멱등키 유효기간이 임박했거나 지나 요청하지 않았습니다. 취소 내역을 수동 대사해주세요.',409);
+ let cancelError:unknown;
+ try{await pg(`/${encodeURIComponent(input.paymentKey)}/cancel`,{cancelReason:input.cancelReason,cancelAmount:input.cancelAmount},input.idempotencyKey);}catch(error){cancelError=error;}
+ current=check(await pg(`/${encodeURIComponent(input.paymentKey)}`));
+ if(verify(current))return current;
+ if(cancelError instanceof Error)throw cancelError;
+ throw new MarketError('PG 환불 완료 여부를 대사하지 못했습니다. 같은 요청으로 다시 확인해주세요.',503);
+}
+export async function verifyClaimPaymentBalance(input:{paymentKey:string;orderId:string;totalAmount:number;expectedBalance:number}){
+ const p=await pg(`/${encodeURIComponent(input.paymentKey)}`);validate(p,input.orderId,input.totalAmount);if(p.paymentKey!==input.paymentKey||p.balanceAmount!==input.expectedBalance||!['DONE','PARTIAL_CANCELED'].includes(p.status))throw new MarketError('0원 상품 환불 전 PG 주문·잔액 대사가 일치하지 않습니다.',409);return p;
+}
 function method(p:PGPayment){return p.method==='가상계좌'?'VIRTUAL_ACCOUNT':p.easyPay?.provider==='네이버페이'?'NAVERPAY':p.easyPay?.provider==='카카오페이'?'KAKAOPAY':'CARD';}
 async function persist(db:Database,p:PGPayment){await db.transaction(async tx=>{
- const row=(await tx.query<{total:number;payment_key:string|null;payment_status:string}>(`SELECT o.total,o.payment_status,p.payment_key FROM mkt_orders o LEFT JOIN mkt_payments p ON p.order_id=o.id WHERE o.id=$1 FOR UPDATE OF o`,[p.orderId])).rows[0];if(!row)throw new MarketError('주문을 찾을 수 없습니다.',404);validate(p,p.orderId,row.total);if(row.payment_key&&row.payment_key!==p.paymentKey)throw new MarketError('다른 결제키가 등록되어 있습니다.',409);
+  const row=(await tx.query<{total:number;payment_key:string|null;payment_status:string}>(`SELECT o.total,o.payment_status,p.payment_key FROM mkt_orders o LEFT JOIN mkt_payments p ON p.order_id=o.id WHERE o.id=$1 FOR UPDATE OF o`,[p.orderId])).rows[0];if(!row)throw new MarketError('주문을 찾을 수 없습니다.',404);validate(p,p.orderId,row.total);if(row.payment_key&&row.payment_key!==p.paymentKey)throw new MarketError('다른 결제키가 등록되어 있습니다.',409);if(['REFUNDING','PARTIALLY_REFUNDED','REFUNDED'].includes(row.payment_status))return;
  // A delayed virtual-account issue response must never overwrite a completed payment.
  if(['PAID','PARTIALLY_REFUNDED','REFUNDED','REFUNDING'].includes(row.payment_status)&&p.status==='WAITING_FOR_DEPOSIT')return;
  const known=['DONE','WAITING_FOR_DEPOSIT','EXPIRED','CANCELED','ABORTED'];if(!known.includes(p.status))throw new MarketError('현재 PG 상태는 수동 대사가 필요합니다.',409);
