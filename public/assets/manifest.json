@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-10-07T05:29:04.052Z",
+  "sources": [
+    {
+      "id": "lucide",
+      "repo": "lucide-icons/lucide",
+      "commit": "1fae58d0a9c661a338036838caf3399b5507bab6",
+      "license": "ISC + inherited Feather MIT",
+      "licenseFile": "/licenses/lucide-LICENSE.txt"
+    },
+    {
+      "id": "fluent-emoji",
+      "repo": "microsoft/fluentui-emoji",
+      "commit": "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc",
+      "license": "MIT",
+      "licenseFile": "/licenses/fluent-emoji-LICENSE.txt"
+    }
+  ],
+  "assets": [
+    {
+      "name": "arrow-right",
+      "file": "/assets/icons/arrow-right.svg",
+      "source": "lucide",
+      "sourcePath": "icons/arrow-right.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/arrow-right.svg",
+      "sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9"
+    },
+    {
+      "name": "arrow-up-right",
+      "file": "/assets/icons/arrow-up-right.svg",
+      "source": "lucide",
+      "sourcePath": "icons/arrow-up-right.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/arrow-up-right.svg",
+      "sha256": "50b2503b9d11881142255466b7e3461d022b919735841c321d72003ac9959fe1"
+    },
+    {
+      "name": "check",
+      "file": "/assets/icons/check.svg",
+      "source": "lucide",
+      "sourcePath": "icons/check.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/check.svg",
+      "sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0"
+    },
+    {
+      "name": "chevron-down",
+      "file": "/assets/icons/chevron-down.svg",
+      "source": "lucide",
+      "sourcePath": "icons/chevron-down.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/chevron-down.svg",
+      "sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87"
+    },
+    {
+      "name": "chevron-left",
+      "file": "/assets/icons/chevron-left.svg",
+      "source": "lucide",
+      "sourcePath": "icons/chevron-left.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/chevron-left.svg",
+      "sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93"
+    },
+    {
+      "name": "chevron-right",
+      "file": "/assets/icons/chevron-right.svg",
+      "source": "lucide",
+      "sourcePath": "icons/chevron-right.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/chevron-right.svg",
+      "sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b"
+    },
+    {
+      "name": "circle-check",
+      "file": "/assets/icons/circle-check.svg",
+      "source": "lucide",
+      "sourcePath": "icons/circle-check.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/circle-check.svg",
+      "sha256": "9711e045a5999f8a3b0782eb88e09b04e0559bc7b379dcc0a4ae645223e10345"
+    },
+    {
+      "name": "circle-question-mark",
+      "file": "/assets/icons/circle-question-mark.svg",
+      "source": "lucide",
+      "sourcePath": "icons/circle-question-mark.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/circle-question-mark.svg",
+      "sha256": "975db087da041530dbf59ba1e61a7b99c3519fad43dae6375e42ccc74ba63924"
+    },
+    {
+      "name": "clock-3",
+      "file": "/assets/icons/clock-3.svg",
+      "source": "lucide",
+      "sourcePath": "icons/clock-3.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/clock-3.svg",
+      "sha256": "0e097d0b66278965fb53bc14900575d95f5c21b9cca932028bbb33294b56c9e2"
+    },
+    {
+      "name": "copy",
+      "file": "/assets/icons/copy.svg",
+      "source": "lucide",
+      "sourcePath": "icons/copy.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/copy.svg",
+      "sha256": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718"
+    },
+    {
+      "name": "external-link",
+      "file": "/assets/icons/external-link.svg",
+      "source": "lucide",
+      "sourcePath": "icons/external-link.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/external-link.svg",
+      "sha256": "3891241b8c3bfc3a8a930078f26ffc5a7e9763da6d0162ace2050b28d4c1d1fe"
+    },
+    {
+      "name": "file-text",
+      "file": "/assets/icons/file-text.svg",
+      "source": "lucide",
+      "sourcePath": "icons/file-text.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/file-text.svg",
+      "sha256": "52ca55846c202335fb870c8aa23e9345630ec10489303756d62e750f7109605c"
+    },
+    {
+      "name": "globe",
+      "file": "/assets/icons/globe.svg",
+      "source": "lucide",
+      "sourcePath": "icons/globe.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/globe.svg",
+      "sha256": "82c6b8fa0b8e8d775ec9becd86f74a4e50bff7bee4c81f7362de45348504f14d"
+    },
+    {
+      "name": "image",
+      "file": "/assets/icons/image.svg",
+      "source": "lucide",
+      "sourcePath": "icons/image.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/image.svg",
+      "sha256": "619c9db58c879dce6250376ba67d9c9102ca6dbb3b1efb9294c9f180e22273a5"
+    },
+    {
+      "name": "layout-dashboard",
+      "file": "/assets/icons/layout-dashboard.svg",
+      "source": "lucide",
+      "sourcePath": "icons/layout-dashboard.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/layout-dashboard.svg",
+      "sha256": "281ab865b4c04dab32a04023473e448f58be6a7ad90769450ac3349d79dc4aed"
+    },
+    {
+      "name": "link",
+      "file": "/assets/icons/link.svg",
+      "source": "lucide",
+      "sourcePath": "icons/link.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/link.svg",
+      "sha256": "4f3237183dcaabfac92f4e94c776a9a9e45c3c5e77a921061a6b34b61eb5413f"
+    },
+    {
+      "name": "lock-keyhole",
+      "file": "/assets/icons/lock-keyhole.svg",
+      "source": "lucide",
+      "sourcePath": "icons/lock-keyhole.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/lock-keyhole.svg",
+      "sha256": "fc0b8b7590d1d9e9bb0112c5c2e15a78ade0bfeca6d6f8c79fbbe149236d74be"
+    },
+    {
+      "name": "mail",
+      "file": "/assets/icons/mail.svg",
+      "source": "lucide",
+      "sourcePath": "icons/mail.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/mail.svg",
+      "sha256": "3236a51d5b8ce9b0528cf2e6ad07e527bd636dded6f5a9d656072052b99caea8"
+    },
+    {
+      "name": "menu",
+      "file": "/assets/icons/menu.svg",
+      "source": "lucide",
+      "sourcePath": "icons/menu.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/menu.svg",
+      "sha256": "af6491988ac1ba30dc5414f485bc48713e957e1edb0fbef4a0dd8691c3c21598"
+    },
+    {
+      "name": "message-circle",
+      "file": "/assets/icons/message-circle.svg",
+      "source": "lucide",
+      "sourcePath": "icons/message-circle.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/message-circle.svg",
+      "sha256": "146f39740fe50844394d56ae1f8821937655bcfff3842bf6fe8ffc0bcd324076"
+    },
+    {
+      "name": "package",
+      "file": "/assets/icons/package.svg",
+      "source": "lucide",
+      "sourcePath": "icons/package.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/package.svg",
+      "sha256": "69d6bc7650d26c4d24dd55eb22791607b982ce7637073944c256f1f61575509d"
+    },
+    {
+      "name": "plus",
+      "file": "/assets/icons/plus.svg",
+      "source": "lucide",
+      "sourcePath": "icons/plus.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/plus.svg",
+      "sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17"
+    },
+    {
+      "name": "search",
+      "file": "/assets/icons/search.svg",
+      "source": "lucide",
+      "sourcePath": "icons/search.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/search.svg",
+      "sha256": "283d371c2e433817bb9c0c8310caa6c77fa4177c0f4f1168d9c83b97af7389dc"
+    },
+    {
+      "name": "settings-2",
+      "file": "/assets/icons/settings-2.svg",
+      "source": "lucide",
+      "sourcePath": "icons/settings-2.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/settings-2.svg",
+      "sha256": "06d06c191bd7eb28afaf9d40acb5c49ef69448fdeda91801d9823d7c440a4e10"
+    },
+    {
+      "name": "shield-check",
+      "file": "/assets/icons/shield-check.svg",
+      "source": "lucide",
+      "sourcePath": "icons/shield-check.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/shield-check.svg",
+      "sha256": "8d4fcdbde5bba4abb1a2f6fe53e37ceb6343a1d5449a9d88f6f97c1971d26c4e"
+    },
+    {
+      "name": "sparkles",
+      "file": "/assets/icons/sparkles.svg",
+      "source": "lucide",
+      "sourcePath": "icons/sparkles.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/sparkles.svg",
+      "sha256": "f5499f33f09d7158151e9bd2ec0faf79ff8fb57292f84fdd7286d96d0f0424d8"
+    },
+    {
+      "name": "users",
+      "file": "/assets/icons/users.svg",
+      "source": "lucide",
+      "sourcePath": "icons/users.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/users.svg",
+      "sha256": "eeed488a1ec95ba730dd69996536fb65061d6ea273afb2429ae47e65eebf401c"
+    },
+    {
+      "name": "x",
+      "file": "/assets/icons/x.svg",
+      "source": "lucide",
+      "sourcePath": "icons/x.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/x.svg",
+      "sha256": "4a9cdab38fbb96162e7dace28e33f4ca0e49d8963a6162abc3d4691b7d675117"
+    },
+    {
+      "name": "locked",
+      "file": "/assets/emoji/locked.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Locked/Color/locked_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Locked/Color/locked_color.svg",
+      "sha256": "6a7eb7fc918d0df66bde0adb81d8b7e628458468bff32f00f57319eee6e23590"
+    },
+    {
+      "name": "check-mark-button",
+      "file": "/assets/emoji/check-mark-button.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Check mark button/Color/check_mark_button_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Check%20mark%20button/Color/check_mark_button_color.svg",
+      "sha256": "558fde80fa655011dc1e7f90ceaa02845413c9bb88f4c6b174f3b264c6074316"
+    },
+    {
+      "name": "package",
+      "file": "/assets/emoji/package.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Package/Color/package_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Package/Color/package_color.svg",
+      "sha256": "e48835722b58a57c543a3141e7a8528b0a65bccb415b5ebbac80f407bf8c34e6"
+    },
+    {
+      "name": "envelope",
+      "file": "/assets/emoji/envelope.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Envelope/Color/envelope_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Envelope/Color/envelope_color.svg",
+      "sha256": "318a425d1c795c0a1002c26fa045a87c58e5f0912a75b16ca67e9a731f98a4e0"
+    },
+    {
+      "name": "bar-chart",
+      "file": "/assets/emoji/bar-chart.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Bar chart/Color/bar_chart_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Bar%20chart/Color/bar_chart_color.svg",
+      "sha256": "06fab842acce3a7b8910a2857fddab3f7d5bb72d49dd5d21b1f590c628f4d93e"
+    },
+    {
+      "name": "hourglass-not-done",
+      "file": "/assets/emoji/hourglass-not-done.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Hourglass not done/Color/hourglass_not_done_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Hourglass%20not%20done/Color/hourglass_not_done_color.svg",
+      "sha256": "b034c167d86a8bd88d2d162db9790091138648b5d728d29ba18cc1ec2fd5f096"
+    },
+    {
+      "name": "rocket",
+      "file": "/assets/emoji/rocket.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Rocket/Color/rocket_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Rocket/Color/rocket_color.svg",
+      "sha256": "3e759cbfacd8b9fb06df57abaf472bb2dbc1415bd60f21dc9f430e20fa0ca252"
+    },
+    {
+      "name": "handshake",
+      "file": "/assets/emoji/handshake.svg",
+      "source": "fluent-emoji",
+      "sourcePath": "assets/Handshake/Color/handshake_color.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Handshake/Color/handshake_color.svg",
+      "sha256": "06feb82c694c6fd203ec41dfeb095d1f30732e14fde12e1fd57e950964e0a6c8"
+    },
+    {
+      "name": "shopping-bag",
+      "file": "/assets/icons/shopping-bag.svg",
+      "source": "lucide",
+      "sourcePath": "icons/shopping-bag.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/shopping-bag.svg",
+      "sha256": "24a161961b559234b7a31af904dab18b437507336ba2decff3fe6b7772495896"
+    },
+    {
+      "name": "heart",
+      "file": "/assets/icons/heart.svg",
+      "source": "lucide",
+      "sourcePath": "icons/heart.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/heart.svg",
+      "sha256": "70af5f30be9fcb500b852556b38dcdf8c04a4ba81fd262534fb0336bd39b3b52"
+    },
+    {
+      "name": "house",
+      "file": "/assets/icons/house.svg",
+      "source": "lucide",
+      "sourcePath": "icons/house.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/house.svg",
+      "sha256": "28216c479005731ef5e382e7d8627eda2b129b019eb1f3d9de9f5915576d448e"
+    },
+    {
+      "name": "user-round",
+      "file": "/assets/icons/user-round.svg",
+      "source": "lucide",
+      "sourcePath": "icons/user-round.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/user-round.svg",
+      "sha256": "84870f26f3faf8da45da84174517519e81b9e8f00319c78954fcbb74f50038a1"
+    },
+    {
+      "name": "minus",
+      "file": "/assets/icons/minus.svg",
+      "source": "lucide",
+      "sourcePath": "icons/minus.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/minus.svg",
+      "sha256": "a0c743ab6dbf545d8a6e19ef3874f48ede686ce68d25e231bd81f540d97b1f19"
+    },
+    {
+      "name": "volume-2",
+      "file": "/assets/icons/volume-2.svg",
+      "source": "lucide",
+      "sourcePath": "icons/volume-2.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/volume-2.svg",
+      "sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071"
+    },
+    {
+      "name": "log-out",
+      "file": "/assets/icons/log-out.svg",
+      "source": "lucide",
+      "sourcePath": "icons/log-out.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/log-out.svg",
+      "sha256": "f24b5b45c05a3acc346af8095408f6ba197ff58ea1641a4f2cb25a9702d2c0ac"
+    },
+    {
+      "name": "server",
+      "file": "/assets/icons/server.svg",
+      "source": "lucide",
+      "sourcePath": "icons/server.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/server.svg",
+      "sha256": "f7bea54b609dc488f3b848995014041846b2443fd2a880653e9e583d7a034f61"
+    },
+    {
+      "name": "refresh-cw",
+      "file": "/assets/icons/refresh-cw.svg",
+      "source": "lucide",
+      "sourcePath": "icons/refresh-cw.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/refresh-cw.svg",
+      "sha256": "2e10dd403c85a24f163d59fc6151aa21147fe9402e1305dfc8979208caee8944"
+    },
+    {
+      "name": "building",
+      "file": "/assets/icons/building.svg",
+      "source": "lucide",
+      "sourcePath": "icons/building.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/building.svg",
+      "sha256": "62afdf63b5020448cba93267343a91c16ee4dffc7969e46b223ee531cf0bcd1c"
+    },
+    {
+      "name": "clipboard-list",
+      "file": "/assets/icons/clipboard-list.svg",
+      "source": "lucide",
+      "sourcePath": "icons/clipboard-list.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/clipboard-list.svg",
+      "sha256": "2b91abc2e8ee8ba4c2e0f77d506a47a7a9774b0d4de3fa4b27e822a6376ab892"
+    },
+    {
+      "name": "chart-no-axes-combined",
+      "file": "/assets/icons/chart-no-axes-combined.svg",
+      "source": "lucide",
+      "sourcePath": "icons/chart-no-axes-combined.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/chart-no-axes-combined.svg",
+      "sha256": "2f8a708c357488cfde7428d9b055b9bb4a99c08dc71e9296da03ecc19291c4ab"
+    },
+    {
+      "name": "eye",
+      "file": "/assets/icons/eye.svg",
+      "source": "lucide",
+      "sourcePath": "icons/eye.svg",
+      "sourceUrl": "https://raw.githubusercontent.com/lucide-icons/lucide/1fae58d0a9c661a338036838caf3399b5507bab6/icons/eye.svg",
+      "sha256": "5bf90197dd7629cad64a2e48d1186a71559deb6121207d10e3dc5b19ebaffdcf"
+    }
+  ]
+}
