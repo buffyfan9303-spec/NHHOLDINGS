@@ -1,7 +1,7 @@
 import type {Product,Settings} from './types';
 export const initialSettings:Settings = {
  brand:'NURI MARKET',
- seller:{company:'엔에이치홀딩스',representative:'김윤혜',businessNumber:'525-20-02937',commerceNumber:'',address:'경기도 남양주시 다산중앙로82번안길 166-46, 207-본244호(다산동, 파인듀파크빌딩)',phone:'',email:'',hosting:'Vercel Inc.',escrowUrl:''},
+ seller:{company:'엔에이치홀딩스',representative:'김윤혜',businessNumber:'525-20-02937',commerceNumber:'',address:'경기도 남양주시 다산중앙로82번안길 166-46, 207-본244호(다산동, 파인듀파크빌딩)',phone:'070-8098-1727',email:'',hosting:'Vercel Inc.',escrowUrl:''},
  shipping:{fee:3000,freeThreshold:70000,remoteFee:0,returnFee:3000,returnAddress:'',cutoff:''},
  policiesApproved:false,shippingReady:false,notificationReady:false
 };

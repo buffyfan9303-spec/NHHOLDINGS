@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, type FormEvent} from 'react';
+import {useEffect, useState, type FormEvent} from 'react';
 
 export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
   const [signup, setSignup] = useState(false);
@@ -8,6 +8,12 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{text: string; error: boolean} | null>(null);
   const market = portal === 'market';
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('error') === 'google_failed') {
+      setMessage({text: 'Google 로그인에 실패했습니다. 다시 시도해주세요.', error: true});
+    }
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,6 +48,8 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
           <h1>{signup ? market ? '회원가입' : '계정 신청' : '로그인'}</h1>
           {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '관리자 승인 후 이용할 수 있습니다.'}</p>}
         </header>
+        <a href={`/api/auth/google?portal=${portal}`} className="nh-google-button">Google로 계속하기</a>
+        <div className="nh-login-divider">또는 이메일로</div>
         <form onSubmit={submit} aria-busy={busy}>
           <div className="nh-login-field">
             <label htmlFor="login-email">이메일</label>

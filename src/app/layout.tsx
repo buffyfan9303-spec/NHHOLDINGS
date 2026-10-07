@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ko" data-scroll-behavior="smooth"><body>{children}</body></html>;
+  return <html lang="ko" data-scroll-behavior="smooth"><head><link rel="stylesheet" href="/market-motion.css"/></head><body>{children}</body></html>;
 }

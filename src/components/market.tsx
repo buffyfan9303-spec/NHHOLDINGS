@@ -95,7 +95,7 @@ function ProductCard({ product, wished, wish, shipping }: { product: Product; wi
 function Reveal({children}:{children:React.ReactNode}) {
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{const element=ref.current;if(!element||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    const observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){element.animate([{opacity:0,transform:"translateY(20px)"},{opacity:1,transform:"translateY(0)"}],{duration:600,easing:"cubic-bezier(0.23, 1, 0.32, 1)"});observer.disconnect();}},{threshold:0.08});observer.observe(element);return()=>observer.disconnect();},[]);
+    const observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){element.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:280,easing:"cubic-bezier(0.23, 1, 0.32, 1)"});observer.disconnect();}},{threshold:0.08});observer.observe(element);return()=>observer.disconnect();},[]);
   return <div ref={ref}>{children}</div>;
 }
 function Home({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: string[]; wish: (id: string) => void }) {

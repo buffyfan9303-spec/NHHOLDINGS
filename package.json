@@ -12,7 +12,7 @@
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3120",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts",
+    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts tests/oauth-security.test.ts",
     "test:browser": "node --env-file=.env.local tests/cloud-integration.cjs",
     "db:migrate": "tsx scripts/migrate.ts"
   },

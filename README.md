@@ -53,4 +53,10 @@ Codex가 기존 마켓·대시보드 코드를 재사용해 통합했습니다. 
 
 2026-10-07 추가 작업 팀: 디자인 GPT-6.1 high(로그인·로고), 보안 GPT-6 Astra high(승인·회수·권한 검토), 자료 GPT-6.1 medium(공식 라이선스·API), 주 에이전트(통합·실제 흐름·배포). 높은 비용 모델은 지정된 보안 검토에만 사용했고 독립 파일 소유권으로 중복 편집을 줄였습니다. 기존 Node/Next·PostgreSQL·MCP·CLI·브라우저를 사용했으며 추가 라이브러리·유료 API·hooks는 설치하지 않았습니다. 실제 수용 기준은 승인 계정 조회200·변경403·회수 후 기존 세션403, 두 로그인 경로 구분, 반응형 넘침0과 콘솔 오류0입니다.
 
-추가 검증 완료: `npm test` 2개 통합 시나리오 통과, TypeScript·Next production 빌드 통과, 실제 Supabase 계정 승인·CAS 충돌·조회 전용·즉시 회수 확인, 320/390/768/1440px 40개 화면 및 설정 4개 탭의 넘침0·콘솔 오류0. 아이콘 SVG 문법 오류와 단일 PostgreSQL 트랜잭션 안의 병렬 조회 경고를 수정했습니다. 49개 외부 SVG의 XML·SHA256·위험 내용 검사와 실제 비밀값 유출 검사도 통과했습니다. SMTP·실제 SNS 발행·AI 유료 호출·PG 결제는 미연결 또는 미활성 상태입니다.
+추가 검증 완료: `npm test` 3개 통합 시나리오 통과, TypeScript·Next production 빌드 통과, 실제 Supabase 계정 승인·CAS 충돌·조회 전용·즉시 회수 확인, 320/390/768/1440px 40개 화면 및 설정 4개 탭의 넘침0·콘솔 오류0. 아이콘 SVG 문법 오류와 단일 PostgreSQL 트랜잭션 안의 병렬 조회 경고를 수정했습니다. 49개 외부 SVG의 XML·SHA256·위험 내용 검사와 실제 비밀값 유출 검사도 통과했습니다. SMTP·실제 SNS 발행·AI 유료 호출·PG 결제는 미연결 또는 미활성 상태입니다.
+
+2026-10-07 디자인 마감: 원본 벡터 워드마크·파비콘을 적용하고 차콜·민트 로그인, 메뉴 전환, 상품·입력·버튼 반응을 CSS 및 브라우저 View Transition으로 구현했습니다. `animate` 스킬을 사용했으며 외부 모션 라이브러리는 추가하지 않았습니다. 자동 데이터 갱신에는 등장 효과를 재생하지 않고 동작 줄이기 설정을 존중합니다. 회사 전화는 `070-8098-1727`로 설정·재조회했습니다.
+
+Google 로그인은 `/api/auth/google` → Supabase → `/api/auth/callback`의 PKCE 흐름을 사용합니다. 10분 만료·암호화 HttpOnly 쿠키로 브라우저를 연결하고, 공급자 응답 뒤 실제 인증 사용자와 기존 운영자 UUID·이메일·승인 권한을 다시 검사합니다. 공급자 토큰은 브라우저에 반환하지 않습니다. Google 클라이언트 비밀값은 Supabase 인증 설정에만 적용하며 저장소·공개 화면에 넣지 않습니다. Google 콘솔의 승인된 리디렉션 URI는 `https://ytyrqzajjtovvywvadcf.supabase.co/auth/v1/callback`입니다. Supabase 설정을 CLI로 갱신할 때에는 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` 및 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` 환경변수가 필요합니다.
+
+최종 검증: Google 콘솔 콜백 주소를 사용자 승인 후 저장·재조회했고, 실제 Google 운영자 로그인으로 대시보드에 진입했습니다. 기존 운영자 UUID가 유지되며 email·google identity 연결을 재조회했습니다. 로그인 직후 구형 로그인 폼이 잠깐 표시되던 부분을 로딩 상태로 교체했습니다. 빠른 연속 메뉴 전환과 reduced-motion 검증도 통과했습니다.

@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {getDB} from '@/lib/db';
 import {catalog,runMaintenance} from '@/lib/commerce';
-import {identity,isOwner} from '@/lib/auth';
+import {identity,isOwner,authRequest} from '@/lib/auth';
 import {body,requireOrigin,failure,MarketError,textValue,integer,seal} from '@/lib/security';
 import {integrationCatalog} from '@/lib/integration-catalog';
 export const dynamic='force-dynamic';
@@ -13,8 +13,9 @@ export async function GET(req:NextRequest){try{
  const docs=(await db.query<{kind:string;id:string;data:Record<string,unknown>}>("SELECT kind,id,data FROM nh_documents WHERE workspace='live' AND (kind='source' OR kind='system')")).rows;
  const config=await catalog(db),smtp=docs.find(r=>r.kind==='system'&&r.id==='smtp')?.data;
  let bucket:null|{private:boolean;limit:number}=null;
+ let googleSignIn:boolean|null=null;try{const r=await authRequest('settings');if(r.ok)googleSignIn=(await r.json()).external?.google===true;}catch{}
  if(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY){try{const key=process.env.SUPABASE_SERVICE_ROLE_KEY,r=await fetch(process.env.SUPABASE_URL+'/storage/v1/bucket/nuri-media',{headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store',signal:AbortSignal.timeout(10000)});if(r.ok){const v=await r.json();bucket={private:v.public===false,limit:Number(v.file_size_limit)};}}catch{}}
- return NextResponse.json({checkedAt:new Date().toISOString(),database:{connected:true,tables:tables.length,rlsProtected:tables.filter(t=>t.rls).length,restricted:!role.superuser&&!role.bypassRls},storage:bucket,auth:{ownerConfigured:!!process.env.OPERATOR_USER_ID,emailVerification:true,smtpApplied:process.env.SMTP_CONFIGURED==='true'},smtp:smtp?{provider:smtp.provider,host:smtp.host,port:smtp.port,username:smtp.username,from:smtp.from,fromName:smtp.fromName,hasPassword:!!smtp.password,updatedAt:smtp.updatedAt,applied:false}:null,cron:docs.find(r=>r.kind==='system'&&r.id==='cron')?.data??null,sources:docs.filter(r=>r.kind==='source').map(r=>({id:r.id,checkedAt:r.data.checkedAt,error:r.data.error})),market:{mode:config.mode,products:config.products.length,readiness:config.readiness},integrations:integrationCatalog},{headers:{'Cache-Control':'private, no-store'}});
+ return NextResponse.json({checkedAt:new Date().toISOString(),database:{connected:true,tables:tables.length,rlsProtected:tables.filter(t=>t.rls).length,restricted:!role.superuser&&!role.bypassRls},storage:bucket,auth:{ownerConfigured:!!process.env.OPERATOR_USER_ID,emailVerification:true,googleSignIn,smtpApplied:process.env.SMTP_CONFIGURED==='true'},smtp:smtp?{provider:smtp.provider,host:smtp.host,port:smtp.port,username:smtp.username,from:smtp.from,fromName:smtp.fromName,hasPassword:!!smtp.password,updatedAt:smtp.updatedAt,applied:false}:null,cron:docs.find(r=>r.kind==='system'&&r.id==='cron')?.data??null,sources:docs.filter(r=>r.kind==='source').map(r=>({id:r.id,checkedAt:r.data.checkedAt,error:r.data.error})),market:{mode:config.mode,products:config.products.length,readiness:config.readiness},integrations:integrationCatalog},{headers:{'Cache-Control':'private, no-store'}});
  }catch(e){return failure(e);}}
 export async function POST(req:NextRequest){try{
  requireOrigin(req);const user=await owner(req),v=await body(req),db=await getDB();

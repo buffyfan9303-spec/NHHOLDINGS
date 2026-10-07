@@ -1,0 +1,60 @@
+/* Interaction feedback only; data refreshes never replay an entrance. */
+:root{--ease-out:cubic-bezier(.23,1,.32,1);--surface:#181e22;--line:#2c363c;--teal:#91d4b9}
+#content{animation:none;view-transition-name:nuri-content}
+.sidebar{background:#11171a;border-right-color:#293238}
+.topbar{background:#131a1e}
+.heading-row h1{font-weight:620;letter-spacing:-.045em}
+.panel,.publishing-board,.publication-pulse,.mobile-post-card{border-color:var(--line);box-shadow:0 1px 0 #ffffff03}
+.panel h2,.publish-heading h2{font-weight:600;letter-spacing:-.025em}
+.kpi{background:linear-gradient(145deg,#1c2429,#181e22);border-color:#303b42}
+.kpi:first-child{background:linear-gradient(145deg,#1d3028,#18221e);border-color:#355444}
+.kpi-number,.metric-strip strong,.pulse-stat strong{font-weight:600;letter-spacing:-.045em}
+.metric-tile{background:#1b2328}
+.metric-tile .caption,.kpi-label{color:#abb9c0}
+.source-note{border-left:2px solid #476b59;padding-left:12px;color:#a5b7ad}
+.panel-foot{background:#151c20}
+th,.publishing-board th{background:#1b242a;color:#b4c4cd}
+td,.publishing-board td{border-bottom-color:#2a343b}
+.publishing-board .board-title strong{font-weight:560;line-height:1.65}
+.site-card,.channel-tile,.setup-shortcuts a{transition:transform 180ms var(--ease-out),background-color 160ms ease,border-color 160ms ease}
+.btn,.nav-item,.service-nav,.channel-tabs button,.site-tabs button,.status-filters button,.setup-tabs button{transition:background-color 160ms ease,border-color 160ms ease,color 160ms ease,transform 160ms var(--ease-out)}
+.nav-item.active,.service-nav.active{background:#20352c;color:#a6e0c9}
+.nav-item.active:after,.service-nav.active:after{background:#a6e0c9}
+.nav-category>summary{border-radius:8px;transition:background-color 160ms ease,color 160ms ease}
+.btn.primary{background:#9bd8be;border-color:#9bd8be;color:#10281e;box-shadow:inset 0 1px 0 #ffffff40}
+.btn.primary:hover:not(:disabled){background:#b3e5d0;border-color:#b3e5d0;color:#10281e}
+.btn.primary:active:not(:disabled){background:#88c8ad;transform:translateY(1px)}
+.setup-shortcuts a{background:#192227;border-color:#34444b}
+.integration-list article{background:#181f23}
+.integration-list h3{font-weight:600;letter-spacing:-.025em}
+.integration-cost{color:#b3d6c5}
+.workspace-links a{transition:background-color 160ms ease,border-color 160ms ease}
+.field :is(input,select,textarea){transition:border-color 160ms ease,box-shadow 160ms ease}
+.field :is(input,select,textarea):focus{border-color:#91d4b9;box-shadow:0 0 0 3px #91d4b914}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #a6e0c9;outline-offset:3px}
+.post-inspector{transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out)}
+.post-inspector::backdrop{backdrop-filter:none;background:#080c10c9}
+@starting-style{.post-inspector[open]{opacity:0;transform:translateY(8px) scale(.985)}}
+@media(hover:hover) and (pointer:fine){
+ .site-card:hover,.channel-tile:hover{transform:translateY(-2px);background:#1f292e;border-color:#527360;box-shadow:none}
+ .setup-shortcuts a:hover{transform:translateY(-2px);background:#202c30;border-color:#527360}
+ .nav-category>summary:hover{background:#1b252a}
+ .workspace-links a:hover{background:#20332a;border-color:#527360}
+ tbody tr:hover,.publishing-board tbody tr:hover{background:#202a30}
+ .btn:not(.primary):not(.text):hover{background:#26333a;border-color:#52646c}
+}
+/* Root calls startViewTransition only for deliberate navigation. */
+::view-transition-group(root){animation:none}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-group(nuri-content){animation-duration:180ms;animation-timing-function:var(--ease-out)}
+::view-transition-old(nuri-content){animation:one-leave 100ms ease both;mix-blend-mode:normal}
+::view-transition-new(nuri-content){animation:one-enter 180ms var(--ease-out) both;mix-blend-mode:normal}
+@keyframes one-leave{to{opacity:0}}
+@keyframes one-enter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .site-card:hover,.channel-tile:hover,.setup-shortcuts a:hover,.btn:active{transform:none!important}
+ ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+ @starting-style{.post-inspector[open]{opacity:1;transform:none}}
+}
+@media print{.panel,.kpi,.publishing-board{box-shadow:none;background:#fff;color:#111;border-color:#bbb}th,.publishing-board th{background:#eee;color:#111}}

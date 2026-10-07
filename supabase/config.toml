@@ -2,7 +2,7 @@ project_id = "NHHOLDINGS"
 [auth]
 enabled = true
 site_url = "https://nhholdings.xyz/login"
-additional_redirect_urls = ["https://nhholdings.xyz/login", "https://nhholdings.xyz/nurimarket/login", "https://nhholdings.vercel.app/login", "http://127.0.0.1:3120/login", "http://127.0.0.1:3120/nurimarket/login"]
+additional_redirect_urls = ["https://nhholdings.xyz/login", "https://nhholdings.xyz/nurimarket/login", "https://nhholdings.xyz/api/auth/callback", "https://nhholdings.vercel.app/login", "http://127.0.0.1:3120/login", "http://127.0.0.1:3120/nurimarket/login", "http://127.0.0.1:3120/api/auth/callback"]
 jwt_expiry = 3600
 enable_signup = true
 enable_anonymous_sign_ins = false
@@ -18,3 +18,8 @@ max_frequency = "1m"
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+skip_nonce_check = false
