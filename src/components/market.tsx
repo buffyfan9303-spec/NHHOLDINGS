@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { CatalogResponse, Customer, Inquiry, Order, PaymentMethod, Product, Review } from "@/lib/types";
 import { categories, fulfillmentLabels, money, paymentLabels } from "@/lib/types";
@@ -26,9 +26,13 @@ export async function request<T>(url: string, body?: unknown, token?: string): P
 // Fade the live content, not a resized snapshot: text keeps its rendered size.
 function changeView(update: () => void, selector: string) {
   flushSync(update);
+  animateView(selector);
+}
+function animateView(selector: string) {
   const target = document.querySelector(selector);
-  if (!target || matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.marketInput === "keyboard") return;
+  if (!target) return;
   target.getAnimations().forEach(animation => animation.cancel());
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.marketInput === "keyboard") return;
   target.animate([{ opacity: .65 }, { opacity: 1 }], { duration: 160, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
 }
 function stockOf(product: Product) { return product.variants.reduce((sum, variant) => sum + Math.max(0, variant.stock), 0); }
@@ -36,8 +40,9 @@ function isOpen(product: Product) { return !product.dropAt || new Date(product.d
 
 export function Modal({ title, children, onClose, sheet = false, wide = false }: { title: string; children: React.ReactNode; onClose: () => void; sheet?: boolean; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close(); }; }, []);
-  return <dialog ref={ref} className={`modal${sheet ? " sheet" : ""}${wide ? " modal-wide" : ""}`} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}><div className="modal-inner"><div className="modal-heading"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="창 닫기"><Icon name="close" /></button></div>{children}</div></dialog>;
+  const titleId = useId();
+  useEffect(() => { const dialog = ref.current; const opener = document.activeElement; dialog?.showModal(); return () => { dialog?.close(); if (opener instanceof HTMLElement && opener.isConnected) opener.focus({ preventScroll: true }); }; }, []);
+  return <dialog ref={ref} aria-labelledby={titleId} className={`modal${sheet ? " sheet" : ""}${wide ? " modal-wide" : ""}`} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}><div className="modal-inner"><div className="modal-heading"><h2 id={titleId}>{title}</h2><button className="icon-button" onClick={onClose} aria-label="창 닫기"><Icon name="close" /></button></div>{children}</div></dialog>;
 }
 
 export default function Market({ path }: { path: string[] }) {
@@ -53,6 +58,13 @@ export default function Market({ path }: { path: string[] }) {
   const section = path[0] ?? "home";
   const mainRef = useRef<HTMLElement>(null);
   const routeKey = path.join("/");
+  useEffect(() => {
+    const keyboard = () => { document.documentElement.dataset.marketInput = "keyboard"; };
+    const pointer = () => { document.documentElement.dataset.marketInput = "pointer"; };
+    document.addEventListener("keydown", keyboard, true);
+    document.addEventListener("pointerdown", pointer, true);
+    return () => { document.removeEventListener("keydown", keyboard, true); document.removeEventListener("pointerdown", pointer, true); };
+  }, []);
   useEffect(() => {
     const main = mainRef.current;
     if (!main || !catalog || document.documentElement.dataset.marketInput === "keyboard" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -76,7 +88,7 @@ export default function Market({ path }: { path: string[] }) {
   const product = section === "product" ? catalog.products.find(item => item.slug === path[1]) : undefined;
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const onProduct = Boolean(product);
-  return <div className="market-shell" onKeyDownCapture={() => { document.documentElement.dataset.marketInput = "keyboard"; }} onPointerDownCapture={() => { document.documentElement.dataset.marketInput = "pointer"; }}>
+  return <div className="market-shell">
     <a className="skip-link" href="#main-content">본문으로 바로가기</a>
     <div className="preview-strip">{catalog.mode === "preview" ? "샘플 컬렉션 · 체험 주문만 가능합니다" : catalog.mode === "test" ? "결제 테스트 운영 · 실제 판매 전 점검 중" : "NURI MARKET 공식 스토어"}</div>
     <header className="header"><div className="header-inner"><Link href="/" className="wordmark" aria-label="NURI MARKET 홈"><img src="/brand/nuri-market-light.svg" alt="NURI MARKET" width="7906" height="1120"/></Link><nav className="desktop-links" aria-label="주요 메뉴"><Link href="/search" aria-current={section === "search" ? "page" : undefined}>모든 상품</Link><Link href="/search?category=clicker">클릭커</Link><Link href="/search?category=apparel">의류·모자</Link><Link href="/search?category=figure">작은 오브제</Link></nav><div className="header-actions"><Link className="icon-button" href="/search" aria-label="상품 검색"><Icon name="search" /></Link><Link className="icon-button desktop-only" href="/wishlist" aria-label="관심 상품"><Icon name="heart" /></Link><Link className="icon-button" href="/cart" aria-label={`장바구니 ${cartCount}개`}><Icon name="bag" />{cartCount > 0 && <span className="count-badge">{cartCount}</span>}</Link><Link href="/my" className="desktop-only account-link">마이</Link><Link href="/nurimarket/login" className="account-link">로그인</Link></div></div></header>
@@ -119,7 +131,8 @@ function ProductCard({ product, wished, wish, shipping }: { product: Product; wi
 function Reveal({children}:{children:React.ReactNode}) {
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{const element=ref.current;if(!element||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    const observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){element.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:280,easing:"cubic-bezier(0.23, 1, 0.32, 1)"});observer.disconnect();}},{threshold:0.08});observer.observe(element);return()=>observer.disconnect();},[]);
+    let animation:Animation|undefined;
+    const observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){if(document.documentElement.dataset.marketInput!=="keyboard"&&!matchMedia("(prefers-reduced-motion: reduce)").matches)animation=element.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:280,easing:"cubic-bezier(0.23, 1, 0.32, 1)"});observer.disconnect();}},{threshold:0.08});observer.observe(element);return()=>{observer.disconnect();animation?.cancel();};},[]);
   return <div ref={ref}>{children}</div>;
 }
 function Home({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: string[]; wish: (id: string) => void }) {
@@ -174,11 +187,16 @@ function Home({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: str
   </>;
 }
 function Search({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: string[]; wish: (id: string) => void }) {
-  const [query, setQuery] = useState(""); const [category, setCategory] = useState("all"); const [sort, setSort] = useState("latest"); const [available, setAvailable] = useState(false);
+  const [query, setQuery] = useState(""); const [sort, setSort] = useState("latest"); const [available, setAvailable] = useState(false);
   const params = useSearchParams();
-  useEffect(() => { setCategory(params.get("category") ?? "all"); }, [params]);
+  const category = params.get("category") ?? "all";
+  const previousCategory = useRef(category);
+  useEffect(() => {
+    if (previousCategory.current !== category) animateView(".product-grid");
+    previousCategory.current = category;
+  }, [category]);
   const products = catalog.products.filter(product => (category === "all" || product.category === category) && `${product.name} ${product.line}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) && (!available || stockOf(product) > 0)).sort((a,b) => sort === "low" ? a.price-b.price : sort === "high" ? b.price-a.price : 0);
-  return <><PageTitle title="취향을 찾아보세요"/><form className="search-form" onSubmit={e => e.preventDefault()}><Icon name="search"/><input aria-label="상품 이름 검색" placeholder="클릭커, 모자, 작은 오브제" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button type="button" className="icon-button" aria-label="검색어 지우기" onClick={() => setQuery("")}><Icon name="close" size={18}/></button>}</form><div className="filter-chips">{categories.map(item => <button key={item.id} className={category === item.id ? "active" : ""} onClick={() => { changeView(()=>setCategory(item.id), ".product-grid"); window.history.replaceState(null,"",item.id === "all" ? "/search" : `/search?category=${item.id}`); }} aria-pressed={category === item.id}>{item.label}</button>)}</div><div className="list-controls"><span>{products.length}개 상품</span><div><label className="check-label"><input type="checkbox" checked={available} onChange={e => setAvailable(e.target.checked)}/>재고 있음</label><select aria-label="상품 정렬" value={sort} onChange={e => setSort(e.target.value)}><option value="latest">등록순</option><option value="low">낮은 가격순</option><option value="high">높은 가격순</option></select></div></div><ProductGrid products={products} wishes={wishes} wish={wish} shipping={catalog.settings.shipping}/></>;
+  return <><PageTitle title="취향을 찾아보세요"/><form className="search-form" onSubmit={e => e.preventDefault()}><Icon name="search"/><input aria-label="상품 이름 검색" placeholder="클릭커, 모자, 작은 오브제" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button type="button" className="icon-button" aria-label="검색어 지우기" onClick={() => setQuery("")}><Icon name="close" size={18}/></button>}</form><div className="filter-chips">{categories.map(item => <button key={item.id} className={category === item.id ? "active" : ""} onClick={() => window.history.replaceState(null,"",item.id === "all" ? "/search" : `/search?category=${item.id}`)} aria-pressed={category === item.id}>{item.label}</button>)}</div><div className="list-controls"><span>{products.length}개 상품</span><div><label className="check-label"><input type="checkbox" checked={available} onChange={e => setAvailable(e.target.checked)}/>재고 있음</label><select aria-label="상품 정렬" value={sort} onChange={e => setSort(e.target.value)}><option value="latest">등록순</option><option value="low">낮은 가격순</option><option value="high">높은 가격순</option></select></div></div><ProductGrid products={products} wishes={wishes} wish={wish} shipping={catalog.settings.shipping}/></>;
 }
 
 function SpecTable({ product }: { product: Product }) { return <dl className="spec-table">{product.specs.map(spec => <div key={spec.label}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>)}</dl>; }

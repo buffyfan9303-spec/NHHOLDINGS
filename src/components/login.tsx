@@ -41,7 +41,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
 
   return <>
     <link rel="stylesheet" href="/one/fonts/pretendard.css" precedence="login"/>
-    <main className="nh-login">
+    <main className={`nh-login${market ? " nh-login-market" : ""}`}>
       <div className="nh-login-card">
         <a href={market ? '/nurimarket' : '/login'} className="nh-wordmark" aria-label={market ? 'NURI MARKET 홈' : 'NURI ONE 로그인'}><img src={`/brand/nuri-${market ? 'market' : 'one'}.svg`} alt={market ? 'NURI MARKET' : 'NURI ONE'} width={market ? 7906 : 8541} height={market ? 1120 : 1600}/></a>
         <header className="nh-login-heading">
