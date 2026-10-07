@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createDatabase} from '../src/lib/db';
-import {createOrder,getOrder,orderPage,inquiryPage,replyInquiry,registerShipment,adminData,dispatchRows,applyPayment,customerAction,prepare,importShipments,shipmentStatus,resolveClaim,adjustStock,saveCoupon,saveProduct,runMaintenance,catalog} from '../src/lib/commerce';
+import {createOrder,getOrder,orderPage,inquiryPage,replyInquiry,registerShipment,adminData,dispatchRows,applyPayment,customerAction,prepare,importShipments,shipmentStatus,resolveClaim,adjustStock,saveCoupon,saveProduct,runMaintenance,catalog,mode} from '../src/lib/commerce';
 import {confirmPayment,paymentWebhook,pgDueDate} from '../src/lib/payments';
 import {seal,unseal,MarketError,readBytes,requireOrigin,marketOrigin} from '../src/lib/security';
 import {NextRequest} from 'next/server';
@@ -13,6 +13,7 @@ import {normalizeImage,normalizeAudio} from '../src/lib/media';
 import sharp from 'sharp';
 import {parseInvoices,workbookBuffer,checkZip} from '../src/lib/excel';
 test('주문·재고·결제·배송·부분환불·법정요청·권한 통합 검증',async()=>{
+ const previousNodeEnv=process.env.NODE_ENV;Object.assign(process.env,{NODE_ENV:'production',MARKET_MODE:'preview'});assert.equal(mode(),'live');if(previousNodeEnv===undefined)Reflect.deleteProperty(process.env,'NODE_ENV');else Object.assign(process.env,{NODE_ENV:previousNodeEnv});
  process.env.MARKET_MODE='preview';process.env.SESSION_SECRET='test-only-secret-'.repeat(4);process.env.SEED_DEMO_DATA='true';delete process.env.DATABASE_URL;
  const directory=await mkdtemp(path.join(tmpdir(),'nuri-market-test-')),db=await createDatabase(directory);
  const customer={name:'검증용',phone:'01000000000',email:'qa@example.invalid',postcode:'12345',address:'검증 주소',addressDetail:'실배송 아님',note:''};

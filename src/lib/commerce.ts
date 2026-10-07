@@ -5,7 +5,7 @@ import {paymentLabels,fulfillmentLabels} from './types';
 import {MarketError,hash,equal,orderToken,textValue,integer} from './security';
 type Row=Record<string,any>;
 const iso=(v:unknown)=>v?new Date(v as string).toISOString():null;
-export function mode():CatalogResponse['mode'] {const value=process.env.MARKET_MODE??'preview';if(!['preview','test','live'].includes(value))throw new MarketError('잘못된 운영 모드입니다.',503);return value as CatalogResponse['mode'];}
+export function mode():CatalogResponse['mode'] {const value=process.env.NODE_ENV==='production'?'live':process.env.MARKET_MODE??'preview';if(!['preview','test','live'].includes(value))throw new MarketError('잘못된 운영 모드입니다.',503);return value as CatalogResponse['mode'];}
 export async function audit(tx:Queryable,action:string,detail:string){await tx.query('INSERT INTO mkt_audit(id,action,detail) VALUES($1,$2,$3)',[randomUUID(),action,detail]);}
 async function job(tx:Queryable,orderId:string,kind:string){await tx.query('INSERT INTO mkt_jobs(id,order_id,kind,payload) VALUES($1,$2,$3,$4)',[randomUUID(),orderId,kind,JSON.stringify({orderId})]);}
 export async function settings(tx:Queryable){return (await tx.query<{data:Settings}>('SELECT data FROM mkt_settings WHERE id=$1',['store'])).rows[0].data;}
