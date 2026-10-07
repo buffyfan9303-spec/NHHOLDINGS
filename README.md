@@ -72,3 +72,9 @@ X는 PKCE와 refresh token 회전, Instagram·Threads는 장기 토큰 교환·�
 2026-10-07 추가 검증: 4개 통합 시나리오와 SNS 공급자 스텁 검사 통과. OAuth 권한·출처·브라우저 상태·재사용 차단·암호화 저장, 갱신 중 이미 게시된 콘텐츠 보호를 검사했습니다. 실제 Supabase의 sample 행과 독립 PostgreSQL 연결로 토큰 회전 중 병렬 계정 수정이 CAS 0행으로 차단되는 것을 확인했고 테스트 행을 제거했습니다. 320/390/768/1024/1280/1440px 78개 화면에서 페이지 넘침 0·콘솔 오류 0, SNS 메뉴·다음 업로드 표시·설정 폼을 확인했습니다. 운영 금전 원장은 변경하지 않았습니다.
 
 이번 범위는 자료·연동 GPT-6.1 medium, 디자인 GPT-6.1 high, 지정 OAuth 차이의 GPT-6 Astra high 독립 검토와 주 에이전트 통합으로 진행했습니다. 기존 Git·Node·Next·PG·MCP·브라우저·Vercel Cron을 재사용했으며 추가 의존성·유료 호출을 활성화하지 않았습니다. Meta·X 콘솔은 로그인 세션이 없어 앱 발급을 완료하지 않았습니다. 실제 SNS 동의·토큰 갱신·공개 게시와 AI 과금 호출은 사용자 계정·앱 키가 연결된 뒤 검증해야 합니다. 스텁 성공을 실제 공급자 연결 성공으로 표시하지 않습니다.
+
+2026-10-07 내부 레이아웃 정리: [shadcn dashboard-01](https://ui.shadcn.com/view/new-york-v4/dashboard-01), [Linear의 UI 개편](https://linear.app/now/how-we-redesigned-the-linear-ui), [Geist](https://vercel.com/geist/introduction)의 셸·정렬·정보 위계를 참조했습니다. 기존 누리원 벡터 로고와 Pretendard·Lucide 자산을 재사용했고 외부 브랜드 로고나 새 라이브러리는 넣지 않았습니다. 사이드바·헤더·표·폼을 공통 크기로 맞추고 제목 중복, 채널 카드와 표의 0px 간격, 콘텐츠 탭과 카드의 0px 간격을 수정했습니다. 전체 대시보드는 재무 그래프를 먼저 표시하며 최근 콘텐츠 4개에서 전체 게시 현황으로 이동합니다. 게시 형식·계정은 표에, 확인 이력은 게시 상세에 남아 있습니다.
+
+역할은 주 에이전트(app.js·dashboard.html·실제 브라우저 QA·배포), GPT-6.1 high(공통 motion.css 디자인), GPT-6 Luna medium(읽기 전용 원인·사후 반증)으로 나눴습니다. 디자인에만 높은 추론을 쓰고 반복 점검은 효율적인 모델과 기존 Playwright로 수행했습니다. Git CLI·Vercel MCP·브라우저·공식 웹 문서를 실제 사용했으며 추가 플러그인·hooks·유료 API는 활성화하지 않았습니다.
+
+`npm test`, `npm run build`, `TEST_OWNER_PASSWORD=... node tests/dashboard-layout.cjs` 통과. 마지막 명령은 `.env.local`의 운영자 이메일과 테스트 로그인 비밀번호가 필요하며 `TEST_ORIGIN`으로 검사 대상을 지정할 수 있습니다. 50개 내부 경로 × 320/390/768/1024/1440/1920px = 300개 화면에서 가로 넘침·블록 겹침·콘솔 오류 0건, 카드와 표 22px 이상 간격, 제목과 액션 24px 이내 배치를 확인했습니다. 게시 상세의 형식·계정·확인 시각, 설정 4개 탭, 모바일 메뉴 이동도 확인했습니다. 증거는 `artifacts/layout/report.json`과 같은 폴더의 화면 캡처에 있습니다. 운영 금전 기록·외부 SNS 게시·계정 권한은 변경하지 않았습니다.
