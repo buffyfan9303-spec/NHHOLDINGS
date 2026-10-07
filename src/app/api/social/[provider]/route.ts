@@ -3,7 +3,6 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {identity,isOwner} from '@/lib/auth';
 import {body,requireOrigin,marketOrigin,seal,unseal,equal,hash,textValue,failure,MarketError} from '@/lib/security';
 import {context} from '@/server/context.cjs';
-import {SOURCES} from '@/server/dashboard.cjs';
 import {providers,authorization,exchange,identity as socialIdentity} from '@/server/social.cjs';
 export const dynamic='force-dynamic';
 export const maxDuration=120;
@@ -16,7 +15,7 @@ export async function POST(req:NextRequest,route:Route){try{
  requireOrigin(req);const user=await owner(req),{provider}=await route.params;
  if(!Object.hasOwn(providers,provider))throw new MarketError('지원하는 SNS를 선택해주세요.');
  const input=await body(req),service=textValue(input.service,'서비스',80),label=textValue(input.label,'계정 이름',120),id=input.id?textValue(input.id,'계정',80):randomUUID(),ctx=await context('live');
- if(![...SOURCES,...ctx.list('service')].some((s:{id:string})=>s.id===service))throw new MarketError('서비스를 선택해주세요.');
+ if(service!=='tistory')throw new MarketError('SNS 계정은 다른 서비스와 연결하지 않고 독립 운영합니다.');
  const app=ctx.get('social-app',provider);if(!app?.secret)throw new MarketError('먼저 SNS 앱의 Client ID와 Client Secret을 저장해주세요.');
  const old=ctx.get('channel',id);if(input.id&&(!old||old.service!==service||old.channel!==provider))throw new MarketError('재연결할 계정을 확인해주세요.');
  const state=randomBytes(32).toString('base64url'),verifier=randomBytes(32).toString('base64url'),expires=Date.now()+600000,flowId=user.id+':'+provider;
@@ -34,7 +33,7 @@ export async function GET(req:NextRequest,route:Route){
   if(browser.provider!==provider||browser.ownerId!==user.id||!Number.isFinite(browser.expires)||browser.expires<Date.now()||browser.expires>Date.now()+600000||typeof browser.state!=='string'||!state||!equal(state,browser.state)||!code||code.length>2000||req.nextUrl.searchParams.has('error'))throw new Error('Invalid flow');
   const ctx=await context('live'),flowId=user.id+':'+provider;let flow:any,app:any;
   await ctx.transaction(async()=>{await ctx.lock('social-flow:'+flowId);await ctx.reload();flow=ctx.get('social-flow',flowId);app=ctx.get('social-app',provider);
-   if(!flow||flow.usedAt||flow.ownerId!==user.id||flow.provider!==provider||flow.expires!==browser.expires||flow.expires<Date.now()||!equal(flow.stateHash,hash(state))||!app?.secret||!equal(flow.appHash,hash(app.secret)))throw new Error('Expired flow');
+   if(!flow||flow.service!=='tistory'||flow.usedAt||flow.ownerId!==user.id||flow.provider!==provider||flow.expires!==browser.expires||flow.expires<Date.now()||!equal(flow.stateHash,hash(state))||!app?.secret||!equal(flow.appHash,hash(app.secret)))throw new Error('Expired flow');
    await ctx.put('social-flow',flowId,{...flow,usedAt:new Date().toISOString()});
   });
   const config=await exchange(provider,ctx.decrypt(app.secret),{code,verifier:ctx.decrypt(flow.secret).verifier,redirectUri:marketOrigin()+'/api/social/'+provider}),verified=await socialIdentity(provider,config);

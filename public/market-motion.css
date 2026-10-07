@@ -1,37 +1,94 @@
-/* Keep the store light; build on the existing motion tokens. */
-.header{backdrop-filter:none;background:#fffffff7}
-.header .wordmark{flex-shrink:0}
-.desktop-links a{position:relative;padding:8px 0;color:#37434d;transition:color 160ms ease}
-.desktop-links a::after{content:'';position:absolute;left:0;right:0;bottom:2px;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform 180ms var(--ease-out)}
-.product-visual{background:#f1f3f4}
-.product-visual img,.discovery-shortcuts img,.editorial-card img{transition:transform 260ms var(--ease-out)}
-.product-copy h3 a{transition:color 160ms ease}
-.product-copy>strong{font-weight:650;letter-spacing:-.025em}
-.discovery-shortcuts>a{transition:background-color 160ms ease,border-color 160ms ease}
-.editorial-card{transition:transform 260ms var(--ease-out)}
-.editorial-link svg,.section-heading>a svg{transition:transform 180ms var(--ease-out)}
-.hero-frame{animation-duration:300ms}
-.primary,.secondary,.icon-button,.wish-button{transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease,transform 160ms var(--ease-out)}
-.collection-tabs button,.filter-chips button{transition:background-color 180ms ease,color 180ms ease,border-color 180ms ease}
-.image-thumbs button{transition:border-color 160ms ease,opacity 160ms ease}
-.image-thumbs button:not([aria-pressed=true]){opacity:.72}
-.image-thumbs button:focus-visible{opacity:1}
-.header a:focus-visible,.product-copy a:focus-visible,.editorial-card:focus-visible{outline:2px solid #2855e8;outline-offset:5px;border-radius:3px}
-.product-card:focus-within .product-copy h3 a{color:var(--blue)}
-.editorial-card:focus-visible .editorial-link svg,.section-heading>a:focus-visible svg{transform:translateX(3px)}
+/* Storefront identity. Native transitions are progressive enhancement. */
+.market-shell{--ink:#edf3ef;--muted:#a5b5ac;--blue:#a5ddc4;--line:#33413b;--soft:#202b25;--paper:#151d19;--error:#ffb4ad;--ease-out:cubic-bezier(.23,1,.32,1);min-height:100dvh;background:#111814;color:var(--ink);color-scheme:dark}
+.market-shell .preview-strip{height:auto;min-height:30px;padding:5px 16px;background:#23392e;color:#c7e7d6;font-size:11px;text-align:center}
+.market-shell .header{background:#111814f5;backdrop-filter:none;border-color:var(--line)}
+.market-shell .wordmark img{filter:brightness(0) invert(1);opacity:.94}
+.market-shell .header-inner{max-width:1280px;gap:24px}
+.market-shell .header-actions{gap:12px}.market-shell .icon-button{min-width:40px;min-height:40px}
+.market-shell .desktop-links a{position:relative;padding:12px 0;color:#b8c6be;transition:color 160ms ease}
+.market-shell .desktop-links a[aria-current]{color:var(--blue)}
+.market-shell .category-strip,.market-shell .pdp-tabs,.market-shell .bottom-nav,.market-shell .sticky-buy{background:#151e19;border-color:var(--line)}
+.market-shell .category-strip a{color:#b7c6bd;min-height:44px}.market-shell .category-strip a.active{color:var(--blue);border-color:var(--blue)}
+.market-shell .main{padding-top:24px}.market-shell .main,.market-shell .footer{width:calc(100% - 64px);max-width:1208px}
+.market-shell .hero-campaign{width:100%;aspect-ratio:2.08;border-radius:20px;background:#1e3127;border:1px solid #435b4d}
+.market-shell .hero-frame{animation:none;opacity:0;transform:scale(1.015);transition:opacity 260ms var(--ease-out),transform 260ms var(--ease-out);pointer-events:none}
+.market-shell .hero-frame.is-active{opacity:1;transform:none;pointer-events:auto;z-index:1}
+.market-shell .hero-frame>picture{position:absolute;inset:0 0 0 38%;width:auto;height:auto;overflow:hidden}
+.market-shell .hero-frame>picture img{object-fit:cover;object-position:70% center}
+.market-shell .hero-frame::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#17291f 28%,#17291ff2 39%,#17291f00 70%);pointer-events:none}
+.market-shell .hero-copy{z-index:2;max-width:52%;left:6%;top:46%}
+.market-shell .hero-campaign .hero-copy>p{color:#b6dfca;font-size:10px;margin-bottom:22px}
+.market-shell .hero-campaign .hero-copy h1{color:#f0f7f2;font-size:clamp(38px,4.3vw,62px);line-height:1.2;text-wrap:balance}
+.market-shell .hero-campaign .hero-copy>span{color:#becdc3;font-size:14px;margin-top:20px}
+.market-shell .hero-link{color:#d1eddf;font-size:13px;min-height:44px;gap:20px;margin-top:26px}
+.market-shell .hero-link>span{width:34px;height:34px;transition:transform 180ms var(--ease-out)}
+.market-shell .hero-controls{z-index:3;bottom:20px;color:#c4d9cc;font-size:10px;letter-spacing:.02em}
+.market-shell .hero-controls>div{background:#142a21e8;color:#e2f5e9;border-radius:999px;padding:0 8px}
+.market-shell .hero-controls button{width:44px;height:44px}.market-shell .hero-controls i{width:8px;height:8px}
+.market-shell .hero-controls button[aria-pressed=true] i{opacity:1;transform:scale(1.25);background:#b4e8cc}
+.market-shell .hero-campaign-1{background:#1d2922}.market-shell .hero-campaign-1 .hero-frame::after{background:linear-gradient(90deg,#1c2a21 28%,#1c2a21e8 40%,#1c2a2100 72%)}
+.market-shell .campaign-cap{right:-1%;bottom:-8%;width:59%;height:118%;mix-blend-mode:normal;mask-image:radial-gradient(ellipse at center,#000 35%,transparent 70%)}
+.market-shell .discovery-shortcuts>a{background:#19231d;border-color:var(--line);transition:border-color 160ms ease,background-color 160ms ease}
+.market-shell .discovery-shortcuts>a>div:first-child{background:#26342b}.market-shell .shortcut-copy>span{color:#8eaa99}
+.market-shell .product-visual{background:#28352d;border:1px solid #39473e}.market-shell .product-visual img{transition:transform 240ms var(--ease-out)}
+.market-shell .product-copy h3{font-size:15px}.market-shell .product-copy h3 a{transition:color 160ms ease}.market-shell .line-name{color:#a8bcb0}
+.market-shell .product-copy>strong{font-size:18px}.market-shell .card-shipping{color:#9eafa4;font-size:11px}
+.market-shell .product-tags span,.market-shell .tag{background:#2a382f;color:#c1d1c6}.market-shell .product-tags .blue{background:#264c3a;color:#c3ecd7}
+.market-shell .wish-button{width:40px;height:40px;background:#17241de8;color:#d2dfd7;transition:transform 140ms var(--ease-out),color 140ms ease}
+.market-shell .wish-button:active{transform:scale(.95)}.market-shell .is-wished{color:#ade2c8!important}
+.market-shell .soldout{background:#18271fe8;color:#e4eee7}.market-shell .count-badge{background:#a5ddc4;color:#12271b}
+.market-shell .collection-tabs button,.market-shell .filter-chips button{min-height:44px;color:#b9cbbf;transition:color 160ms ease,background-color 160ms ease}
+.market-shell .collection-tabs button.active,.market-shell .filter-chips button.active{background:#a5ddc4;border-color:#a5ddc4;color:#15271d}
+.market-shell .editorial-blue,.market-shell .editorial-mint{background:#223b2d;color:#d4e9dc;border:1px solid #3a5344}
+.market-shell .editorial-mint{background:#293a30}.market-shell .editorial-card img{mix-blend-mode:normal}.market-shell .table-story-visual{background:#26362c}
+.market-shell .brand-note-symbol{color:#385744}.market-shell .brand-note p,.market-shell .brand-note span{color:#adc0b3}
+.market-shell .section-heading>a,.market-shell .footer nav,.market-shell .seller-info,.market-shell .copyright{color:#b4c5b9}
+.market-shell .primary{background:#a5ddc4;border-color:#a5ddc4;color:#12271b}.market-shell .secondary{background:#223128;border-color:#46594c;color:#e1eee6}
+.market-shell .text-button{color:#c0dfcc}.market-shell .search-form,.market-shell .order-summary,.market-shell .sample-note,.market-shell .saved-orders>a{background:#1c2b21;border-color:var(--line);color:#bdcfc2}
+.market-shell .sample-note{color:#c2d9ca}.market-shell .sample-note p{color:#a6bdaf}
+.market-shell .list-controls select,.market-shell .field input,.market-shell .field select,.market-shell .field textarea,.market-shell .modal{background:#1b2720;border-color:#46594c;color:var(--ink)}
+.market-shell .field input::placeholder,.market-shell .field textarea::placeholder{color:#99aea0}
+.market-shell .modal::backdrop{background:#050b08bb;backdrop-filter:none}.market-shell .modal{box-shadow:0 24px 90px #0008}
+.market-shell .pdp-tabs button{min-height:48px;color:#a7bcaf}.market-shell .pdp-tabs button.active{color:#c4edda;border-color:#a5ddc4}
+.market-shell .pdp-content>p,.market-shell .pdp-content details p,.market-shell .policy>p{color:#b4c6ba}
+.market-shell .pdp-image>span{background:#17251ee8;color:#e0efe5}.market-shell .image-thumbs button{min-height:48px;transition:border-color 160ms ease,opacity 160ms ease}
+.market-shell .image-thumbs button:not([aria-pressed=true]){opacity:.65}.market-shell .image-thumbs button[aria-pressed=true]{border-color:#a5ddc4}
+.market-shell .bottom-nav>a{color:#9fb4a6}.market-shell .bottom-nav>a.active{color:#bde9d1}
+.market-shell .toast{background:#b9e8d0;color:#14301f}.market-shell .toast a{color:#234f37}
+.market-shell .payment-options .selected{background:#253d2d}.market-shell .access-key{background:#263b2d}
+.market-shell :is(button,a,summary):focus-visible{outline:2px solid #b8ecd1;outline-offset:4px}.market-shell :is(input,select,textarea):focus{outline:2px solid #b8ecd1}
+::view-transition{pointer-events:none}::view-transition-group(*){animation-duration:200ms;animation-timing-function:var(--ease-out)}
+::view-transition-old(root){display:none}::view-transition-new(root){animation:none}
+::view-transition-old(market-results),::view-transition-old(market-gallery),::view-transition-old(market-details){animation:market-fade-out 120ms ease both}
+::view-transition-new(market-results),::view-transition-new(market-gallery),::view-transition-new(market-details){animation:market-fade-in 200ms var(--ease-out) both}
+@keyframes market-fade-in{from{opacity:0}to{opacity:1}}@keyframes market-fade-out{from{opacity:1}to{opacity:0}}
 @media(hover:hover) and (pointer:fine){
- .desktop-links a:hover::after{transform:scaleX(1)}
- .product-card:hover .product-visual img{transform:translateY(-2px) scale(1.03)}
- .product-card:hover .product-copy h3 a{color:#365c86}
- .discovery-shortcuts>a:hover{background:#fafcfc;border-color:#bacac7}
- .discovery-shortcuts>a:hover img{transform:scale(1.03)}
- .editorial-card:hover{transform:translateY(-2px)}
- .editorial-card:hover img{transform:translateY(-4px) scale(1.02)}
- .editorial-card:hover .editorial-link svg,.section-heading>a:hover svg{transform:translateX(3px)}
- .image-thumbs button:hover{opacity:1}
+ .market-shell .desktop-links a:hover,.market-shell .product-card:hover .product-copy h3 a{color:#b4e8cc}
+ .market-shell .product-card:hover .product-visual img{transform:scale(1.03)}
+ .market-shell .discovery-shortcuts>a:hover{background:#263a2d;border-color:#6a8b76}.market-shell .discovery-shortcuts>a:hover img{transform:scale(1.03)}
+ .market-shell .hero-link:hover>span{transform:translateX(4px)}.market-shell .editorial-card:hover img{transform:translateY(-4px)}
+ .market-shell .primary:hover:not(:disabled){background:#c4ecd9}.market-shell .secondary:hover:not(:disabled){background:#304c39}
+ .market-shell .image-thumbs button:hover{opacity:1}
 }
+@media(max-width:1000px) and (min-width:761px){.market-shell .hero-campaign{min-height:380px}.market-shell .hero-campaign .hero-copy h1{font-size:40px}.market-shell .hero-campaign .hero-copy>span{font-size:12px;max-width:250px}.market-shell .hero-controls{font-size:9px}}
+@media(max-width:760px){
+ .market-shell .main{width:100%;padding:16px 20px 48px}.market-shell .footer{width:auto;max-width:none;margin:0 20px}.market-shell .header-inner{padding:0 16px;gap:14px}.market-shell .header-actions{gap:3px}
+ .market-shell .hero-campaign{aspect-ratio:4/5;border-radius:16px}.market-shell .hero-frame>picture{inset:0}.market-shell .hero-frame>picture img{object-position:center}
+ .market-shell .hero-frame::after{background:linear-gradient(180deg,#162a20 0%,#162a20e8 24%,#162a2099 43%,#162a2000 61%)}
+ .market-shell .hero-copy{top:24px;left:24px;max-width:calc(100% - 48px);transform:none;max-height:none}
+ .market-shell .hero-campaign .hero-copy>p{font-size:8px;margin-bottom:12px}.market-shell .hero-campaign .hero-copy h1{font-size:clamp(28px,8vw,44px);line-height:1.18}
+ .market-shell .hero-campaign .hero-copy>span{display:none}.market-shell .hero-link{font-size:11px;margin-top:14px;gap:14px}.market-shell .hero-link>span{width:28px;height:28px}
+ .market-shell .hero-controls{left:20px;right:14px;bottom:8px;font-size:8px;color:#f1f8f4;text-shadow:0 1px 5px #13281d}.market-shell .hero-controls>span{max-width:55%;line-height:1.5}.market-shell .hero-controls>div>span{margin-left:3px}.market-shell .hero-controls button{width:34px;height:44px}
+ .market-shell .hero-campaign-1 .hero-frame::after{background:linear-gradient(180deg,#1c2a21 3%,#1c2a21da 34%,#1c2a2100 65%)}
+ .market-shell .campaign-cap{width:110%;height:75%;bottom:-8%;right:-5%}
+ .market-shell .product-copy h3{font-size:13px}.market-shell .product-copy>strong{font-size:16px}.market-shell .card-shipping{font-size:10px}.market-shell .wish-button{width:40px;height:40px;top:6px;right:6px}
+ .market-shell .collection-tabs button,.market-shell .filter-chips button{font-size:11px;min-height:44px}.market-shell .collection-controls{margin-bottom:22px}
+ .market-shell .pdp-description,.market-shell .pdp-content>p{font-size:13px}.market-shell .pdp-tabs button{font-size:12px}.market-shell .pdp-image{border-radius:0}
+}
+@media(max-width:360px){.market-shell .main{padding-left:15px;padding-right:15px}.market-shell .hero-copy{left:20px;top:20px;max-width:calc(100% - 40px)}.market-shell .hero-campaign .hero-copy h1{font-size:27px}.market-shell .hero-controls{left:15px;font-size:7px}.market-shell .hero-controls button{width:29px}}
+:root[data-market-input=keyboard] .market-shell .hero-frame{transition:none}
 @media(prefers-reduced-motion:reduce){
- *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
- .product-card:hover .product-visual img,.discovery-shortcuts>a:hover img,.editorial-card:hover,.editorial-card:hover img,.editorial-link svg,.section-heading>a svg{transform:none!important}
+ .market-shell *, .market-shell *::before,.market-shell *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .market-shell .hero-frame,.market-shell .product-card:hover .product-visual img,.market-shell .discovery-shortcuts>a:hover img,.market-shell .editorial-card:hover img,.market-shell .hero-link>span{transform:none!important}
  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }

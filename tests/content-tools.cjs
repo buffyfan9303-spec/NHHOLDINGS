@@ -16,10 +16,10 @@ async function run(){
  const channels=['blog','instagram','threads','x','facebook','linkedin','pinterest','youtube','tiktok'],limits={blog:20000,instagram:2200,threads:500,x:280,facebook:5000,linkedin:3000,pinterest:500,youtube:5000,tiktok:2200};
  for(const draft of repurpose({...input,body:'매우 긴 공개 서비스 안내입니다. '.repeat(500)},channels)){
   assert.match(draft.body,/규칙 기반 홍보 초안/);assert.match(draft.body,/https:\/\/example.com\/article/);assert(weight(draft.body,draft.channel)<=limits[draft.channel]);assert.equal(draft.ai,false);
-  if(['blog','instagram','threads','x'].includes(draft.channel))preflight({...draft,service:'market',blogTarget:'wordpress',media:'https://example.com/image.jpg'});
-  else {assert.throws(()=>preflight(draft),/자동 게시 API/);assert.deepEqual(await inspectPublication({...draft,externalId:'manual:x'},null,()=>assert.fail('manual posts must not fetch')),{checkStatus:'unavailable'});}
+  if(['blog','instagram','threads','x'].includes(draft.channel))preflight({...draft,service:'tistory',blogTarget:'wordpress',media:'https://example.com/image.jpg'});
+  else {assert.throws(()=>preflight({...draft,service:'tistory'}),/자동 게시 API/);assert.deepEqual(await inspectPublication({...draft,externalId:'manual:x'},null,()=>assert.fail('manual posts must not fetch')),{checkStatus:'unavailable'});}
  }
- assert.equal(repurpose(input,['x','x']).length,1);assert.throws(()=>repurpose(input,['unknown']),{status:400});
+ assert.throws(()=>preflight({service:'crm',channel:'x',body:'과거 기록'}),/독립 운영/);assert.equal(repurpose(input,['x','x']).length,1);assert.throws(()=>repurpose(input,['unknown']),{status:400});
  assert(repurpose({...input,body:'😀'.repeat(9999)},['blog'])[0].body.length<=20000);
  console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, validation, nine-channel repurposing and manual-only preflight');
 }
