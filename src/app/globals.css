@@ -297,7 +297,9 @@
 .admin-shell .search-small{min-height:40px}
 .admin-shell .field{font-size:13px}
 .admin-shell .field input,.admin-shell .field select,.admin-shell .field textarea{font-size:14px}
-.admin-shell .text-button{font-size:13px}
+.admin-shell .text-button{min-height:38px;padding:6px 8px;font-size:13px}
+.admin-shell .button-row{gap:12px}
+.admin-shell .admin-sidebar nav>button.active{background:#eceeef;color:#192024}
 .admin-shell .compact{min-height:38px;padding:6px 12px;font-size:13px}
 .admin-shell .admin-alert{font-size:13px}
 .admin-shell .panel-heading h2{margin-right:auto}
