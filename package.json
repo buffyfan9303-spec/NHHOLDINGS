@@ -12,17 +12,19 @@
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3120",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts tests/oauth-security.test.ts tests/social-security.test.ts && node tests/social.cjs",
+    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts tests/oauth-security.test.ts tests/social-security.test.ts && node tests/social.cjs && node tests/content-tools.cjs",
     "test:browser": "node --env-file=.env.local tests/cloud-integration.cjs",
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",
     "exceljs": "^4.4.0",
+    "markdown-it": "15.0.2",
     "next": "16.4.0",
     "pg": "^8.16.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sanitize-html": "2.18.0",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

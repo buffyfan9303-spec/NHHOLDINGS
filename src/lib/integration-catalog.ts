@@ -8,6 +8,46 @@ export type Integration = {
 };
 export const integrationCatalog: readonly Integration[] = [
   {
+    id:'youtube',name:'YouTube',category:'publishing',status:'manual-only',
+    description:'영상 구성·제목·설명 초안과 직접 게시한 URL을 관리합니다. 영상 생성과 자동 업로드는 연결되지 않았습니다.',
+    requirements:['직접 운영하는 YouTube 채널','실제 제작한 영상·음원 권리','향후 연동 시 Google Cloud·youtube.upload OAuth·프로젝트 검증'],
+    freeUsage:'Data API 할당량과 프로젝트 검증 조건을 확인합니다. 미검증 프로젝트의 API 업로드는 비공개로 제한됩니다.',
+    docsUrl:'https://developers.google.com/youtube/v3/docs/videos/insert',pricingUrl:'https://developers.google.com/youtube/v3/getting-started',
+    setupSteps:['YouTube Studio에서 본인 채널과 저작권을 확인합니다.','작업실에서 제목·설명·영상 구성 초안을 검토합니다.','공식 Studio에서 직접 업로드한 뒤 발행 URL을 기록합니다.'],
+  },
+  {
+    id:'tiktok',name:'TikTok',category:'publishing',status:'manual-only',
+    description:'숏폼 구성·캡션 초안과 발행 URL을 관리합니다. 내부 전용 NURI는 Direct Post 공식 허용 용도에 해당하지 않습니다.',
+    requirements:['본인 TikTok 계정','직접 제작한 영상·사진','상업 콘텐츠·AI 콘텐츠 표시 확인'],
+    freeUsage:'본인·팀 계정 업로드용 내부 도구는 Direct Post의 허용 용도가 아닙니다. 수동 게시 또는 해당 용도의 승인 도구를 사용합니다.',
+    docsUrl:'https://developers.tiktok.com/docs/en/content-sharing-guidelines',pricingUrl:'https://developers.tiktok.com/docs/en/content-posting-api-get-started',
+    setupSteps:['공식 앱에서 계정과 게시 자격을 확인합니다.','영상·음원 권리와 광고·AI 표시를 검토합니다.','직접 업로드한 공개 URL을 작업실에 기록합니다.'],
+  },
+  {
+    id:'linkedin',name:'LinkedIn',category:'publishing',status:'manual-only',
+    description:'전문 지식·제작 사례 콘텐츠 초안과 직접 게시 URL을 관리합니다. Posts API는 아직 연결하지 않았습니다.',
+    requirements:['본인 프로필 또는 관리 권한이 있는 회사 페이지','향후 연동 시 개발자 앱·w_member_social 또는 조직 게시 권한'],
+    freeUsage:'API 제품 접근과 앱 심사·호출 한도를 확인해야 합니다. 게시 수익 배분을 가정하지 않습니다.',
+    docsUrl:'https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api',pricingUrl:'https://learn.microsoft.com/en-us/linkedin/marketing/community-management-app-review',
+    setupSteps:['본인 프로필·페이지 권한을 확인합니다.','작업실에서 본인 경험·근거를 포함한 초안을 검토합니다.','공식 웹에서 직접 게시 후 URL을 등록합니다.'],
+  },
+  {
+    id:'pinterest',name:'Pinterest',category:'publishing',status:'manual-only',
+    description:'Pin 설명과 유입 링크, 직접 게시 URL을 관리합니다. 이미지 업로드 API는 연결되지 않았습니다.',
+    requirements:['Pinterest 계정·사용할 보드','상업 이용 가능한 직접 이미지','향후 연동 시 개발자 앱·OAuth·pins:write·보드 접근 권한'],
+    freeUsage:'개발자 접근 단계·API 한도를 확인해야 합니다. 플랫폼 직접 수익 지급을 가정하지 않습니다.',
+    docsUrl:'https://developers.pinterest.com/docs/getting-started/make-an-api-call/',pricingUrl:'https://developers.pinterest.com/docs/getting-started/introduction/',
+    setupSteps:['보드와 이미지 권리를 확인합니다.','설명과 전환 링크를 검토하고 공식 앱에서 Pin을 게시합니다.','발행 URL과 확인한 클릭·전환을 기록합니다.'],
+  },
+  {
+    id:'facebook',name:'Facebook Page',category:'publishing',status:'manual-only',
+    description:'페이지 게시 초안과 발행 URL을 관리합니다. Pages API는 연결되지 않았습니다.',
+    requirements:['관리 권한이 있는 Facebook Page','향후 연동 시 Meta 앱·페이지 토큰·pages_manage_posts 및 필요한 접근 심사'],
+    freeUsage:'앱 권한과 접근 심사, 수익화 자격은 별도입니다. API 가격을 확인하기 전 무료라고 단정하지 않습니다.',
+    docsUrl:'https://developers.facebook.com/docs/pages-api/posts/',pricingUrl:'https://developers.facebook.com/docs/pages-api/overview/',
+    setupSteps:['페이지 운영 권한을 확인합니다.','게시 내용과 상업 관계 표시를 검토합니다.','공식 페이지에서 직접 게시하고 발행 URL을 기록합니다.'],
+  },
+  {
     id: 'supabase', name: 'Supabase', category: 'infrastructure', status: 'existing-code',
     description: '기존 로그인·파일 저장 코드가 있습니다. 실제 프로젝트 연결 상태는 운영 화면에서 별도 확인합니다.',
     requirements: ['프로젝트 URL·공개 키', '서버 전용 서비스 키', '접근 정책·운영자 설정'],

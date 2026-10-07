@@ -340,3 +340,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
  @starting-style{.post-inspector[open]{opacity:1;transform:none}}
 }
 @media print{.panel,.kpi,.publishing-board{box-shadow:none;background:#fff;color:#111;border-color:#bbb}th,.publishing-board th{background:#eee;color:#111}}
+.manual-channel-strip{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.manual-channel-strip>button{flex:1 1 170px;display:flex;align-items:center;gap:8px;min-width:0;min-height:52px;padding:10px 12px;background:#181e22;border:1px solid var(--line);border-radius:8px;color:#d5dfe5;font:inherit;font-size:12px;cursor:pointer}
+.manual-channel-strip small{margin-left:auto;color:#9aabb5;font-size:11px;white-space:nowrap}
+.manual-channel-strip .channel-icon{width:25px;height:25px}
+.manual-channel-strip>button>.icon{width:14px;height:14px;color:#91a59b}
+.publishing-board.board--wide table{min-width:1780px}
+.board--wide th:first-child,.board--wide td:first-child{position:sticky;left:0;z-index:1;background:#181f23;box-shadow:1px 0 0 var(--line)}
+.board--wide th:first-child{background:#1b242a}
+.channel-tile:focus-visible,.manual-channel-strip>button:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.mobile-post-states:not(.single){grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:760px){.manual-channel-strip>button{flex-basis:calc(50% - 8px);flex-wrap:wrap}.manual-channel-strip small{font-size:11px}.manual-channel-strip>button>.icon{display:none}}

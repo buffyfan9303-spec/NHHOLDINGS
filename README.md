@@ -11,6 +11,9 @@ NURI ONE 통합 운영실과 NURI MARKET을 제공하는 Next.js 16 웹입니다
 | `/dashboard` | 운영자·승인된 조회 계정의 통합 현황 |
 | `/dashboard?sample=1` | 승인 계정도 볼 수 있는 가상 샘플 · 변경은 운영자만 |
 | `/nurimarket/admin` | 운영자 전용 쇼핑몰 관리 |
+| `/dashboard#studio` | SNS 독립 콘텐츠 작업실 · Markdown · SEO/GEO 편집 점검 |
+| `/dashboard#calendar` | KST 게시 일정 · 예약 ICS 내보내기 |
+| `/dashboard#growth` | SNS 독립 캠페인 · UTM · 수기 수익/비용/전환 분석 |
 
 운영자 여부는 확인된 이메일과 서버 환경변수 `OPERATOR_USER_ID`를 모두 검사합니다. 쇼핑몰 로그인은 운영자만 대시보드로, 다른 계정은 마켓으로 이동합니다. 누리원 로그인은 이메일 인증과 운영자 승인을 모두 검사합니다. 승인 계정은 조회만 가능하며 매 요청에 권한을 다시 확인해 회수 즉시 차단합니다. 승인·거절·회수는 버전 충돌 검사와 감사 이력을 남깁니다. 모든 변경·쇼핑몰 관리 API는 운영자만 사용할 수 있습니다.
 
@@ -29,6 +32,22 @@ npm run test:browser
 ```
 
 비밀키는 서버 환경에만 둡니다. `.private/`, `.env.local`, 실제 데이터, 사업자등록증 원본은 저장소에 넣지 않습니다. 테스트는 임시 인증 계정을 생성·정리하고 sample 작업공간에 가상 콘텐츠를 씁니다. 운영 금전 원장은 변경하지 않습니다.
+
+## 2026-10-07 콘텐츠·수익화 확장
+
+사용자 최신 지시에 따라 **SNS 자동화·수익화는 NURI CRM·MIND·HOLDEM·MARKET과 연결하지 않습니다. 기존 웹사이트 현황 조회는 유지합니다.** 신규 작업실 초안과 수익 캠페인은 `tistory`(화면 이름 SNS) 소속으로 만들며, 서버에서도 다른 서비스의 수익 캠페인 연결을 거부합니다. 기존 웹사이트 현황과 과거 기록은 별도 영역에 보존합니다. 다른 서비스 DB에 쓰는 기능은 추가하지 않았습니다.
+
+작업실에서 5가지 편집 템플릿, Markdown 서식, 안전한 미리보기·HTML/Markdown 내보내기, 검색 제목·설명·근거 출처·제휴 표시 점검, 수정 버전 복원, 원본 복제, 9개 채널 규칙 기반 홍보 초안을 사용합니다. 규칙 기반 재가공은 유료 AI 호출을 하지 않습니다. 로컬 임시 초안은 해당 탭의 sessionStorage에 보관하고 서버 저장 성공 후 지웁니다. 예약·취소·게시 상태 변경도 편집 버전을 올려 오래 열린 편집창의 덮어쓰기를 차단합니다.
+
+Instagram·Threads·X·WordPress는 기존 공식 게시 코드와 예약 실행을 사용하며 실제 앱·토큰 연결이 필요합니다. 티스토리는 종료된 공식 글쓰기 API 대신 HTML 복사·에디터·발행 URL·사이트맵 확인을 사용합니다. Facebook·LinkedIn·Pinterest·YouTube·TikTok은 초안과 직접 게시 URL 관리만 제공합니다. URL 등록은 공개 검증으로 표시하지 않으며 자동 게시와 토큰 등록도 서버에서 거부합니다. 영상 제작·Reels·캐러셀 자동 업로드는 이번 범위에서 구현하지 않았습니다.
+
+수익화 화면은 독립 캠페인, 쿼리를 보존하는 UTM 링크, 수정 가능한 수기 성과, CSV를 제공합니다. 수익·비용 차액과 클릭/노출·주문/클릭·전체 등록 비용 대비 수익은 입력한 근거의 계산값이며 플랫폼이 지급한 금액이나 회사 손익을 자동 추정하지 않습니다. `nh_money` 원장과 합산하지 않습니다. [9채널 공식 조건·수익 전략·30일 실행안](docs/SNS-수익화-실행전략.md)에 계정·권한·API 요금·정책과 실제 미연결 범위를 정리했습니다.
+
+로고는 기존 SIL OFL Pretendard 620 글리프를 커닝한 벡터 워드마크로 교체했습니다. 앞의 N 심볼 없이 O 절개와 파비콘을 사용합니다. Markdown 처리는 MIT `markdown-it@15.0.2`, 서버 HTML 보안 처리는 MIT `sanitize-html@2.18.0`만 추가했고 [라이선스 고지](THIRD_PARTY_NOTICES.md)에 원문을 보존했습니다. 설치 시 npm audit 취약점은 0건이었습니다.
+
+역할: GPT-6.1 Sol high가 브랜드·프론트·서버 구현과 좁은 보안 반증을 분담했고 GPT-6 Luna medium은 공식 자료 수집을 맡았습니다. 주 에이전트가 실제 Supabase sample 저장·재조회·정리와 브라우저 검증을 통합했습니다. 기존 Git CLI·Node·MCP·Vercel·Playwright를 사용했고 image_gen은 로고 콘셉트에 1회 사용했습니다. 별도 자동화 스택·플러그인·hooks·외부 계정·유료 API·광고 집행은 활성화하지 않았습니다.
+
+검증: `npm test`, `npm run build`, `node tests/studio-integration.cjs`, `node tests/dashboard-layout.cjs`. 브라우저 검사는 `TEST_OWNER_PASSWORD`와 `.env.local`의 운영자 설정, 실행 중인 앱이 필요하며 `TEST_ORIGIN`으로 실제 도메인도 지정할 수 있습니다. 기존 300개 화면과 신규 40개 화면에서 가로 넘침·콘솔 오류 0건, 글 미리보기/Ctrl+S/버전 충돌/복원/9채널 재가공/수동 URL/성과 수정/UTM 보존을 확인했습니다. 복원 시 채널 길이 제한 누락을 독립 반증 후 수정했습니다. `artifacts/studio/report.json`과 `artifacts/layout/report.json`에 날짜·대상·결과가 남습니다. 실제 SNS 공개 게시·AI 과금 호출·플랫폼 정산은 미검증입니다.
 
 ## 운영 계약
 

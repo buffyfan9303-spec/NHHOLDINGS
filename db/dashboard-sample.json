@@ -2834,6 +2834,533 @@
         "at": "2026-10-07T04:04:03.003Z"
       },
       "updated": "2026-10-07T04:04:03.003Z"
+    },
+    {
+      "kind": "growth-campaign",
+      "id": "sample-growth-market",
+      "data": {
+        "service": "tistory",
+        "name": "[샘플] 독립 콘텐츠 자료집 판매",
+        "model": "product",
+        "goal": "독립 콘텐츠에서 자료집 소개 페이지로 이어지는 전환 비교",
+        "offer": "검색 질문 답변 → 자료집 안내 → 구매",
+        "url": "https://example.com/sample-offer",
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-campaign",
+      "id": "sample-growth-crm",
+      "data": {
+        "service": "tistory",
+        "name": "[샘플] SNS 콘텐츠 제작 상담",
+        "model": "lead",
+        "goal": "콘텐츠 제작 문의의 유입과 상담 결과 기록",
+        "offer": "제작 사례 → 문의 안내 → 상담",
+        "url": "https://example.com/sample-offer",
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-campaign",
+      "id": "sample-growth-blog",
+      "data": {
+        "service": "tistory",
+        "name": "[샘플] 근거 있는 도구 비교",
+        "model": "affiliate",
+        "goal": "제휴 관계를 공개한 비교 글의 유입과 확정 수수료 대조",
+        "offer": "사용 조건 비교 → 제휴 고지 → 공식 상품 안내",
+        "url": "https://example.com/sample-offer",
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-blog",
+      "data": {
+        "campaignId": "sample-growth-market",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "blog",
+        "impressions": 1200,
+        "clicks": 40,
+        "leads": 0,
+        "orders": 2,
+        "revenue": 48000,
+        "cost": 10000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-instagram",
+      "data": {
+        "campaignId": "sample-growth-market",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "instagram",
+        "impressions": 1570,
+        "clicks": 48,
+        "leads": 1,
+        "orders": 3,
+        "revenue": 64000,
+        "cost": 11000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-threads",
+      "data": {
+        "campaignId": "sample-growth-market",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "threads",
+        "impressions": 1940,
+        "clicks": 56,
+        "leads": 2,
+        "orders": 4,
+        "revenue": 80000,
+        "cost": 12000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-x",
+      "data": {
+        "campaignId": "sample-growth-market",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "x",
+        "impressions": 2310,
+        "clicks": 64,
+        "leads": 0,
+        "orders": 5,
+        "revenue": 96000,
+        "cost": 13000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-youtube",
+      "data": {
+        "campaignId": "sample-growth-blog",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "youtube",
+        "impressions": 2680,
+        "clicks": 72,
+        "leads": 1,
+        "orders": 0,
+        "revenue": 7000,
+        "cost": 14000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "growth-result",
+      "id": "sample-growth-result-pinterest",
+      "data": {
+        "campaignId": "sample-growth-blog",
+        "service": "tistory",
+        "day": "2026-10-07",
+        "channel": "pinterest",
+        "impressions": 3050,
+        "clicks": 80,
+        "leads": 2,
+        "orders": 0,
+        "revenue": 7000,
+        "cost": 15000,
+        "note": "샘플 수기 실적입니다. 실제 수익·판매가·플랫폼 조회 결과가 아닙니다.",
+        "manual": true,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-blog",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "blog",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "이 글은 콘텐츠 작업실의 샘플입니다. 소품을 고를 때에는 쓰임새, 크기, 소재를 먼저 비교하고 실제 상품 안내에서 조건을 확인하세요.\n\n## 1. 어디에 사용할지 정하기\n책상과 가방 등 사용 장소를 떠올리고 필요한 크기를 확인합니다.\n\n## 2. 상품 설명과 관리 방법 비교하기\n소재와 구성품, 관리 방법은 상품별 안내를 기준으로 확인합니다. 확인하지 않은 효과나 가격을 단정하지 않습니다.\n\n## 3. 구매 전 확인할 내용\n- 실제 상품의 규격과 구성\n- 배송 및 교환 안내\n- 문의할 내용\n\n## 자주 묻는 질문\n### 어떤 상품을 먼저 비교하면 좋을까요?\n취향뿐 아니라 실제 사용 장소와 필요한 조건을 기준으로 비교하세요.\n\n[독립 콘텐츠 채널 둘러보기](https://example.com/sample-offer)\n\n이 샘플은 실제 상품의 효능이나 판매 실적을 설명하지 않습니다.",
+        "blogTarget": "tistory",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-instagram",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "instagram",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-threads",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "threads",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "scheduled",
+        "scheduledAt": "2026-10-08T01:00:00.000Z",
+        "account": "sample-tistory-threads",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-x",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "x",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-facebook",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "facebook",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-linkedin",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "linkedin",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-pinterest",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "pinterest",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플] 소품을 고를 때에는 쓰임새·크기·소재를 비교하세요. 실제 조건은 상품 안내에서 확인합니다.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-youtube",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "youtube",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플 영상 구성안]\n0:00 소품을 고르는 기준\n0:15 사용 장소와 규격\n0:35 소재와 관리 방법\n0:55 실제 상품 안내 확인\n\n직접 촬영한 영상과 정확한 설명을 준비하세요.\nhttps://example.com/sample-offer",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content",
+      "id": "sample-studio-tiktok",
+      "data": {
+        "service": "tistory",
+        "business": "platform",
+        "channel": "tiktok",
+        "campaignId": "sample-studio-launch",
+        "growthCampaign": "sample-growth-market",
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플 숏폼 구성안]\n첫 장면: 어떤 소품이 필요한가요?\n다음 장면: 쓰임새·크기·소재 세 가지를 비교하세요.\n마지막 장면: 실제 상품 안내 확인.\n#소품 #취향",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "status": "draft",
+        "ai": false,
+        "version": 1,
+        "createdAt": "2026-10-07T08:00:00.000Z",
+        "updatedAt": "2026-10-07T08:00:00.000Z"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
+    },
+    {
+      "kind": "content-revision",
+      "id": "sample-studio-revision",
+      "data": {
+        "contentId": "sample-studio-blog",
+        "version": 1,
+        "title": "[샘플] 취향에 맞는 소품을 고르는 세 가지 기준",
+        "body": "[샘플 이전 초안]\n소품 선택 가이드의 첫 구상입니다. 사용 장소와 크기를 중심으로 내용을 보완합니다.",
+        "seo": {
+          "title": "취향에 맞는 소품 고르는 법 · 샘플",
+          "description": "소품을 고를 때 쓰임새와 크기, 소재를 비교하는 방법을 안내합니다. 실제 구매 조건은 상품 설명과 배송 및 교환 안내에서 확인하세요.",
+          "slug": "small-objects-guide",
+          "keyword": "소품",
+          "cta": "콘텐츠에서 안내한 실제 상품 조건을 확인하세요.",
+          "url": "https://example.com/sample-offer",
+          "sources": [
+            {
+              "title": "샘플 공개 참고자료",
+              "url": "https://example.com/sample-offer"
+            }
+          ],
+          "affiliate": false
+        },
+        "media": "",
+        "createdAt": "2026-10-07T07:00:00.000Z",
+        "reason": "saved"
+      },
+      "updated": "2026-10-07T08:00:00.000Z"
     }
   ],
   "money": [
