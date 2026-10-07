@@ -19,6 +19,8 @@ async function context(workspace){
  const secret=process.env.SESSION_SECRET;if(!secret||secret.length<32)throw new Error('서버 보안 키가 필요합니다.');const secretKey=crypto.createHash('sha256').update(secret).digest();
  const encrypt=v=>{const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',secretKey,iv);return Buffer.concat([iv,cipher.update(JSON.stringify(v)),cipher.final(),cipher.getAuthTag()]).toString('base64');};
  const decrypt=v=>{const b=Buffer.from(v,'base64'),cipher=crypto.createDecipheriv('aes-256-gcm',secretKey,b.subarray(0,12));cipher.setAuthTag(b.subarray(-16));return JSON.parse(Buffer.concat([cipher.update(b.subarray(12,-16)),cipher.final()]).toString('utf8'));};
- return {workspace,get,list,put,audit,transaction,recordMoney,voidMoney,findMoney,encrypt,decrypt,reload,get money(){return money;},get audits(){return audits;}};
+ const lock=async key=>{if(!connection)throw new Error('Transaction required');await q('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[workspace+':'+key]);};
+ const lockRow=async(kind,id)=>{if(!connection)throw new Error('Transaction required');await q('SELECT id FROM nh_documents WHERE workspace=$1 AND kind=$2 AND id=$3 FOR UPDATE',[workspace,kind,id]);};
+ return {workspace,get,list,put,audit,transaction,lock,lockRow,recordMoney,voidMoney,findMoney,encrypt,decrypt,reload,get money(){return money;},get audits(){return audits;}};
 }
 module.exports={context};

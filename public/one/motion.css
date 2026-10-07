@@ -3,6 +3,22 @@
 #content{animation:none;view-transition-name:nuri-content}
 .sidebar{background:#11171a;border-right-color:#293238}
 .topbar{background:#131a1e}
+/* Korean labels wrap at words, including anonymous text inside flex buttons. */
+.nav-item,.service-nav,.nav-category>summary{word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty;line-height:1.65}
+.nav-item{padding-right:23px}
+.nav-item .icon,.service-nav .service-logo,.category-number,.nav-category>summary:after{flex-shrink:0}
+.nav-category>summary{align-items:flex-start}
+.breadcrumbs{min-width:0;flex-wrap:wrap;word-break:keep-all;overflow-wrap:anywhere}
+.topbar-actions{flex-shrink:0}
+.heading-row,.heading-controls,.section-heading,.panel-head,.publish-heading{flex-wrap:wrap}
+.heading-row>div:first-child,.section-heading>div:first-child,.panel-head>div:first-child,.publish-heading>div:first-child{min-width:0}
+.heading-controls,.section-heading>.btn,.panel-head>.btn{flex-shrink:0}
+.heading-row h1,.panel h2,.panel h3,.section-heading h2,.publish-heading h2,.site-card h3,.channel-tile-head,.kpi-label,.kpi-change,.metric-tile .caption,.metric-strip span,.pulse-stat>span,.pulse-next,.service-info,.panel-desc{word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty}
+.kpi,.site-card,.channel-tile,.pulse-stat,.pulse-next,.metric-strip>div{min-width:0}
+.kpi-label{gap:8px;align-items:flex-start}
+.kpi-label .icon{flex-shrink:0}
+.account-text{min-width:0;flex:1}
+#account-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .heading-row h1{font-weight:620;letter-spacing:-.045em}
 .panel,.publishing-board,.publication-pulse,.mobile-post-card{border-color:var(--line);box-shadow:0 1px 0 #ffffff03}
 .panel h2,.publish-heading h2{font-weight:600;letter-spacing:-.025em}

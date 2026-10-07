@@ -4,6 +4,7 @@ export type Integration = {
   id: string; name: string; category: 'infrastructure' | 'analytics' | 'publishing' | 'ai' | 'email';
   description: string; status: 'existing-code' | 'requires-setup' | 'manual-only';
   requirements: readonly string[]; freeUsage: string; docsUrl: string; pricingUrl: string;
+  setupSteps?: readonly string[];
 };
 export const integrationCatalog: readonly Integration[] = [
   {
@@ -12,6 +13,7 @@ export const integrationCatalog: readonly Integration[] = [
     requirements: ['프로젝트 URL·공개 키', '서버 전용 서비스 키', '접근 정책·운영자 설정'],
     freeUsage: '무료 플랜 한도 내 사용 가능. 용량·트래픽·인증 한도와 비활성 프로젝트 일시 정지를 확인하세요.',
     docsUrl: 'https://supabase.com/docs', pricingUrl: 'https://supabase.com/pricing',
+    setupSteps: ['기존 운영 프로젝트를 재사용하고 접근 권한을 확인합니다.', '프로젝트 URL·공개 키와 서버 전용 키를 분리합니다.', '로그인·저장·재조회와 서버 권한을 실제로 확인합니다.'],
   },
   {
     id: 'vercel', name: 'Vercel', category: 'infrastructure', status: 'requires-setup',
@@ -19,6 +21,7 @@ export const integrationCatalog: readonly Integration[] = [
     requirements: ['배포 프로젝트 권한', '상업 이용에 맞는 요금제', '서버 환경 변수'],
     freeUsage: 'Hobby는 개인·비상업 용도만 허용됩니다. 상업 서비스는 Pro 등 적합한 유료 플랜이 필요합니다.',
     docsUrl: 'https://vercel.com/docs', pricingUrl: 'https://vercel.com/docs/plans/hobby',
+    setupSteps: ['이미 연결한 운영 프로젝트와 도메인을 확인합니다.', '상업 이용 플랜·환경 변수·API 지출 범위를 확인합니다.', '배포 버전과 실제 도메인의 로그인·저장 흐름을 대조합니다.'],
   },
   {
     id: 'ga4', name: 'Google Analytics 4', category: 'analytics', status: 'requires-setup',
@@ -27,6 +30,7 @@ export const integrationCatalog: readonly Integration[] = [
     freeUsage: '표준 Analytics와 Data API의 할당량을 확인하세요. Analytics 360·BigQuery·다른 Cloud 서비스 비용은 별도입니다.',
     docsUrl: 'https://developers.google.com/analytics/devguides/reporting/data/v1/quickstart',
     pricingUrl: 'https://developers.google.com/analytics/devguides/reporting/data/v1/quotas',
+    setupSteps: ['GA4의 숫자 속성 ID를 확인합니다. G- 측정 ID와 다릅니다.', 'Google Cloud에서 Analytics Data API를 활성화합니다.', '서비스 계정 이메일에 해당 GA4 속성 조회 권한을 줍니다.', '서비스 계정 JSON을 NURI 설정에 저장하고 월별 조회를 확인합니다.'],
   },
   {
     id: 'search-console', name: 'Google Search Console', category: 'analytics', status: 'requires-setup',
@@ -34,29 +38,33 @@ export const integrationCatalog: readonly Integration[] = [
     requirements: ['확인된 사이트 속성', 'Search Console API 활성화', '속성 접근 권한을 가진 서비스 계정 또는 OAuth'],
     freeUsage: 'Search Console API는 무료이며 요청·부하 할당량이 적용됩니다.',
     docsUrl: 'https://developers.google.com/webmaster-tools', pricingUrl: 'https://developers.google.com/webmaster-tools/pricing',
+    setupSteps: ['사이트 속성을 등록하고 소유권을 확인합니다.', 'Google Cloud에서 Search Console API를 활성화합니다.', '서비스 계정 이메일을 해당 속성의 사용자로 추가합니다.', '정확한 속성 주소와 서비스 계정 JSON을 저장하고 검색 통계를 조회합니다.'],
   },
   {
     id: 'instagram', name: 'Instagram', category: 'publishing', status: 'requires-setup',
-    description: '전문 계정의 미디어 게시·인사이트 연동 후보입니다. 로그인 방식별 권한을 먼저 확인합니다.',
-    requirements: ['Business 또는 Creator 계정', 'Meta 앱·OAuth 토큰', '게시 권한·앱 검수 및 사용 제한 확인'],
+    description: 'Instagram Login으로 전문 계정을 연결합니다. 현재 게시 코드는 이미지 1장과 본문용이며 실제 OAuth·게시 성공은 계정 연결 후 검증합니다.',
+    requirements: ['Business 또는 Creator 계정', 'Instagram 앱 Client ID·Client Secret', 'instagram_business_basic·instagram_business_content_publish', '정확한 콜백 URI·앱 역할 또는 검수'],
     freeUsage: '무료 무제한 사용으로 보장하지 않습니다. Meta 정책·권한·게시 한도를 확인해야 하며 광고비는 별도입니다.',
-    docsUrl: 'https://developers.facebook.com/docs/instagram-platform/',
+    docsUrl: 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/',
     pricingUrl: 'https://developers.facebook.com/docs/graph-api/overview/rate-limiting/',
+    setupSteps: ['회사 Instagram 계정을 Business 또는 Creator로 전환합니다. Facebook 페이지는 필수가 아닙니다.', 'Meta 앱에서 Instagram Login·게시 권한과 콜백 https://nhholdings.xyz/api/social/instagram 을 등록합니다.', '앱 Client ID·Client Secret을 NURI 설정에 저장합니다.', '서비스와 계정 표시 이름을 선택하고 Instagram 공식 동의창에서 연결합니다.', '계정 재조회 후 이미지 1장 테스트 게시와 외부 게시 URL을 확인합니다.'],
   },
   {
     id: 'threads', name: 'Threads', category: 'publishing', status: 'requires-setup',
-    description: 'Threads 게시와 계정 인사이트 연동 후보입니다.',
-    requirements: ['Meta 앱·Threads OAuth', 'threads_basic·게시 권한', '외부 계정 사용 전 앱 검수'],
+    description: 'Threads OAuth로 계정을 연결하고 텍스트를 게시합니다. 실제 인증·토큰 갱신·게시 성공은 별도 검증이 필요합니다.',
+    requirements: ['운영할 Threads 계정', 'Threads 앱 Client ID·Client Secret', 'threads_basic·threads_content_publish', '정확한 콜백 URI·앱 역할 또는 검수'],
     freeUsage: '무료 무제한 사용으로 보장하지 않습니다. 권한·게시 할당량·플랫폼 약관을 확인하세요.',
     docsUrl: 'https://developers.facebook.com/docs/threads/',
     pricingUrl: 'https://developers.facebook.com/docs/threads/overview/',
+    setupSteps: ['회사 Threads 프로필과 Meta 개발자 앱의 Threads 구성을 준비합니다.', '게시 권한과 콜백 https://nhholdings.xyz/api/social/threads 를 등록합니다.', 'Threads용 Client ID·Client Secret을 NURI 설정에 저장합니다.', '서비스와 표시 이름을 선택하고 Threads 공식 동의창에서 연결합니다.', '연결 계정을 재조회하고 승인한 테스트 글의 게시 URL을 확인합니다.'],
   },
   {
     id: 'x', name: 'X', category: 'publishing', status: 'requires-setup',
     description: 'X 게시·조회 API는 비용 승인 후 연결합니다.',
-    requirements: ['개발자 앱·사용자 OAuth', 'API 크레딧·지출 한도', '유료 호출 승인'],
-    freeUsage: '사용량 과금 API입니다. 프로모션 크레딧을 상시 무료로 간주하지 않으며 자동 충전을 켜지 않습니다.',
+    requirements: ['개발자 앱의 OAuth 2.0 Client ID·Client Secret', 'tweet.read·tweet.write·users.read·offline.access', 'API 크레딧·지출 한도와 유료 호출 승인'],
+    freeUsage: '사용량 과금 API이며 X Premium 구독과 별도입니다. 프로모션을 상시 무료로 간주하지 않고 자동 충전은 별도 승인 전 켜지 않습니다.',
     docsUrl: 'https://docs.x.com/x-api', pricingUrl: 'https://docs.x.com/x-api/getting-started/pricing',
+    setupSteps: ['X 개발자 앱을 만들고 API 과금·지출 한도를 확인합니다.', 'OAuth 2.0 Web App과 콜백 https://nhholdings.xyz/api/social/x 를 설정합니다.', 'Client ID·Client Secret을 NURI 설정에 저장합니다.', '서비스·표시 이름을 선택한 뒤 공식 동의창에서 게시·오프라인 접근을 허용합니다.', '사용자 계정과 갱신 가능 상태를 확인한 뒤 승인한 텍스트 글을 테스트합니다.'],
   },
   {
     id: 'wordpress', name: 'WordPress', category: 'publishing', status: 'requires-setup',
@@ -64,13 +72,15 @@ export const integrationCatalog: readonly Integration[] = [
     requirements: ['사이트 REST API 주소', 'HTTPS·게시 권한', '서버 전용 Application Password 또는 해당 호스트 OAuth'],
     freeUsage: '자체 WordPress REST API는 별도 호출료가 없지만 호스팅·유료 플러그인·WordPress.com 플랜 비용은 별도입니다.',
     docsUrl: 'https://developer.wordpress.org/rest-api/', pricingUrl: 'https://wordpress.com/pricing/',
+    setupSteps: ['관리할 WordPress 사이트의 HTTPS 주소를 확인합니다.', '게시 권한을 가진 사용자의 프로필에서 NURI 전용 Application Password를 발급합니다.', '사이트 주소·사용자 이름·Application Password를 NURI 설정에 저장합니다.', '연결 확인 후 승인한 테스트 글의 실제 게시 URL을 확인합니다.'],
   },
   {
     id: 'tistory', name: 'Tistory', category: 'publishing', status: 'manual-only',
     description: '공식 Open API 종료로 직접 글쓰기 화면에서 게시합니다. 자동 게시 연결을 제공하지 않습니다.',
-    requirements: ['블로그 관리자 화면에서 직접 로그인·게시'],
-    freeUsage: '기존 Open API 쓰기·수정·첨부 기능은 종료되었습니다. 링크 이동·수동 게시만 사용합니다.',
+    requirements: ['블로그 관리자 직접 로그인·게시', '수동 발행 후 공개 글 URL 확인'],
+    freeUsage: '기존 Open API 쓰기·수정·첨부 기능은 종료되었습니다. AI 초안의 생성 비용은 선택한 AI API에 별도 적용됩니다.',
     docsUrl: 'https://notice.tistory.com/2664', pricingUrl: 'https://notice.tistory.com/2664',
+    setupSteps: ['티스토리 관리자 계정을 직접 준비합니다. API 키 발급 절차는 없습니다.', 'NURI에서 검토한 초안의 본문을 복사합니다.', '티스토리 편집기에서 이미지·서식·공개 범위를 확인하고 직접 발행합니다.', '발행한 공개 글 URL을 NURI에 등록하고 실제 글을 열어 확인합니다.'],
   },
   {
     id: 'anthropic', name: 'Anthropic Claude API', category: 'ai', status: 'requires-setup',
@@ -78,19 +88,22 @@ export const integrationCatalog: readonly Integration[] = [
     requirements: ['서버 전용 API 키', 'API 결제·지출 한도', '사용할 모델·정보 전송 범위 승인'],
     freeUsage: '토큰·도구 사용량 과금입니다. Claude 구독 포함 한도와 API 결제를 혼동하지 않습니다.',
     docsUrl: 'https://platform.claude.com/docs/en/api/overview', pricingUrl: 'https://platform.claude.com/docs/en/about-claude/pricing',
+    setupSteps: ['Claude API 콘솔에서 프로젝트·API 결제·지출 한도를 확인합니다.', '프로젝트 API 키를 만들고 접근 가능한 모델 ID를 확인합니다.', '키·모델·유료 사용 동의를 NURI AI 설정에 입력합니다.', '소량의 텍스트 초안을 생성·검토하고 API 사용 내역을 대조합니다.'],
   },
   {
     id: 'openai', name: 'OpenAI API', category: 'ai', status: 'requires-setup',
-    description: '글·이미지·음성 작업 후보입니다. 유료 생성은 승인 후 실행합니다.',
+    description: '현재 코드는 Chat Completions의 JSON 텍스트 초안을 생성합니다. 이미지·음성 생성은 구현하지 않았으며 유료 실행은 승인 후 검증합니다.',
     requirements: ['서버 전용 프로젝트 API 키', 'API 결제·지출 한도', '모델·데이터 전송 범위 승인'],
     freeUsage: '모델·토큰·도구별 과금입니다. ChatGPT 구독이 API 무료 사용을 의미하지 않습니다.',
     docsUrl: 'https://developers.openai.com/api/docs', pricingUrl: 'https://developers.openai.com/api/docs/pricing',
+    setupSteps: ['OpenAI API 프로젝트에서 결제·사용 예산을 확인합니다. ChatGPT 구독과 별도입니다.', 'API 프로젝트 키와 현재 JSON 텍스트 생성에 사용할 모델 ID를 준비합니다.', '대화창 대신 NURI AI 설정에 키·모델·유료 사용 동의를 입력합니다.', '소량의 텍스트 초안을 검토하고 API 사용량을 확인합니다. 이미지는 직접 준비합니다.'],
   },
   {
     id: 'smtp', name: 'SMTP · Resend', category: 'email', status: 'requires-setup',
     description: '로그인·주문·운영 알림 메일 후보입니다. 발송 도메인을 먼저 인증합니다.',
     requirements: ['SMTP 자격 증명 또는 Resend 서버 API 키', '발신 도메인 DNS 인증', '발송 동의·반송 처리'],
-    freeUsage: 'Resend 무료 플랜은 월 3,000건·하루 100건 한도입니다. SMTP 제공업체별 요금과 제한은 별도입니다.',
+    freeUsage: 'Resend 무료 플랜과 일·월 발송 제한은 공식 가격표에서 확인합니다. SMTP 제공업체별 요금·제한은 별도입니다.',
     docsUrl: 'https://resend.com/docs/send-with-smtp', pricingUrl: 'https://resend.com/pricing',
+    setupSteps: ['발신 도메인과 SMTP 제공업체 또는 Resend를 선택합니다.', 'SPF·DKIM 등 제공업체가 요구하는 DNS 인증을 완료합니다.', '서버 주소·포트·로그인·비밀값·발신 주소를 NURI 설정에 저장합니다.', '실제 테스트 수신과 반송 상태를 확인한 후 인증·알림 발송에 사용합니다.'],
   },
 ];

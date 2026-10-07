@@ -14,7 +14,7 @@ async function handle(req:NextRequest,ctx:{params:Promise<{route:string[]}>}){tr
  const headers={'Cache-Control':'private, no-store'};
  if(route==='/api/session'&&req.method==='GET')return Response.json({authenticated:true,email:user.email,setup:false,demo,owner,readOnly:!owner,access},{headers});
  const input=req.method==='POST'?await body(req):{},app=await controller({demo,collect}),response=await app.handle(req,route,input,user.email!);
- if(!owner&&route==='/api/state'&&response.ok){const state=await response.json();return Response.json({...state,accounts:state.accounts.map(({id,label,service,channel,username,verifiedAt}:Record<string,unknown>)=>({id,label,service,channel,username,verifiedAt})),aiConfig:{},google:{configured:false,reports:state.google?.reports??[]},audit:[]},{headers});}
+ if(!owner&&route==='/api/state'&&response.ok){const state=await response.json();return Response.json({...state,socialApps:{},accounts:state.accounts.map(({id,label,service,channel,username,verifiedAt}:Record<string,unknown>)=>({id,label,service,channel,username,verifiedAt})),aiConfig:{},google:{configured:false,reports:state.google?.reports??[]},audit:[]},{headers});}
  response.headers.set('Cache-Control','private, no-store');return response;
  }catch(e){return failure(e);}}
 export {handle as GET,handle as POST};

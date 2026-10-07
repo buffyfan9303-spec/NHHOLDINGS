@@ -1,8 +1,10 @@
 'use strict';
 const crypto=require('node:crypto'),dns=require('node:dns').promises;
 const {context}=require('./context.cjs');
-const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'티스토리 · doto1',url:'https://doto1.tistory.com',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'공개 글 동기화 · GA4/서치콘솔 조회 권한 별도'}];
+const {providers,ensureFresh}=require('./social.cjs');
+const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'블로그 · Instagram · Threads · X 게시와 예약 관리'}];
 const CHANNELS=['blog','instagram','threads','x'];
+const accountFits=(a,p)=>a&&a.channel===p.channel&&(a.service===p.service||a.service==='tistory');
 const now=()=>new Date().toISOString(),hash=v=>crypto.createHash('sha256').update(v).digest('hex');
 function fail(message,status=400){throw Object.assign(new Error(message),{status});}
 function text(v,name,max=200,optional=false){if(typeof v!=='string'||v.trim().length>max||(!optional&&!v.trim()))fail(`${name}을 확인하세요.`);return v.trim();}
@@ -36,8 +38,9 @@ async function remote(url,options={}){
  const v=await r.json().catch(()=>({}));if(!r.ok)fail(`채널 API 응답 ${r.status}. 계정 권한/토큰/이용 한도를 확인하세요.`,502);return v;
 }
 const plainHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])).split('\n').map(x=>`<p>${x}</p>`).join('');
+const manualBlog=p=>p.channel==='blog'&&(p.blogTarget==='tistory'||!p.blogTarget&&p.service==='tistory');
 function preflight(p){
- if(p.service==='tistory'&&p.channel==='blog')fail('티스토리는 공식 글쓰기 API 종료로 발행 링크를 직접 등록하세요.');
+ if(manualBlog(p))fail('티스토리는 공식 글쓰기 API 종료로 발행 링크를 직접 등록하세요.');
  if(p.channel==='instagram'&&!p.media)fail('인스타그램에는 공개 이미지 HTTPS 주소가 필요합니다.');
  const weighted=Array.from(p.body).reduce((n,c)=>n+(c.codePointAt(0)>0x10ff?2:1),0);
  if(p.channel==='x'&&weighted>280)fail('X 본문을 가중 280자 이하로 줄이세요.');
@@ -45,7 +48,7 @@ function preflight(p){
  if(p.channel==='instagram'&&Array.from(p.body).length>2200)fail('인스타그램 캡션을 2200자 이하로 줄이세요.');
 }
 async function inspectPublication(p,c,request=fetch){
- if(p.service==='tistory'&&p.channel==='blog'){
+ if(manualBlog(p)){
   const r=await request('https://doto1.tistory.com/sitemap.xml',{redirect:'error',signal:AbortSignal.timeout(20000)});
   if(!r.ok)return {checkStatus:'unavailable'};
   return {checkStatus:parseSitemap(await r.text()).some(x=>x.url===p.link)?'visible':'not-listed'};
@@ -67,7 +70,7 @@ async function inspectPublication(p,c,request=fetch){
 
 function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,blog:`[샘플 초안]\n${name}의 ${topic}를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.`,instagram:`[샘플] ${topic}\n${name}의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내`,threads:`[샘플] ${topic}\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. ${name}에서 시작해 보세요.`,x:`[샘플] ${topic} — ${name}의 서비스 소식을 확인하세요.`})};}
 
-async function cloudGenerate(prompt,c,decrypt){if(!c?.enabled||!c.secret||!c.model)fail('설정에서 AI API 계정과 모델을 연결해주세요.',503);const {token}=decrypt(c.secret),anthropic=c.provider==='anthropic';const r=await fetch(anthropic?'https://api.anthropic.com/v1/messages':'https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',...(anthropic?{'x-api-key':token,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+token})},body:JSON.stringify(anthropic?{model:c.model,max_tokens:6000,messages:[{role:'user',content:prompt}]}:{model:c.model,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}}),signal:AbortSignal.timeout(120000)});if(!r.ok)fail('AI API 응답 '+r.status+'. 키·모델·이용 한도를 확인해주세요.',502);const v=await r.json();return anthropic?v.content?.filter(x=>x.type==='text').map(x=>x.text).join(''):v.choices?.[0]?.message?.content;}
+async function cloudGenerate(prompt,c,decrypt){if(!c?.enabled||!c.secret||!c.model)fail('설정에서 AI API 계정과 모델을 연결해주세요.',503);const {token}=decrypt(c.secret),anthropic=c.provider==='anthropic';const r=await fetch(anthropic?'https://api.anthropic.com/v1/messages':'https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',...(anthropic?{'x-api-key':token,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+token})},body:JSON.stringify(anthropic?{model:c.model,max_tokens:6000,messages:[{role:'user',content:prompt}]}:{model:c.model,max_completion_tokens:6000,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}}),signal:AbortSignal.timeout(120000)});if(!r.ok)fail('AI API 응답 '+r.status+'. 키·모델·이용 한도를 확인해주세요.',502);const v=await r.json();return anthropic?v.content?.filter(x=>x.type==='text').map(x=>x.text).join(''):v.choices?.[0]?.message?.content;}
 async function controller(options){
  const ctx=await context(options.demo?'sample':'live');const {get,list,put,audit,transaction,encrypt,decrypt}=ctx;
  const invalidate=async(s,b,day)=>{const id=s+':'+b+':'+day.slice(0,7),old=get('coverage',id);if(old)await put('coverage',id,{...old,complete:false,at:now()});};
@@ -92,7 +95,7 @@ async function controller(options){
  function view(){return {
   services:allServices().map(s=>({...s,snapshot:get('source',s.id),installed:!!get('source',s.id)?.data,stale:!get('source',s.id)?.data||!!get('source',s.id)?.error||(!options.demo&&Date.now()-Date.parse(get('source',s.id).data.observedAt)>15*60000)})),
   businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content'),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
-  accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||''};}),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return c;})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics')},audit:ctx.audits,
+  accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return c;})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics')},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
   observedAt:now(),demo:!!options.demo
  };}
@@ -111,14 +114,14 @@ async function controller(options){
 
    const raw=typeof result==='string'?result:result.result;let generated;
    try{generated=JSON.parse(raw.replace(/^\s*```(?:json)?\s*/,'').replace(/\s*```\s*$/,''));}catch{fail('AI 응답 형식을 확인할 수 없습니다. 다시 생성하세요.',502);}
-    const campaignId=generationId,records=[...new Set(channels)].map(channel=>({id:crypto.randomUUID(),service:s.id,business:input.business||'platform',channel,campaignId,generationId,title:text(generated.title,'제목',300),body:text(generated[channel],'본문',20000),media:'',status:'draft',createdAt:now(),ai:true,topic})),ids=records.map(p=>p.id);
+    const campaignId=generationId,records=[...new Set(channels)].map(channel=>({id:crypto.randomUUID(),service:s.id,business:input.business||'platform',channel,...(channel==='blog'?{blogTarget:s.id==='tistory'?'tistory':'wordpress'}:{}),campaignId,generationId,title:text(generated.title,'제목',300),body:text(generated[channel],'본문',20000),media:'',status:'draft',createdAt:now(),ai:true,topic})),ids=records.map(p=>p.id);
     await transaction(async()=>{for(const {id,...record} of records)await put('content',id,record);await put('generation',generationId,{...generation,status:'completed',completedAt:now(),ids});await audit(email,'content.generated',ids.join(','));});return {ids};
 
   }catch(e){if(generationId){await put('generation',generationId,{...generation,status:'failed',completedAt:now(),error:e.status?e.message:'AI API 연결·모델·이용 한도를 확인해주세요.'});await audit(email,'content.generation_failed',generationId);}if(!e.status)fail('AI API 연결·모델·이용 한도를 확인해주세요.',502);throw e;}finally{aiBusy=false;}
  }
  async function verify(account){
   if(options.demo)return {userId:'sample-user',username:account.label+' · 샘플 확인'};
-  const c=decrypt(account.secret),auth={Authorization:'Bearer '+c.token};let r;
+  account=await ensureFresh(ctx,account);const c=decrypt(account.secret),auth={Authorization:'Bearer '+c.token};let r;
   if(account.channel==='blog'){const u=await publicURL(c.url);r=await remote(u.origin+u.pathname.replace(/\/$/,'')+'/wp-json/wp/v2/users/me',{headers:{Authorization:'Basic '+Buffer.from(c.username+':'+c.token).toString('base64')}});}
   else if(account.channel==='x')r=await remote('https://api.x.com/2/users/me',{headers:auth});
   else if(account.channel==='threads')r=await remote('https://graph.threads.net/v1.0/me?fields=id,username',{headers:auth});
@@ -139,9 +142,10 @@ async function controller(options){
  async function publish(id,email){
   const post=get('content',id);if(!post||!['scheduled','approved'].includes(post.status))fail('승인된 초안만 게시할 수 있습니다.');
   try{preflight(post);}catch(e){await put('content',id,{...post,status:'draft',error:e.message});throw e;}
-  const a=get('channel',post.account);if(!a||!a.verifiedAt||a.channel!==post.channel||a.service!==post.service)fail('같은 서비스의 채널 계정을 연결·확인하세요.');
+  let a=get('channel',post.account);if(!a||!a.verifiedAt||!accountFits(a,post))fail('해당 브랜드 또는 SNS 공용 게시 계정을 연결·확인하세요.');
   if(options.demo){await put('content',id,{...post,status:'published',externalId:'sample-'+id,publishedAt:now(),error:null});await audit(email,'content.sample_published',id);return;}
-  const c=decrypt(a.secret),headers={Authorization:'Bearer '+c.token};
+  a=await ensureFresh(ctx,{...a,id:post.account});const c=decrypt(a.secret),headers={Authorization:'Bearer '+c.token};
+  if(JSON.stringify(get('content',id))!==JSON.stringify(post))fail('게시 상태가 변경됐습니다. 새로고침 후 확인하세요.',409);
   await put('content',id,{...post,status:'publishing',startedAt:now()});
   try{
    let r,externalId,link;
@@ -168,13 +172,14 @@ async function controller(options){
  async function tick(){
   if(workerBusy)return;workerBusy=true;
   try{
+   if(!options.demo)for(const a of list('channel').filter(a=>a.verifiedAt&&Object.hasOwn(providers,a.channel)))try{await ensureFresh(ctx,a);}catch{await put('channel',a.id,{...get('channel',a.id),connectionError:'인증 만료 또는 갱신 실패 · 계정을 다시 연결하세요.'}).catch(()=>{});}
    for(const p of list('content').filter(p=>p.status==='publishing'&&Date.parse(p.startedAt)<Date.now()-600000))await put('content',p.id,{...p,status:'review',uncertain:true,error:'게시 응답이 중단되었습니다. 채널의 실제 게시 여부를 확인해주세요.'});
    for(const g of list('generation').filter(g=>g.status==='running'&&Date.parse(g.startedAt)<Date.now()-600000))await put('generation',g.id,{...g,status:'failed',completedAt:now(),error:'생성 응답이 중단되었습니다. 작성 내역을 확인한 뒤 다시 실행해주세요.'});
    for(const p of list('content').filter(p=>p.status==='scheduled'&&Date.parse(p.scheduledAt)<=Date.now()))await publish(p.id,'예약 실행').catch(()=>{});
    for(const p of list('plan').filter(p=>p.enabled&&Date.parse(p.nextAt)<=Date.now())){
     if(aiBusy)continue;
     const nextAt=new Date(Date.now()+p.days*86400000).toISOString();await put('plan',p.id,{...p,nextAt,lastRun:now()});const revision=JSON.stringify(get('plan',p.id));
-    try{const r=await generate(p,'자동 기획'),current=get('plan',p.id),auto=current.enabled&&current.autoPublish&&JSON.stringify(current)===revision;for(const id of r.ids){const post=get('content',id);if(auto){const account=list('channel').find(a=>a.channel===post.channel&&a.service===p.service&&a.verifiedAt);if(account&&post.channel!=='instagram'){try{preflight(post);await put('content',id,{...post,status:'scheduled',scheduledAt:now(),account:account.id});}catch(e){await put('content',id,{...post,error:e.message});}}}}await put('plan',p.id,{...get('plan',p.id),lastResult:'초안 '+r.ids.length+'개 생성 · 게시 상태는 콘텐츠 목록에서 확인'});}
+    try{const r=await generate(p,'자동 기획'),current=get('plan',p.id),auto=current.enabled&&current.autoPublish&&JSON.stringify(current)===revision;for(const id of r.ids){const post=get('content',id);if(auto){const account=list('channel').find(a=>accountFits(a,post)&&a.verifiedAt);if(account&&post.channel!=='instagram'){try{preflight(post);await put('content',id,{...post,status:'scheduled',scheduledAt:now(),account:account.id});}catch(e){await put('content',id,{...post,error:e.message});}}}}await put('plan',p.id,{...get('plan',p.id),lastResult:'초안 '+r.ids.length+'개 생성 · 게시 상태는 콘텐츠 목록에서 확인'});}
     catch(e){await put('plan',p.id,{...get('plan',p.id),lastResult:e.message});}
    }
   }finally{workerBusy=false;}
@@ -184,9 +189,10 @@ async function controller(options){
    if(route==='/api/session'&&req.method==='GET')return reply({authenticated:true,email,setup:false,demo:options.demo});
    if(route==='/api/state'&&req.method==='GET')return reply(view());
    if(req.method!=='POST')fail('지원하지 않는 요청입니다.',405);
-   if(route==='/api/ai'){if(!['anthropic','openai'].includes(v.provider)||v.enabled!==true)fail('AI 공급자와 API 사용 동의를 확인해주세요.');const token=text(v.token,'API 키',5000),model=text(v.model,'모델 ID',120);await put('ai','config',{provider:v.provider,model,enabled:true,secret:encrypt({token})});await audit(email,'ai.configured',v.provider);await ctx.reload();return reply(view());}
-   if(route==='/api/refresh'){await refresh();return reply(view());}
-   if(route==='/api/ownership'){const b=businesses().find(b=>b.key===v.key);if(!b||b.excluded||typeof v.owned!=='boolean')fail('운영 사업장을 선택하세요.');await put('ownership',b.key,{owned:v.owned});await audit(email,'business.ownership',b.key);}
+   if(route==='/api/social-app'){if(options.demo)fail('SNS 앱 연결은 운영 설정에서 등록하세요.');if(!Object.hasOwn(providers,v.provider))fail('SNS를 선택하세요.');const old=get('social-app',v.provider),c=old?.secret?decrypt(old.secret):{};c.clientId=text(v.clientId,'Client ID',500);if(v.clientSecret)c.clientSecret=text(v.clientSecret,'Client Secret',5000);if(!c.clientSecret)fail('Client Secret을 입력하세요.');if(v.provider==='instagram'){c.version=text(v.version||c.version||'v25.0','API 버전',12);if(!/^v\d+\.0$/.test(c.version))fail('API 버전을 확인하세요.');}await put('social-app',v.provider,{secret:encrypt(c),updatedAt:now()});await audit(email,'social.app_configured',v.provider);}
+   else if(route==='/api/ai'){if(!['anthropic','openai'].includes(v.provider)||v.enabled!==true)fail('AI 공급자와 API 사용 동의를 확인해주세요.');const token=text(v.token,'API 키',5000),model=text(v.model,'모델 ID',120);await put('ai','config',{provider:v.provider,model,enabled:true,secret:encrypt({token})});await audit(email,'ai.configured',v.provider);await ctx.reload();return reply(view());}
+   else if(route==='/api/refresh'){await refresh();return reply(view());}
+   else if(route==='/api/ownership'){const b=businesses().find(b=>b.key===v.key);if(!b||b.excluded||typeof v.owned!=='boolean')fail('운영 사업장을 선택하세요.');await put('ownership',b.key,{owned:v.owned});await audit(email,'business.ownership',b.key);}
    else if(route==='/api/money'){
     scope(v.service,v.business,true);if(!['income','expense','refund','expense_refund'].includes(v.kind))fail('거래 유형을 확인하세요.');if(!Number.isSafeInteger(v.amount)||v.amount<1||v.amount>1e12)fail('원 단위 금액을 확인하세요.');
     const reference=text(v.reference,'거래 고유번호/증빙번호',160),day=date(v.day),category=text(v.category,'분류',60),partner=text(v.partner||'','거래처',120,true),note=text(v.note||'','근거/메모',1000,true);
@@ -202,13 +208,13 @@ async function controller(options){
    }else if(route==='/api/service'){const id='site-'+crypto.randomUUID();const name=text(v.name,'서비스 이름',60);if(allServices().some(s=>s.name.toLowerCase()===name.toLowerCase()))fail('이미 등록된 서비스입니다.',409);const url=v.url?String(await publicURL(v.url)):'';await put('service',id,{name,url,root:'',ref:null,note:'등록됨 · 수집 경로 연결 필요'});await audit(email,'service.registered',id);}
    else if(route==='/api/channel'){
     if(!CHANNELS.includes(v.channel)||!allServices().some(s=>s.id===v.service))fail('서비스/채널을 확인하세요.');const id=v.id||crypto.randomUUID(),old=get('channel',id);
-    if(v.id&&!old)fail('계정이 없습니다.',404);
-    const config=old?.secret?decrypt(old.secret):{};if(v.token)config.token=text(v.token,'접근 토큰/앱 비밀번호',5000);if(options.demo&&!config.token)config.token='sample-no-provider';if(!config.token)fail('접근 토큰을 입력하세요.');
+    if(v.id&&!old)fail('계정이 없습니다.',404);if(old&&(old.service!==v.service||old.channel!==v.channel))fail('기존 계정의 서비스·채널은 변경할 수 없습니다. 새 계정으로 등록하세요.');
+    const config=old?.secret?decrypt(old.secret):{};if(v.token){config.token=text(v.token,'접근 토큰/앱 비밀번호',5000);delete config.refreshToken;delete config.expiresAt;delete config.issuedAt;delete config.clientId;delete config.clientSecret;config.authType='manual';}if(options.demo&&!config.token)config.token='sample-no-provider';if(!config.token)fail('접근 토큰을 입력하세요.');
     if(v.channel==='blog'){config.url=String(await publicURL(v.url||config.url));config.username=text(v.username||config.username,'WordPress 사용자 이름',120);}
     if(v.channel==='instagram'){config.version=text(v.version||config.version||'v25.0','API 버전',12);if(!/^v\d+\.0$/.test(config.version))fail('API 버전을 확인하세요.');}
     if(JSON.stringify(get('channel',id))!==JSON.stringify(old))fail('계정이 변경됐습니다. 다시 저장하세요.',409);
     await put('channel',id,{service:v.service,channel:v.channel,label:text(v.label,'계정 이름',120),secret:encrypt(config),verifiedAt:null,userId:null});await audit(email,'channel.saved',id);
-   }else if(route==='/api/channel/verify'){const a=get('channel',v.id);if(!a)fail('계정이 없습니다.',404);const identity=await verify(a);if(get('channel',v.id)?.secret!==a.secret)fail('계정 정보가 변경됐습니다. 다시 확인하세요.',409);await put('channel',v.id,{...a,...identity,verifiedAt:now()});await audit(email,'channel.verified',v.id);}
+   }else if(route==='/api/channel/verify'){let a=get('channel',v.id);if(!a)fail('계정이 없습니다.',404);if(!options.demo)a=await ensureFresh(ctx,{...a,id:v.id});const identity=await verify({...a,id:v.id});if(get('channel',v.id)?.secret!==a.secret)fail('계정 정보가 변경됐습니다. 다시 확인하세요.',409);await put('channel',v.id,{...a,...identity,verifiedAt:now(),connectionError:null});await audit(email,'channel.verified',v.id);}
    else if(route==='/api/google'){
     const propertyId=text(v.propertyId||'','GA4 속성 ID',30,true);if(propertyId&&!/^\d+$/.test(propertyId))fail('GA4 속성 ID는 G- 측정 ID가 아닌 숫자 ID입니다.');
     const siteUrl=text(v.siteUrl,'서치콘솔 속성',300);if(siteUrl!=='https://doto1.tistory.com/'&&siteUrl!=='sc-domain:doto1.tistory.com')fail('등록한 티스토리의 정확한 속성 URL을 입력하세요.');
@@ -221,23 +227,23 @@ async function controller(options){
    }
    else if(route==='/api/content/generate')return reply(await generate(v,email));
    else if(route==='/api/content'){
-    scope(v.service,v.business||'platform');if(!CHANNELS.includes(v.channel))fail('게시 채널을 확인하세요.');const media=v.media?String(await publicURL(v.media)):'',id=v.id||crypto.randomUUID(),old=get('content',id);if(v.id&&!old)fail('콘텐츠가 없습니다.',404);if(old&&(old.externalId||['published','publishing'].includes(old.status)))fail('게시된 콘텐츠는 새 초안으로 작성하세요.');
-    const uncertain=!!old?.uncertain||old?.status==='review';await put('content',id,{...old,service:v.service,business:v.business||'platform',channel:v.channel,campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),title:text(v.title,'제목',300),body:text(v.body,'본문',20000),media,status:uncertain?'review':'draft',uncertain,createdAt:old?.createdAt||now(),error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,account:null,container:null,scheduledAt:null});await audit(email,'content.saved',id);
+    scope(v.service,v.business||'platform');if(!CHANNELS.includes(v.channel))fail('게시 채널을 확인하세요.');if(v.channel==='blog'&&v.blogTarget&&!['tistory','wordpress'].includes(v.blogTarget))fail('블로그 발행 방식을 확인하세요.');const media=v.media?String(await publicURL(v.media)):'',id=v.id||crypto.randomUUID(),old=get('content',id);if(v.id&&!old)fail('콘텐츠가 없습니다.',404);if(old&&(old.externalId||['published','publishing'].includes(old.status)))fail('게시된 콘텐츠는 새 초안으로 작성하세요.');
+    const uncertain=!!old?.uncertain||old?.status==='review';await put('content',id,{...old,service:v.service,business:v.business||'platform',channel:v.channel,...(v.channel==='blog'?{blogTarget:['tistory','wordpress'].includes(v.blogTarget)?v.blogTarget:old?.blogTarget||(v.service==='tistory'?'tistory':'wordpress')}:{}),campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),title:text(v.title,'제목',300),body:text(v.body,'본문',20000),media,status:uncertain?'review':'draft',uncertain,createdAt:old?.createdAt||now(),error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,account:null,container:null,scheduledAt:null});await audit(email,'content.saved',id);
    }else if(route==='/api/content/manual'){
     const link=await publicURL(v.url);if(link.origin!=='https://doto1.tistory.com'||link.pathname==='/')fail('이 티스토리의 발행 글 URL을 입력하세요.');
-    const p=get('content',v.id);if(!p||p.service!=='tistory'||p.channel!=='blog'||['publishing','published'].includes(p.status))fail('티스토리 초안을 확인하세요.');await put('content',v.id,{...p,status:'published',link:String(link),externalId:'manual:'+link.pathname,publishedAt:now(),manual:true});await audit(email,'content.manual_link',v.id);
+    const p=get('content',v.id);if(!p||!manualBlog(p)||['publishing','published'].includes(p.status))fail('티스토리 초안을 확인하세요.');await put('content',v.id,{...p,status:'published',link:String(link),externalId:'manual:'+link.pathname,publishedAt:now(),manual:true});await audit(email,'content.manual_link',v.id);
    }else if(route==='/api/content/schedule'){
     const p=get('content',v.id),a=get('channel',v.account);if(!p||!['draft','review','approved','scheduled'].includes(p.status)||p.externalId)fail('예약할 초안을 확인하세요.');
     if((p.status==='review'||p.uncertain)&&v.checked!==true)fail('채널에서 게시되지 않았음을 먼저 확인하세요.');
-    if(!a||!a.verifiedAt||a.channel!==p.channel||a.service!==p.service)fail('서비스와 일치하는 확인된 계정을 선택하세요.');
+    if(!a||!a.verifiedAt||!accountFits(a,p))fail('해당 브랜드 또는 SNS 공용의 확인된 계정을 선택하세요.');
     preflight(p);
     const scheduledAt=v.at?new Date(v.at).toISOString():now();await put('content',v.id,{...p,status:'scheduled',uncertain:false,scheduledAt,account:v.account,error:null});await audit(email,'content.scheduled',v.id);
    }else if(route==='/api/content/cancel'){const p=get('content',v.id);if(!p||!['scheduled','draft','approved','review'].includes(p.status))fail('취소할 콘텐츠를 확인하세요.');await put('content',v.id,{...p,status:p.uncertain||p.status==='review'?'review':'draft',scheduledAt:null});await audit(email,'content.cancelled',v.id);}
    else if(route==='/api/content/publish'){await publish(text(v.id,'콘텐츠',80),email);}
    else if(route==='/api/content/check'){
     const p=get('content',text(v.id,'콘텐츠',80));if(!p||p.status!=='published')fail('게시 완료된 콘텐츠를 선택하세요.');
-    const a=get('channel',p.account);let result;
-    try{result=options.demo?{checkStatus:'visible'}:await (options.inspect||inspectPublication)(p,a&&a.service===p.service&&a.channel===p.channel&&a.secret?decrypt(a.secret):null);}catch{result={checkStatus:'unavailable'};}
+    let a=get('channel',p.account);let result;
+    try{if(!options.demo&&accountFits(a,p))a=await ensureFresh(ctx,{...a,id:p.account});result=options.demo?{checkStatus:'visible'}:await (options.inspect||inspectPublication)(p,accountFits(a,p)&&a.secret?decrypt(a.secret):null);}catch{result={checkStatus:'unavailable'};}
     const current=get('content',v.id);if(current?.externalId!==p.externalId||current?.status!=='published')fail('게시 기록이 변경되었습니다. 다시 확인하세요.',409);
     await put('content',v.id,{...current,...result,checkedAt:now()});await audit(email,'content.checked',v.id);
    }
@@ -251,4 +257,4 @@ async function controller(options){
  }catch(e){return reply({error:e.code==='23505'?'이미 등록된 거래 고유번호입니다.':e.status?e.message:'작업을 완료하지 못했습니다. 연결과 입력값을 확인해주세요.'},e.code==='23505'?409:e.status||500);}}
  return {handle,view,refresh,tick};
 }
-module.exports={controller,preflight,parseSitemap,inspectPublication};
+module.exports={controller,preflight,parseSitemap,inspectPublication,manualBlog,SOURCES};
