@@ -1,5 +1,6 @@
 'use strict';
 const MarkdownIt=require('markdown-it'),sanitize=require('sanitize-html');
+const twitterTextModule=require('twitter-text'),twitterText=twitterTextModule.default||twitterTextModule;
 const md=new MarkdownIt({html:false,linkify:false,typographer:false,breaks:true});
 const CHANNELS=['blog','instagram','threads','x','facebook','linkedin','pinterest','youtube','tiktok'];
 const CHANNEL_LIMITS={blog:20000,instagram:2200,threads:500,x:280,facebook:5000,linkedin:3000,pinterest:500,youtube:5000,tiktok:2200};
@@ -72,8 +73,16 @@ function preview(input){
  return {html,document,analysis:{score:Math.round(checks.filter(c=>c.pass).length/checks.length*100),checks,words:plain.split(/\s+/u).filter(Boolean).length,characters:Array.from(plain).length,readingMinutes:Math.max(1,Math.ceil(Array.from(plain).length/600)),headings,links,notice:'편집 점검용입니다. 검색·AI 답변 노출이나 순위를 보장하지 않습니다.'},seo};
 }
 function linesFirst(s){return s.split('\n').find(Boolean)||'';}
-const weight=(s,channel)=>Array.from(s).reduce((n,c)=>n+(channel==='blog'?c.length:channel==='x'&&c.codePointAt(0)>0x10ff?2:1),0);
-function fit(s,budget,channel){let out='',n=0;for(const c of s){const k=weight(c,channel);if(n+k>budget)break;out+=c;n+=k;}return out.trim();}
+const xConfig=twitterText.configs.defaults;
+const weight=(s,channel)=>channel==='x'?twitterText.parseTweet(s,xConfig).weightedLength:Array.from(s).reduce((n,c)=>n+(channel==='blog'?c.length:1),0);
+function fit(s,budget,channel){
+ if(channel==='x'){
+  const text=s.normalize('NFC'),end=twitterText.parseTweet(text,{...xConfig,maxWeightedTweetLength:budget}).validRangeEnd+1;let safeEnd=0;
+  for(const {index,segment} of new Intl.Segmenter('ko',{granularity:'grapheme'}).segment(text)){const next=index+segment.length;if(next>end)break;safeEnd=next;}
+  return text.slice(0,safeEnd).trim();
+ }
+ let out='',n=0;for(const c of s){const k=weight(c,channel);if(n+k>budget)break;out+=c;n+=k;}return out.trim();
+}
 function repurpose(post,channels){
  if(!Array.isArray(channels)||!channels.length||channels.length>CHANNELS.length||channels.some(c=>!CHANNELS.includes(c)))fail('재가공할 채널을 선택하세요.');
  const title=string(post.title,'제목',300),body=string(post.body,'본문',20000),seo=validateSEO(post.seo),plain=inspect(body).plain,url=httpsURL(seo.url||post.link||''),cta=seo.cta||'원문에서 자세한 내용을 확인하세요.',marker='[규칙 기반 홍보 초안]';

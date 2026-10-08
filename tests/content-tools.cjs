@@ -1,7 +1,37 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {validateSEO,renderMarkdown,preview,repurpose,weight}=require('../src/server/content-tools.cjs');
-const {preflight,inspectPublication,defaultPublishingSettings,validatePublishingSettings}=require('../src/server/dashboard.cjs');
+const {controller,preflight,inspectPublication,defaultPublishingSettings,validatePublishingSettings}=require('../src/server/dashboard.cjs');
+async function manualRegistrations(){
+ const {PGlite}=require('@electric-sql/pglite'),fs=require('node:fs'),dns=require('node:dns').promises,db=new PGlite();
+ const previous={pool:globalThis.nhPool,fetch:globalThis.fetch,lookup:dns.lookup,database:process.env.DATABASE_URL,secret:process.env.SESSION_SECRET};let failAudit=false,tail=Promise.resolve(),locks=0;
+ const query=async(sql,args=[])=>{if(sql.startsWith('SELECT pg_advisory_xact_lock')){locks++;return {rows:[],rowCount:1};}if(failAudit&&sql.startsWith('INSERT INTO nh_audit')){failAudit=false;throw Error('test audit rollback');}const r=await db.query(sql,args);return {...r,rowCount:r.affectedRows??r.rows.length};};
+ try{
+  await db.exec(fs.readFileSync('db/dashboard.sql','utf8').split('ALTER TABLE')[0]);
+  // PGlite has one session and no advisory locks; serialize its transaction connections.
+  globalThis.nhPool={query,async connect(){const prior=tail;let release;tail=new Promise(r=>release=r);await prior;return {query,release};}};
+  process.env.DATABASE_URL='postgres://memory-test-only';process.env.SESSION_SECRET='test-only-manual-registration-secret-32-characters';
+  dns.lookup=async hostname=>{assert.equal(hostname,'doto1.tistory.com');return [{address:'203.0.113.1',family:4}];};globalThis.fetch=async()=>assert.fail('URL registration must not fetch or publish');
+  const seed=async(id,channel,extra={})=>query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','content',$1,$2)",[id,JSON.stringify({service:'tistory',business:'platform',channel,...(channel==='blog'?{blogTarget:'tistory'}:{}),title:'회귀 검사 초안',body:'본문',status:'review',version:3,uncertain:true,error:'확인 필요',scheduledAt:'2026-10-08T00:00:00Z',...extra})]);
+  const call=async(c,route,value,status=200)=>{const r=await c.handle({method:'POST'},route,value,'test@example.invalid'),body=await r.json();assert.equal(r.status,status,JSON.stringify(body.error));return body;};
+  const row=async id=>(await query("SELECT data FROM nh_documents WHERE workspace='live' AND kind='content' AND id=$1",[id])).rows[0].data;
+  const auditCount=async()=>Number((await query('SELECT count(*) n FROM nh_audit')).rows[0].n);
+  for(const [channel,url,other] of [['blog','https://doto1.tistory.com/170','https://doto1.tistory.com/171'],['youtube','https://www.youtube.com/watch?v=sample-only','https://www.youtube.com/watch?v=other'],['tiktok','https://www.tiktok.com/@sample/video/123','https://www.tiktok.com/@sample/video/456']]){
+   const id=channel+'-a',duplicate=channel+'-b',route=channel==='blog'?'/api/content/manual':'/api/studio/manual';await seed(id,channel);await seed(duplicate,channel);const c=await controller({demo:false});
+   await call(c,route,{id,url},400);await call(c,route,{id,url,version:2},409);assert.equal((await row(id)).version,3);
+   if(channel==='blog')for(const invalid of ['https://doto1.tistory.com.evil.test/170','https://user:secret@doto1.tistory.com/170','https://doto1.tistory.com:443/170','https://doto1.tistory.com/category/tools','https://doto1.tistory.com/manage/posts','https://doto1.tistory.com/entry/a%2Fb','http://doto1.tistory.com/170'])await call(c,route,{id,url:invalid,version:3},400);
+   await call(c,route,{id,url:channel==='blog'?url+'/?utm_source=test#section':url,version:3});const saved=await row(id),count=await auditCount();
+   assert.equal(saved.link,url);assert.equal(saved.version,4);assert.equal(saved.status,'published');assert.equal(saved.manual,true);assert.equal(saved.checkStatus,'registered');assert.equal(saved.checkedAt,null);assert.equal(saved.uncertain,false);assert.equal(saved.error,null);assert.equal(saved.scheduledAt,null);assert(saved.registeredAt&&saved.updatedAt&&saved.publishedAt);
+   await call(c,route,{id,url,version:3});assert.deepEqual(await row(id),saved);assert.equal(await auditCount(),count,'retry must not write or audit');
+   await call(c,route,{id,url:other,version:4},409);await call(c,route,{id:duplicate,url:channel==='blog'?url+'?utm_campaign=duplicate#x':url,version:3},409);assert.equal((await row(duplicate)).status,'review');assert.equal(await auditCount(),count);
+   await call(c,'/api/content/publish',{id},400);await call(c,'/api/content/schedule',{id},400);assert.deepEqual(await row(id),saved,'registered content must never reenter publication');
+   assert.equal((await call(c,'/api/content/check',{id})).contents.find(p=>p.id===id).checkStatus,channel==='blog'?'unavailable':'registered');
+  }
+  await seed('stale-context','youtube');const stale=await controller({demo:false});await query("UPDATE nh_documents SET data=jsonb_set(data,'{version}','4') WHERE id='stale-context'");await call(stale,'/api/studio/manual',{id:'stale-context',url:'https://youtu.be/stale',version:3},409);assert.equal((await row('stale-context')).version,4);
+  await seed('rollback','youtube');const rollback=await controller({demo:false}),before=await row('rollback'),count=await auditCount();failAudit=true;await call(rollback,'/api/studio/manual',{id:'rollback',url:'https://youtu.be/rollback',version:3},500);assert.deepEqual(await row('rollback'),before);assert.equal(await auditCount(),count);
+  await seed('race-a','youtube');await seed('race-b','youtube');const a=await controller({demo:false}),b=await controller({demo:false}),race=await Promise.all([a.handle({method:'POST'},'/api/studio/manual',{id:'race-a',url:'https://youtu.be/same-post',version:3},'test@example.invalid'),b.handle({method:'POST'},'/api/studio/manual',{id:'race-b',url:'https://youtu.be/same-post',version:3},'test@example.invalid')]);assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);assert(locks>0,'registration must acquire the workspace URL lock');
+ }finally{globalThis.nhPool=previous.pool;globalThis.fetch=previous.fetch;dns.lookup=previous.lookup;for(const [key,value] of [['DATABASE_URL',previous.database],['SESSION_SECRET',previous.secret]])if(value===undefined)delete process.env[key];else process.env[key]=value;await db.close();}
+}
 async function run(){
  const publishing=defaultPublishingSettings();assert.deepEqual(publishing,{timezone:'Asia/Seoul',dailyCount:5,times:['08:00','12:00','16:00','20:00','22:00'],enabled:false,version:1});
  assert.equal(validatePublishingSettings({timezone:'Asia/Seoul',dailyCount:1,times:['08:30'],enabled:false},null).version,2);
@@ -35,6 +65,7 @@ async function run(){
  }
  assert.throws(()=>preflight({service:'crm',channel:'x',body:'과거 기록'}),/독립 운영/);assert.equal(repurpose(input,['x','x']).length,1);assert.throws(()=>repurpose(input,['unknown']),{status:400});
  assert(repurpose({...input,body:'😀'.repeat(9999)},['blog'])[0].body.length<=20000);
- console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, validation, nine-channel repurposing and manual-only preflight');
+ await manualRegistrations();
+ console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, nine-channel repurposing, manual URL validation/CAS/duplicates/retries/rollback and serialized registration');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
