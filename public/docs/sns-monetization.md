@@ -30,10 +30,15 @@ Google의 Page RPM은 페이지 조회수 1,000회당 **추정 수익** 지표�
 |---|---|---|---|
 | [Make](https://help.make.com/affiliate-program) | 구독 결제의 35%, 추천 링크로 가입한 날부터 12개월. 추가 operation 구매 제외 | 수수료 최소 US$100와 서로 다른 유료 사용자 3명, Wise 지급. 최소액은 지급 요청마다 적용 | 업무 자동화 절차 글의 우선 검토 후보. 가입·고유 링크·본인 지급 경로 미확인 |
 | [ElevenLabs](https://elevenlabs.io/affiliates-terms) | Starter·Creator·Pro·Scale 세전 결제의 22%, Business 11%, 추천 유료 구독 첫 12개월. Enterprise 제외 | PartnerStack, 유효한 지급 수단·필요 세금 서류. 수수료 발생일 이후 세 번째 달 말 지급 | 음성 제작을 실제 검증한 글에만 검토. 가입·한국 지급·고유 링크 미확인 |
+| [n8n 신청 연결 약관](https://n8n.notion.site/n8n-Referral-Partner-Program-Agreement-3ac5b6e0c94f8003be2de2bff364c526) | Cloud Starter·Pro 순수익의 30%, 고객 첫 12개월. Business·Enterprise·기존 고객·자기 추천 제외 | 연결 약관은 검토·확정 후 매월 13일 이후 PartnerStack 지급을 안내. 홈페이지 FAQ의 PayPal·€100와 상충하므로 실제 적용 조건 미확인 | 검색 질문 해결 글과 관련 있는 미승인 후보. 신청·한국 지급·고유 링크·실제 전환 미확인 |
 
 Wise의 [잔액 보유 지원 국가](https://wise.com/help/articles/2813542/where-do-i-need-to-live-to-hold-money-with-wise)에는 한국이 포함돼 있다. 이는 본인의 Make 수령 자격·통화·출금 성공 확인을 대신하지 않는다. [수령 정보 개설 안내](https://wise.com/help/articles/2978028/how-do-i-open-account-details-to-receive-money)는 거주지·통화 조건과 신분증·셀피 인증을 안내하며, 사업자 계정에는 수령 정보 개설 수수료가 생길 수 있다. 금융계정 개설·인증은 운영자가 맡고 유료 절차를 자동 실행하지 않는다.
 
 현재는 가입이나 약관 동의 없이 조건만 조사했다. Make는 기존 AI·업무 도구의 실제 자동화 가이드와 맞는 후보이며, 애니메이션 글이나 명언 SNS에 무관한 링크를 붙이지 않는다. ElevenLabs는 자연인 등록·자동 가입 금지, 허위 홍보·셀프 추천 금지, 추천·링크 가까이 같은 언어로 제휴 사실을 알리는 조건을 확인했다. 계정 승인·정산 경로·실제 유료 전환 전에는 어느 후보도 수입으로 기록하지 않는다.
+
+n8n은 [공식 제휴 페이지](https://n8n.io/affiliates/)에서 연결된 실제 신청 폼과 약관을 2026-10-08에 읽었다. 신청 폼은 처리에 최대 2주가 걸릴 수 있다고 안내한다. 약관은 부적절한 대량·AI 콘텐츠에서 발생한 수수료를 제외할 수 있고, 요청 시 실제 제품 사용 증명을 못 하는 경우도 해지 사유로 둔다. 유료 광고도 금지한다. AI 보조를 쓰면 자동으로 승인되거나 모두 금지된다고 해석하지 않는다. 홈페이지 FAQ보다 어느 지급 안내가 본인에게 적용되는지는 아직 확정하지 않았다. [PartnerStack 일반 안내](https://support.partnerstack.com/hc/en-us/articles/360009501113-How-do-I-get-paid)의 수수료 차감 후 US$5 출금 기준과 PayPal·Stripe·직접입금은 n8n 한국 계정에 활성화된 조건을 대신하지 않는다.
+
+누리원의 제휴 캠페인은 발급받은 원본 링크의 추적·서명 쿼리를 보존한다. 일반 캠페인에만 UTM을 추가하며 블로그는 referral, SNS는 social로 구분한다. URL 생성·복사는 클릭 수집이나 제휴사 전환 검증이 아니다. 승인된 고유 링크가 없으면 전환 주소는 비워 두고 공식 신청 주소를 수익 링크처럼 쓰지 않는다. 제휴사 실계정에서 클릭·전환·검토·정산을 대조하기 전에는 실제 수익으로 계산하지 않는다.
 
 ## 7·14·30일 실행과 중단 기준
 
