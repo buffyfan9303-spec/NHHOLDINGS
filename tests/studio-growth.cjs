@@ -31,6 +31,14 @@ assert(html.includes('<strong>0</strong><small>확인분 합계 · 1/1건'));
 assert(html.includes('<strong>미확인</strong><small>확인분 합계 · 0/1건'));
 (async()=>{
  const click=async(action,id)=>handlers.click({target:{closest:()=>({dataset:{studio:action,id},isConnected:false})},preventDefault(){}});
+ const originalGetElement=context.document.getElementById,utmOutput={value:''},utmValues={utmCampaign:'affiliate',utmChannel:'blog',utmUrl:'https://EXAMPLE.invalid:443/offer?ref=demo%2Btoken&utm_source=affiliate&utm_campaign=vendor+source&signature=a%20b#guide',utmContent:'article'};
+ context.URL=URL;context.document.getElementById=id=>id==='studio-utm-fields'?{querySelector:selector=>({value:utmValues[selector.match(/name="([^"]+)"/)[1]]})}:id==='studio-utm-output'?utmOutput:null;
+ context.data.growthCampaigns.push({id:'affiliate',service:'tistory',model:'affiliate',name:'제휴'});
+ await click('utm');assert.equal(utmOutput.value,utmValues.utmUrl,'provider-issued affiliate URL must remain byte-for-byte unchanged');
+ utmValues.utmCampaign='a';utmValues.utmChannel='instagram';utmValues.utmUrl='https://example.invalid/offer?ref=demo%2Btoken';await click('utm');let utm=new URL(utmOutput.value);assert.equal(utm.searchParams.get('ref'),'demo+token');assert.equal(utm.searchParams.get('utm_source'),'instagram');assert.equal(utm.searchParams.get('utm_medium'),'social');assert.equal(utm.searchParams.get('utm_campaign'),'a');
+ utmValues.utmChannel='blog';await click('utm');assert.equal(new URL(utmOutput.value).searchParams.get('utm_medium'),'referral');
+ utmValues.utmUrl='javascript:alert(1)';await click('utm');assert.equal(utmOutput.value,'','invalid input must not leave a previous campaign link available to copy');
+ context.document.getElementById=originalGetElement;context.data.growthCampaigns.pop();
  await click('growth-csv');assert.equal(calls.length,1);let csv=calls[0][1];assert(csv.includes('"조회 수"'));assert(csv.includes('"0","","","","","","","2",""'));assert(csv.includes('"\'=SUM(A1)"'));assert(csv.includes('"2","","","","","","","","\'=SUM(A1)"'),'unknown finance fields export as blanks');
  const known={...context.data.growthResults[0],impressions:100,clicks:10,leads:2,orders:1,revenue:1000,cost:100};
  context.data.growthResults=[known,{...known,id:'partial',day:'2026-10-09',impressions:null,clicks:5,orders:0,revenue:2000,cost:null}];html=context.window.NuriStudio.render('growth');
