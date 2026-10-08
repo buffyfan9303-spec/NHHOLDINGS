@@ -51,6 +51,14 @@ Claude는 기존 구독 로그인과 포함 한도를 사용한다. 호출 전 `
 
 외부 발송·공개 게시·업로드는 사용자가 허용한 계정·목적·콘텐츠 범위에서만 한다. 인증/보안 설정·약관 동의·결제 등 도구가 요구하는 별도 확인을 우회하지 않는다. 비밀번호 변경·본인 인증을 대신 우회하지 않는다. `.env`, 토큰, 비밀키, 개인 검색 실적·인사이트 원문은 커밋하지 않는다. 공개 문서에는 비공개 운영 증거를 넣지 않는다.
 
+### 문서 조회·근거 조사·중단 후 재개
+
+참고: [Context7 공식 저장소](https://github.com/upstash/context7), [GPT Researcher 공식 저장소](https://github.com/assafelovic/gpt-researcher), [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence). 확인일: 2026-10-08 KST. 도구 소개의 효과 주장을 성능 보장으로 채택하지 않는다.
+
+- 설치된 정확한 버전의 로컬 문서 우선, 부족한 공식 사용법은 기존 Context7 MCP/공식 문서로 보완한다. 공개 질문만 전송하고 라이브러리 ID·요청/반환 버전·출처를 대조한다. 정확한 버전이 없으면 미확인으로 남기며 latest/canary를 설치 버전의 보장으로 쓰지 않는다.
+- 조사는 질문 분해→필요한 후보 비교→공식 원문·확인 날짜·조건→상충 근거 검토→결론으로 진행한다. 사실·직접 검증·추론·미확인을 구분하고 기존 검색·내부 에이전트·Claude를 재사용한다. GPT Researcher의 별도 설치나 임의의 출처 개수 채우기를 필수로 하지 않는다.
+- 기존 인계/운영 기록에 마지막 완료 단계·증거 경로·작업/콘텐츠 ID와 버전·실제 URL·다음 한 단계를 남긴다. 재개 시 Git·DB·채널의 실제 상태를 먼저 확인한다. 외부 실행 결과가 불명확하면 재전송하지 않고 대상부터 대조한다. LangGraph의 단계/체크포인트 원칙을 재사용하되 기록 파일을 자동 복구·정확히 한 번 실행의 보장으로 표현하지 않는다. 새 프레임워크는 측정된 한계가 있을 때 비용·영구 저장·중복 방지를 검토해 도입한다.
+
 ## SNS 운영 경계
 
 티스토리는 검색형 정보 매체, Instagram·Threads는 계정 자체 성장으로 운영한다. 누리 사이트 판매/가입 유도를 기본 삽입하지 않는다. NURI CRM 등 다른 서비스에 새로 연동하지 않으며 기존 현황 조회 범위는 유지한다. 현재 집중 채널은 티스토리·Instagram·Threads다. [편집·실험 기준](../public/docs/sns-growth.md)을 적용한다.
@@ -66,6 +74,9 @@ SNS 조사도 역할을 나눈다. 티스토리 담당은 검색 의도·본인 
 `날짜/시각(KST) | 시작/종료 | 담당·역할·실제 모델/effort(반환 기록 기준) | branch/HEAD | 변경 파일 | 검사·증거 | 남은 일`
 
 ### 2026-10-08
+
+- 시작 · 18:15 KST · Codex 총괄, `codex/nuri-unified` / `bdaf648`. 사용자 Instagram 참고 게시물의 실제 3개 카드·캡션과 Context7·GPT Researcher·LangGraph 공식 자료를 대조한다. 소유는 이 공통 기준과 로컬 Codex 공통 AGENTS 규칙, 비공개 운영 증거이며 제품 코드·DB·기존 발행 일정은 변경하지 않는다. Luna/low 1명은 기존 규칙 위치를 읽기 전용 감사하고 총괄은 도구 실제 호출·규칙 반영·검증을 담당한다. 기존 Context7은 enabled/OAuth 표시지만 이번 세션 native 도구는 노출되지 않았고 공개 MCP의 익명 resolve/query 호출은 성공했다. 정확한 Next 16.4 자료가 없어 canary 반환을 로컬 설치 문서와 대조했다. 수용 기준은 버전/인증/실제 호출 구분, 비밀 자료 비전송, 근거 조사와 중복 없는 재개 규칙 반영이다. GPT Researcher·LangGraph 신규 설치·유료 호출은 하지 않는다.
+- 로컬 적용·검사 종료 · 2026-10-08 KST · 로컬 Codex 공통 AGENTS와 이 문서에 정확 버전 우선·공개 질문만 전송·질문별 근거 대조·실제 상태 확인 후 재개 규칙을 반영했다. Luna/low 읽기 전용 대조 완료, 총괄이 최종 본문과 `npm run typecheck`, 전체 `npm test`, diff 검사를 확인했다. 공개 Context7 조회 증거는 프로젝트 루트 `artifacts/operations/2026-10-08/context7-docs-probe.json`, 기존 로컬 규칙 백업도 같은 폴더에 보관한다. native 인증 호출·새 프레임워크 설치·자동 복구 보장·성장 성과로 표현하지 않는다. 제품 코드·의존성·DB·발행 일정 변경 없음. 이 공통 기준은 문서 PR로 공유하고 실제 운영 성장/월 수익 검증은 기존 목표로 남긴다.
 
 - 시작 · 12:07 KST · Codex 총괄, `codex/nuri-unified`, 시작 HEAD `67b2471`. 신규 협업 규칙 적용. 소유 파일 `docs/COLLAB.md`, `AGENTS.md`의 협업 링크, `public/docs/sns-growth.md`, 자체 생성 이미지. Claude는 지정 파일 Read 전용으로 한국어·구성·이미지 비평을 수행했고 코드/브랜치를 수정하지 않았다.
 - 확인된 도구: Claude Code 2.1.280의 기존 Max 로그인, Opus/high 실제 3턴 검토 성공(`artifacts/operations/claude-editorial-review-2026-10-08.json`). 웹·Chrome 원게시물/본인 Search Console 조회, Supabase SQL 읽기, 실제 누리원 프롬프트/캠페인 UI 저장과 재조회 성공. Codex 내부 Luna 조사·독립 검토 완료. 기존 content-creation/performance-report/imagegen 스킬 사용, 새 플러그인·hooks·유료 API는 추가하지 않았다. 기존 Vercel 배포 `67b2471`은 READY 확인됐으며 이 문서의 추가 변경은 별도 PR 대상이다.
