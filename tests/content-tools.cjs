@@ -32,7 +32,7 @@ async function manualRegistrations(){
    await reg('sv-ig','instagram','https://instagram.com/sample.user/p/Cvar123xyz?igsh=abc#x',200,3,{account:'api-account',container:'17900000000000001'});assert.equal((await row('sv-ig')).link,'https://www.instagram.com/p/Cvar123xyz/');assert.equal((await row('sv-ig')).account,null);assert.equal((await row('sv-ig')).container,null);
    await reg('sv-reel','instagram','https://www.instagram.com/reels/Creel12345/');assert.equal((await row('sv-reel')).link,'https://www.instagram.com/reel/Creel12345/');
    await reg('sv-x','x','https://twitter.com/sample/status/1840000000000000009?s=20');assert.equal((await row('sv-x')).link,'https://x.com/sample/status/1840000000000000009');
-   await reg('sv-x-dup','x','https://mobile.twitter.com/i/web/status/1840000000000000009',409);
+   await reg('sv-x-web','x','https://mobile.twitter.com/i/web/status/1840000000000000044?s=20');assert.equal((await row('sv-x-web')).link,'https://x.com/i/web/status/1840000000000000044');await reg('sv-x-web-dup','x','https://x.com/sample/status/1840000000000000044',409);await reg('sv-x-dup','x','https://mobile.twitter.com/i/web/status/1840000000000000009',409);
    await reg('sv-x-same','x','https://x.com/other/status/1840000000000000009/',409);assert.equal((await row('sv-x-dup')).status,'review');assert.equal((await row('sv-x-same')).status,'review');
    await seed('api-x','x',{status:'published',externalId:'1840000000000000077',link:'https://x.com/i/status/1840000000000000077'});await seed('api-x2','x',{status:'published',externalId:'1840000000000000066',link:null});await reg('sv-x-api','x','https://x.com/sample/status/1840000000000000077',409);
    await reg('sv-x-api2','x','https://x.com/sample/status/1840000000000000066',409);
