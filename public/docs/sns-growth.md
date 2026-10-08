@@ -17,6 +17,8 @@
 
 Meta는 Threads의 대화·유머·텍스트를 동반한 미디어·플랫폼용 원작을 권고했다. 이는 2024년 공개 후 2025년 갱신된 플랫폼 집계 안내이며 한국의 새 계정에서 특정 형식이 이긴다는 증거는 아니다. Instagram도 원작 추천 정책을 설명하지만 정적 이미지의 저장·공유 가중치 공식은 공개하지 않았다. Shorts는 특정 형식을 우대한다고 설명하지 않고 시청 선택·지속 등과 개인화를 설명한다. [Threads 공식 안내](https://about.fb.com/news/2024/10/find-your-community-with-new-threads-educational-insights/), [Instagram 원작 추천](https://about.fb.com/ltam/news/2024/04/ajudando-o-criador-de-conteudo-a-encontrar-novos-publicos/), [Shorts 발견과 추천](https://support.google.com/youtube/answer/11914225?hl=en)
 
+2026-10-08 클라우드 조사: 네트워크 정책 때문에 Meta·Instagram·Threads 공식 원문을 열지 못했다. 2차 보도 요약상 Meta 크리에이터 허브는 대화 중심 조회, 주 2~5회 게시, 텍스트를 동반한 게시물을 강조하고 Instagram의 원작 보호는 릴스에서 사진·캐러셀로 확대됐다고 전해진다. 위 ‘2025년 갱신’ 표기와 이 요약은 모두 원문 확인 전이므로 발행 전 공식 원문으로 확인한다.
+
 ## 실제 조사에서 확인한 것과 확인하지 못한 것
 
 2026-10-08 로그인된 Threads에서 `명언` 검색의 인기·최근 결과와 원게시물 상세 화면을 직접 확인했다. 아래는 표본이며 전체 조회수 순위가 아니다. 11:40~12:00 KST 관찰 시점의 표시값이고 시간이 지나면 바뀐다. 상세 화면에서 B·C의 조회가 공개돼 추가했으며, 다른 표본의 조회와 모든 표본의 저장·팔로우 전환은 미확인이다. 계정 규모·게시 경과시간·추천 노출·협찬 여부도 통제되지 않았다.

@@ -6,6 +6,9 @@ const {providers,ensureFresh}=require('./social.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
 const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'6개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={facebook:['facebook.com','www.facebook.com'],linkedin:['linkedin.com','www.linkedin.com'],pinterest:['pinterest.com','www.pinterest.com','kr.pinterest.com','pin.it'],youtube:['youtube.com','www.youtube.com','youtu.be'],tiktok:['tiktok.com','www.tiktok.com']};
+const SOCIAL_URL_CHANNELS=['instagram','threads','x'];
+const SOCIAL_PERMALINKS={instagram:[['instagram.com','www.instagram.com'],/^\/(?:(?!(?:accounts|explore|stories|direct)\/)[A-Za-z0-9._]{1,30}\/)?(p|reels?)\/([A-Za-z0-9_-]{5,64})\/?$/],threads:[['threads.net','www.threads.net','threads.com','www.threads.com'],/^\/@([A-Za-z0-9._]{1,30})\/post\/([A-Za-z0-9_-]{5,64})\/?$/],x:[['x.com','www.x.com','mobile.x.com','twitter.com','www.twitter.com','mobile.twitter.com'],/^\/(?:([A-Za-z0-9_]{1,15})|i\/web)\/status\/([1-9]\d{0,19})\/?$/]};
+function socialPermalink(channel,url){let u;try{u=url instanceof URL?url:new URL(String(url));}catch{return null;}const d=Object.hasOwn(SOCIAL_PERMALINKS,channel)&&SOCIAL_PERMALINKS[channel];if(!d||u.protocol!=='https:'||u.username||u.password||u.port||!d[0].includes(u.hostname))return null;const m=d[1].exec(u.pathname);if(!m)return null;if(channel==='instagram')return {href:'https://www.instagram.com/'+(m[1]==='p'?'p':'reel')+'/'+m[2]+'/',key:m[2]};if(channel==='threads')return {href:'https://www.threads.com/@'+m[1]+'/post/'+m[2],key:m[2]};return {href:'https://x.com/'+(m[1]||'i/web')+'/status/'+m[2],key:m[2]};}
 const snsRecord=p=>p?.service==='tistory'&&(p.business||'platform')==='platform';
 const accountFits=(a,p)=>snsRecord(a)&&snsRecord(p)&&a.channel===p.channel;
 const now=()=>new Date().toISOString(),hash=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -273,20 +276,22 @@ async function controller(options){
     if(!p||!r||r.contentId!==id)fail('복원할 콘텐츠와 이전 버전을 확인하세요.',404);if(p.externalId||['published','publishing'].includes(p.status))fail('게시된 콘텐츠는 새 초안으로 작성하세요.');scope(p.service,p.business||'platform');checkVersion(v.version,p,true);
     const uncertain=!!p.uncertain||p.status==='review';await saveContent(id,p,{...p,title:text(r.title,'제목',300),body:text(r.body,'본문',Object.hasOwn(MANUAL_HOSTS,p.channel)?CHANNEL_LIMITS[p.channel]:20000),seo:validateSEO(r.seo),media:r.media||'',status:uncertain?'review':'draft',uncertain,account:null,container:null,scheduledAt:null,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,restoredFrom:revisionId},email,'restored',revisionId);
    }else if(route==='/api/studio/manual'||route==='/api/content/manual'){
-    const id=text(v.id,'콘텐츠',80),blog=route==='/api/content/manual',initial=get('content',id);if(!initial||(blog?!manualBlog(initial):!Object.hasOwn(MANUAL_HOSTS,initial.channel)))fail('직접 게시할 초안을 확인하세요.');
+    const id=text(v.id,'콘텐츠',80),blog=route==='/api/content/manual',initial=get('content',id);if(!initial||(blog?!manualBlog(initial):!Object.hasOwn(MANUAL_HOSTS,initial.channel)&&!SOCIAL_URL_CHANNELS.includes(initial.channel)))fail('직접 게시할 초안을 확인하세요.');
     const link=new URL(httpsURL(v.url,'발행 URL',false));if(link.port||/^https:\/\/[^/]+:\d+(?:\/|$)/i.test(v.url.trim())||v.url.includes('\\')||link.pathname==='/')fail('해당 채널의 발행 글 URL을 입력하세요.');
-    link.hash='';
+    link.hash='';const social=!blog&&SOCIAL_URL_CHANNELS.includes(initial.channel),sp=social?socialPermalink(initial.channel,link):null;if(social){if(!sp)fail('해당 채널의 발행 글 URL을 입력하세요.');link.search='';}
     if(blog){let path;try{path=decodeURIComponent(link.pathname);}catch{fail('티스토리 글 주소를 확인하세요.');}if(link.origin!=='https://doto1.tistory.com'||!/^\/(?:[1-9]\d*|entry\/[^/?#\\\u0000-\u0020]+)\/?$/.test(path))fail('이 티스토리의 발행 글 URL을 입력하세요.');link.pathname=path.replace(/\/$/,'').split('/').map(encodeURIComponent).join('/');link.search='';await publicURL(link.href);}
+    else if(social)link.href=sp.href;
     else if(!MANUAL_HOSTS[initial.channel].includes(link.hostname))fail('해당 채널의 발행 글 URL을 입력하세요.');
     await transaction(async()=>{
-     await ctx.lock('content.manual:'+link.href);await ctx.lockRow('content',id);await ctx.reload();
+     await ctx.lock('content.manual:'+(social?initial.channel+':'+sp.key:link.href));await ctx.lockRow('content',id);await ctx.reload();
      const p=get('content',id);if(!p||(blog?!manualBlog(p):p.channel!==initial.channel))fail('직접 게시할 초안을 확인하세요.');snsScope(p.service,p.business||'platform');
-     const retry=p.status==='published'&&p.manual===true&&(blog?p.link?.split(/[?#]/)[0].replace(/\/$/,''):p.link?.split('#')[0])===link.href;
+     const same=post=>social?post.channel===initial.channel&&(post.link?.split('#')[0]===link.href||socialPermalink(initial.channel,post.link||'')?.key===sp.key):(blog?post.link?.split(/[?#]/)[0].replace(/\/$/,''):post.link?.split('#')[0])===link.href;
+     const retry=p.status==='published'&&p.manual===true&&(social?same(p):(blog?p.link?.split(/[?#]/)[0].replace(/\/$/,''):p.link?.split('#')[0])===link.href);
      // An exact retry may carry the version used before the successful registration.
      checkVersion(v.version,retry?{version:v.version}:p,true);if(retry)return;
      if(p.externalId||!['draft','approved','review'].includes(p.status))fail('이미 게시되었거나 등록할 수 없는 콘텐츠입니다.',409);
-     if(list('content').some(post=>post.id!==id&&(blog?post.link?.split(/[?#]/)[0].replace(/\/$/,''):post.link?.split('#')[0])===link.href))fail('이미 다른 콘텐츠에 등록된 발행 URL입니다.',409);
-     const at=now();await writeContent(id,{...p,status:'published',link:link.href,externalId:'manual:'+(blog?link.pathname:link.href),publishedAt:p.publishedAt||at,registeredAt:at,manual:true,checkStatus:'registered',checkedAt:null,uncertain:false,error:null,scheduledAt:null});await audit(email,blog?'content.manual_link':'content.manual_registered',id);
+     if(list('content').some(post=>post.id!==id&&(same(post)||social&&initial.channel==='x'&&post.channel==='x'&&post.externalId===sp.key)))fail('이미 다른 콘텐츠에 등록된 발행 URL입니다.',409);
+     const at=now();await writeContent(id,{...p,status:'published',link:link.href,...(social?{account:null,container:null}:{}),externalId:'manual:'+(blog?link.pathname:link.href),publishedAt:p.publishedAt||at,registeredAt:at,manual:true,checkStatus:'registered',checkedAt:null,uncertain:false,error:null,scheduledAt:null});await audit(email,blog?'content.manual_link':'content.manual_registered',id);
     });
    }else if(route==='/api/growth/campaign'){
     if(v.service!=='tistory')fail('수익화 캠페인은 SNS에서 독립 운영합니다.');scope(v.service,'platform');const id=v.id?text(v.id,'캠페인',80):crypto.randomUUID(),old=get('growth-campaign',id);if(v.id&&!old)fail('캠페인이 없습니다.',404);checkVersion(v.version,old);
