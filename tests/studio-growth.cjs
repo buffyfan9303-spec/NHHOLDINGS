@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const handlers={},calls=[];
+const context={window:{addEventListener(){}},document:{addEventListener:(name,fn)=>handlers[name]=fn},session:{readOnly:false},state:{month:'2026-10',scope:'all'},labels:{instagram:'인스타그램',threads:'Threads'},data:{growthCampaigns:[{id:'a',service:'tistory',model:'audience',name:'<성장>',goal:'공유 비교'}],growthResults:[]},esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),formField:(l,n,v,t,x)=>`<label>${l}<input name="${n}" type="${t}" value="${v}" ${x}></label>`,selectField:()=>'',today:()=> '2026-10-08',won:n=>n+'원',render(){},toast(){},download:(...v)=>calls.push(v)};
+vm.createContext(context);vm.runInContext(fs.readFileSync('public/one/studio.js','utf8'),context);
+let html=context.window.NuriStudio.render('growth');
+assert(html.includes('계정 성장'));assert(html.includes('&lt;성장&gt;'));assert(!html.includes('value="undefined"'));
+assert(html.includes('<strong>미확인</strong>'));assert(!/name="url"[^>]*required/.test(html));
+context.data.growthResults=[{id:'r',campaignId:'a',service:'tistory',day:'2026-10-08',channel:'instagram',views:0,follows:null,shares:2,saves:null,note:'=SUM(A1)'}];
+html=context.window.NuriStudio.render('growth');
+assert(html.includes('<strong>0</strong><small>확인분 합계 · 1/1건'));
+assert(html.includes('<strong>미확인</strong><small>확인분 합계 · 0/1건'));
+(async()=>{await handlers.click({target:{closest:()=>({dataset:{studio:'growth-csv'},isConnected:false})},preventDefault(){}});assert.equal(calls.length,1);const csv=calls[0][1];assert(csv.includes('"조회 수"'));assert(csv.includes('"0","","","","","","","2",""'));assert(csv.includes('"\'=SUM(A1)"'));console.log('studio growth: unknown/zero, optional URL, escaped rendering and CSV passed');})().catch(e=>{console.error(e);process.exitCode=1;});

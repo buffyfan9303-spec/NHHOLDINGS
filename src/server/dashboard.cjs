@@ -290,14 +290,19 @@ async function controller(options){
     });
    }else if(route==='/api/growth/campaign'){
     if(v.service!=='tistory')fail('수익화 캠페인은 SNS에서 독립 운영합니다.');scope(v.service,'platform');const id=v.id?text(v.id,'캠페인',80):crypto.randomUUID(),old=get('growth-campaign',id);if(v.id&&!old)fail('캠페인이 없습니다.',404);checkVersion(v.version,old);
-    if(!['product','affiliate','lead','sponsor','ads'].includes(v.model))fail('수익 모델을 선택하세요.');
+    if(!['audience','product','affiliate','lead','sponsor','ads'].includes(v.model))fail('성장·수익 모델을 선택하세요.');
     const at=now(),record={service:v.service,name:text(v.name,'캠페인 이름',200),model:v.model,goal:text(v.goal||'','목표',1000,true),offer:text(v.offer||'','제안',2000,true),url:httpsURL(v.url||''),version:old?(old.version??1)+1:1,createdAt:old?.createdAt||at,updatedAt:at};
     if(old&&old.service!==v.service)fail('캠페인의 서비스는 변경할 수 없습니다.');await transaction(async()=>{await put('growth-campaign',id,record);await audit(email,'growth.campaign_saved',id);});
    }else if(route==='/api/growth/result'){
     const campaignId=text(v.campaignId,'캠페인',80),campaign=get('growth-campaign',campaignId);if(!campaign||campaign.service!=='tistory')fail('SNS 독립 캠페인을 선택하세요.');scope(campaign.service,'platform');
     if(!CHANNELS.includes(v.channel))fail('실적 채널을 선택하세요.');const id=v.id?text(v.id,'실적',80):crypto.randomUUID(),old=get('growth-result',id);if(v.id&&!old)fail('실적이 없습니다.',404);checkVersion(v.version,old);
     const values={};for(const field of ['impressions','clicks','leads','orders','revenue','cost']){if(!Number.isSafeInteger(v[field])||v[field]<0||v[field]>1e10)fail('실적은 0~100억의 정수로 입력하세요.');values[field]=v[field];}
-    const at=now();await transaction(async()=>{await put('growth-result',id,{campaignId,service:campaign.service,day:date(v.day),channel:v.channel,...values,note:text(v.note||'','실적 메모',2000,true),manual:true,version:old?(old.version??1)+1:1,createdAt:old?.createdAt||at,updatedAt:at});await audit(email,'growth.result_saved',id);});
+    for(const field of ['views','reach','profileVisits','follows','unfollows','likes','replies','shares','saves']){const value=v[field]??null;if(value!==null&&(!Number.isSafeInteger(value)||value<0||value>1e10))fail('일별 성장 수치는 0~100억의 정수로 입력하세요.');values[field]=value;}
+    const at=now(),day=date(v.day);await transaction(async()=>{
+     if(campaign.model==='audience'){await ctx.lock('growth-result:'+campaignId+':'+day+':'+v.channel);await ctx.reload();if(list('growth-result').some(r=>r.id!==id&&r.campaignId===campaignId&&r.day===day&&r.channel===v.channel))fail('이 캠페인·날짜·채널의 일별 성장 기록이 이미 있습니다. 기존 기록을 수정하세요.',409);}
+     const current=get('growth-result',id);if(v.id&&!current)fail('실적이 없습니다.',404);checkVersion(v.version,current);
+     await put('growth-result',id,{campaignId,service:campaign.service,day,channel:v.channel,...values,note:text(v.note||'','실적 메모',2000,true),manual:true,version:current?(current.version??1)+1:1,createdAt:current?.createdAt||at,updatedAt:at});await audit(email,'growth.result_saved',id);
+    });
    }
    else if(route==='/api/content'){
     scope(v.service,v.business||'platform');if(!CHANNELS.includes(v.channel))fail('게시 채널을 확인하세요.');if(v.channel==='blog'&&v.blogTarget&&!['tistory','wordpress'].includes(v.blogTarget))fail('블로그 발행 방식을 확인하세요.');const media=v.media?String(await publicURL(v.media)):'',id=v.id||crypto.randomUUID(),old=get('content',id);if(v.id&&!old)fail('콘텐츠가 없습니다.',404);if(old&&(old.externalId||['published','publishing'].includes(old.status)))fail('게시된 콘텐츠는 새 초안으로 작성하세요.');

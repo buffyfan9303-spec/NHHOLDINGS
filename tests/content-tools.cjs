@@ -11,7 +11,7 @@ async function manualRegistrations(){
   // PGlite has one session and no advisory locks; serialize its transaction connections.
   globalThis.nhPool={query,async connect(){const prior=tail;let release;tail=new Promise(r=>release=r);await prior;return {query,release};}};
   process.env.DATABASE_URL='postgres://memory-test-only';process.env.SESSION_SECRET='test-only-manual-registration-secret-32-characters';
-  dns.lookup=async hostname=>{assert.equal(hostname,'doto1.tistory.com');return [{address:'203.0.113.1',family:4}];};globalThis.fetch=async()=>assert.fail('URL registration must not fetch or publish');
+  dns.lookup=async hostname=>{assert.equal(hostname,'doto1.tistory.com');return [{address:'203.0.113.1',family:4}];};globalThis.fetch=async()=>assert.fail('recording manual URLs or daily growth must not call an external API');
   const seed=async(id,channel,extra={})=>query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','content',$1,$2)",[id,JSON.stringify({service:'tistory',business:'platform',channel,...(channel==='blog'?{blogTarget:'tistory'}:{}),title:'회귀 검사 초안',body:'본문',status:'review',version:3,uncertain:true,error:'확인 필요',scheduledAt:'2026-10-08T00:00:00Z',...extra})]);
   const call=async(c,route,value,status=200)=>{const r=await c.handle({method:'POST'},route,value,'test@example.invalid'),body=await r.json();assert.equal(r.status,status,JSON.stringify(body.error));return body;};
   const row=async id=>(await query("SELECT data FROM nh_documents WHERE workspace='live' AND kind='content' AND id=$1",[id])).rows[0].data;
@@ -34,6 +34,21 @@ async function manualRegistrations(){
   await seed('stale-context','youtube');const stale=await controller({demo:false});await query("UPDATE nh_documents SET data=jsonb_set(data,'{version}','4') WHERE id='stale-context'");await call(stale,'/api/studio/manual',{id:'stale-context',url:'https://youtu.be/stale',version:3},409);assert.equal((await row('stale-context')).version,4);
   await seed('rollback','youtube');const rollback=await controller({demo:false}),before=await row('rollback'),count=await auditCount();failAudit=true;await call(rollback,'/api/studio/manual',{id:'rollback',url:'https://youtu.be/rollback',version:3},500);assert.deepEqual(await row('rollback'),before);assert.equal(await auditCount(),count);
   await seed('race-a','youtube');await seed('race-b','youtube');const a=await controller({demo:false}),b=await controller({demo:false}),race=await Promise.all([a.handle({method:'POST'},'/api/studio/manual',{id:'race-a',url:'https://youtu.be/same-post',version:3},'test@example.invalid'),b.handle({method:'POST'},'/api/studio/manual',{id:'race-b',url:'https://youtu.be/same-post',version:3},'test@example.invalid')]);assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);assert(locks>0,'registration must acquire the workspace URL lock');
+  const growth=await controller({demo:false}),moneyBefore=(await query('SELECT * FROM nh_money ORDER BY workspace,id')).rows,dailyFields=['views','reach','profileVisits','follows','unfollows','likes','replies','shares','saves'];
+  const campaignState=await call(growth,'/api/growth/campaign',{service:'tistory',name:'계정 성장',model:'audience'}),campaign=campaignState.growthCampaigns.find(c=>c.name==='계정 성장');assert.equal(campaign.model,'audience');assert.equal(campaign.url,'');
+  for(const model of ['product','affiliate','lead','sponsor','ads'])await call(growth,'/api/growth/campaign',{service:'tistory',name:'기존 '+model,model,url:'https://public.example.invalid/offer'});
+  const input={campaignId:campaign.id,day:'2026-10-08',channel:'x',impressions:100,clicks:10,leads:2,orders:1,revenue:1000,cost:100,note:'채널의 당일 증가분 확인'};
+  const unknownState=await call(growth,'/api/growth/result',{...input,views:null}),unknown=unknownState.growthResults.find(r=>r.note===input.note);for(const field of dailyFields)assert.equal(unknown[field],null,'missing/null must stay unknown');
+  const zeros=Object.fromEntries(dailyFields.map(field=>[field,0])),zeroState=await call(growth,'/api/growth/result',{...input,day:'2026-10-09',note:'확인한 0',...zeros}),zero=zeroState.growthResults.find(r=>r.note==='확인한 0');for(const field of dailyFields)assert.equal(zero[field],0,'an observed zero must not become unknown');
+  const counts=Object.fromEntries(dailyFields.map((field,index)=>[field,index+1])),updatedState=await call(growth,'/api/growth/result',{...input,id:unknown.id,version:unknown.version,...counts}),updated=updatedState.growthResults.find(r=>r.id===unknown.id);assert.equal(updated.version,2);assert.equal(updated.revenue,input.revenue);assert.equal(updated.cost,input.cost);
+  await call(growth,'/api/growth/result',{...input,...zeros},409);await call(growth,'/api/growth/result',{...input,id:zero.id,version:zero.version,...zeros},409);
+  await call(growth,'/api/growth/result',{...input,id:unknown.id,version:unknown.version,...zeros},409);
+  for(const field of dailyFields)for(const invalid of [-1,0.5,'0',1e10+1])await call(growth,'/api/growth/result',{...input,id:unknown.id,version:updated.version,...counts,[field]:invalid},400);
+  await call(growth,'/api/growth/result',{...input,impressions:undefined},400);
+  const maximum=await call(growth,'/api/growth/result',{...input,day:'2026-10-10',...Object.fromEntries(dailyFields.map(field=>[field,1e10]))});assert.equal(maximum.growthResults.find(r=>r.day==='2026-10-10').views,1e10);
+  const salesCampaign=maximum.growthCampaigns.find(c=>c.model==='affiliate');for(let i=0;i<2;i++)await call(growth,'/api/growth/result',{...input,campaignId:salesCampaign.id,note:'기존 판매 기록 '+i});
+  const growthA=await controller({demo:false}),growthB=await controller({demo:false}),dailyRace=await Promise.all([growthA.handle({method:'POST'},'/api/growth/result',{...input,day:'2026-10-11'},'test@example.invalid'),growthB.handle({method:'POST'},'/api/growth/result',{...input,day:'2026-10-11'},'test@example.invalid')]);assert.deepEqual(dailyRace.map(r=>r.status).sort(),[200,409]);
+  const fresh=(await controller({demo:false})).view(),reloaded=fresh.growthResults.find(r=>r.id===unknown.id);for(const field of dailyFields)assert.equal(reloaded[field],counts[field]);assert.deepEqual(reloaded,updated);assert(fresh.growthResults.find(r=>r.id===zero.id));assert.equal(fresh.growthCampaigns.find(c=>c.id===campaign.id).url,'');assert.deepEqual((await query('SELECT * FROM nh_money ORDER BY workspace,id')).rows,moneyBefore,'growth counters must not create live or sample financial transactions');
  }finally{globalThis.nhPool=previous.pool;globalThis.fetch=previous.fetch;dns.lookup=previous.lookup;for(const [key,value] of [['DATABASE_URL',previous.database],['SESSION_SECRET',previous.secret]])if(value===undefined)delete process.env[key];else process.env[key]=value;await db.close();}
 }
 async function run(){
@@ -70,6 +85,6 @@ async function run(){
  assert.throws(()=>preflight({service:'crm',channel:'x',body:'과거 기록'}),/독립 운영/);assert.equal(repurpose(input,['x','x']).length,1);assert.throws(()=>repurpose(input,['unknown']),{status:400});
  assert(repurpose({...input,body:'😀'.repeat(9999)},['blog'])[0].body.length<=20000);
  await manualRegistrations();
- console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, nine-channel repurposing, manual URL validation/CAS/duplicates/retries/rollback and serialized registration');
+ console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, nine-channel repurposing, manual URL validation/CAS/duplicates/retries/rollback, serialized registration and daily audience growth unknown/zero/validation/reload/finance isolation');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
