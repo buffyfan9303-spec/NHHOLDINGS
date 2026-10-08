@@ -69,6 +69,9 @@ SNS 조사도 역할을 나눈다. 티스토리 담당은 검색 의도·본인 
 
 ## 시작·종료 기록
 
+- 2026-10-09 01:07~01:16 KST | 분석 시작/종료 | Codex 총괄·기존 workflow_reference_audit 읽기 전용 기록 점검 | codex/nuri-unified/d660711 | 원본 OpenRig 릴스 펼친 캡션/재생 화면 표본·공식 README/Workshop/continuity/usage/auth·v0.6.7 starter YAML 대조, 기존 비공개 openrig-feasibility.md 보완 | 기본 starter의 Claude 구현 리드·Codex gpt-6-astra 지정은 사용자 Codex 리드/비용 우선 방침에 조정 필요. WSL2 공식 경로·자동 시험/현재 PC 실행 미검증 구분 | 설치/팀 기동/권한 확대/새 Claude/유료 호출 없음, 작은 제한 권한 비교시험 전 운영 교체 보류. 완료 내부 담당·연구 Chrome 탭 종료.
+- 2026-10-09 01시대 KST | 월간 게시 집계 운영 검증 종료 | Codex 총괄 | PR #15 MERGED/main 71c0e14ee10f372be15dbbe5ea33c624fc80b04a | production dpl_85xegF6DyrfYgWeLYuosbakXHCLu READY/nhholdings.xyz alias 및 실제 app.js committed Git blob SHA256 일치. 처음 Windows checkout CRLF/raw bytes 차이는 Git blob LF 비교로 해소 | PC 채널별 집계·URL 등록 이력 유지·지난달 선택/복원·375px 모바일/가로 넘침없음 직접 확인, 달력 이력은 기존 VM 회귀검사로 확인하고 이번 UI 재진입 미실행 | 비공개 monthly-publications-after-* 및 asset-check.json 보존. 운영 DB/외부 게시/수익 변경 없음, viewport 복원·소유 Chrome 탭 종료. 다음 /152 공식 근거 대조 또는 먼저 도래하는 발행/관찰 슬롯.
+
 각 작업의 시작과 끝에 아래 형식으로 이 파일에 짧게 누적한다. 담당·파일 소유권은 작업 중 바뀌면 바로 갱신한다. 비공개 원문·로그는 `.gitignore`된 `artifacts/operations/`에 두고 여기에는 경로와 검증 결과만 적는다.
 
 `날짜/시각(KST) | 시작/종료 | 담당·역할·실제 모델/effort(반환 기록 기준) | branch/HEAD | 변경 파일 | 검사·증거 | 남은 일`
