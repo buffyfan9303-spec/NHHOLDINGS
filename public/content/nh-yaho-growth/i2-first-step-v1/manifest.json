@@ -1,0 +1,52 @@
+{
+  "id": "i2-first-step-v1",
+  "format": "carousel",
+  "account": "nh_yaho",
+  "caption": "운동 준비는 자꾸 풀코스가 된다.\n옷 고르고, 음악 고르고, 물병까지 챙기면 출발 전에 쉬고 싶다.\n\n그래서 오늘의 첫 목표는 문밖에 한 발.\n내일의 신발은 오늘 현관에 꺼내 둔다.",
+  "images": [
+    {
+      "order": 1,
+      "file": "card-01.jpg",
+      "url": "https://nhholdings.xyz/content/nh-yaho-growth/i2-first-step-v1/card-01.jpg",
+      "text": "운동복 고르느라\n오늘 운동이 끝났다.",
+      "alt": "주황색 운동복을 입은 원숭이가 옷이 쌓인 의자 옆 바닥에 앉아 운동화 한 짝을 들고 있다. 글자: 운동복 고르느라 오늘 운동이 끝났다.",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 380068,
+      "sha256": "8770f4d3228e9603fcb528d367d16f202aa28e17f3d96daaaf801176b1107bd8"
+    },
+    {
+      "order": 2,
+      "file": "card-02.jpg",
+      "url": "https://nhholdings.xyz/content/nh-yaho-growth/i2-first-step-v1/card-02.jpg",
+      "text": "플레이리스트는 완성.\n몸은 아직 대기 중.",
+      "alt": "원숭이가 의자에 편하게 앉아 헤드폰을 끼고 휴대전화를 보고 있으며 운동화는 바닥에 놓여 있다. 글자: 플레이리스트는 완성. 몸은 아직 대기 중.",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 376844,
+      "sha256": "a2db17f9575fdd0501ec8ce89a25a098732c09df867a7aa7cf00d0d0c7036551"
+    },
+    {
+      "order": 3,
+      "file": "card-03.jpg",
+      "url": "https://nhholdings.xyz/content/nh-yaho-growth/i2-first-step-v1/card-03.jpg",
+      "text": "오늘은 여기까지 줄인다.\n신발 신고\n문밖에 한 발.",
+      "alt": "운동화를 신은 원숭이가 열린 현관문을 잡고 문턱 밖으로 한 발을 내딛는다. 글자: 오늘은 여기까지 줄인다. 신발 신고 문밖에 한 발.",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 370620,
+      "sha256": "e14695cbf54b1a69039488310a00224ca3a881e9eccd0876108d3ee5d45d7b94"
+    },
+    {
+      "order": 4,
+      "file": "card-04.jpg",
+      "url": "https://nhholdings.xyz/content/nh-yaho-growth/i2-first-step-v1/card-04.jpg",
+      "text": "내일의 나에게\n의지 대신\n신발을 꺼내 둔다.",
+      "alt": "저녁의 현관에서 원숭이가 다음 날 신을 운동화 한 켤레를 매트 위에 가지런히 놓는다. 글자: 내일의 나에게 의지 대신 신발을 꺼내 둔다.",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 360782,
+      "sha256": "60ff198037e4024520f25a8f8a9f0f6a822d3bd7279d32111719b80885c893b6"
+    }
+  ]
+}
