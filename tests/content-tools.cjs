@@ -1,8 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {validateSEO,renderMarkdown,preview,repurpose,weight}=require('../src/server/content-tools.cjs');
-const {preflight,inspectPublication}=require('../src/server/dashboard.cjs');
+const {preflight,inspectPublication,defaultPublishingSettings,validatePublishingSettings}=require('../src/server/dashboard.cjs');
 async function run(){
+ const publishing=defaultPublishingSettings();assert.deepEqual(publishing,{timezone:'Asia/Seoul',dailyCount:5,times:['08:00','12:00','16:00','20:00','22:00'],enabled:false,version:1});
+ assert.equal(validatePublishingSettings({timezone:'Asia/Seoul',dailyCount:1,times:['08:30'],enabled:false},null).version,2);
+ const saved=validatePublishingSettings({timezone:'Asia/Seoul',dailyCount:2,times:['09:30','18:00'],enabled:false},{version:4});assert.deepEqual({timezone:saved.timezone,dailyCount:saved.dailyCount,times:saved.times,enabled:saved.enabled,version:saved.version},{timezone:'Asia/Seoul',dailyCount:2,times:['09:30','18:00'],enabled:false,version:5});
+ for(const invalid of [{dailyCount:0,times:[],timezone:'Asia/Seoul',enabled:false},{dailyCount:2,times:['09:00'],timezone:'Asia/Seoul',enabled:false},{dailyCount:2,times:['09:00','09:00'],timezone:'Asia/Seoul',enabled:false},{dailyCount:1,times:['24:00'],timezone:'Asia/Seoul',enabled:false},{dailyCount:1,times:['09:00'],timezone:'UTC',enabled:false},{dailyCount:1,times:['09:00'],timezone:'Asia/Seoul',enabled:true},{dailyCount:1,times:['09:00'],timezone:'Asia/Seoul',enabled:'false'}])assert.throws(()=>validatePublishingSettings(invalid,null));
  const input={title:'공개 자료로 안내하는 누리 서비스',body:'누리 서비스의 이용 방법을 공개 자료에 따라 명확하고 간결하게 설명합니다.\n\n## 이용 방법\n**안내**를 확인하세요. [공식 자료](https://example.com/guide)\n\n<script>alert(1)</script>\n[위험](javascript:alert(1))\n[상대](/secret)',seo:{title:'누리 서비스 이용 방법',description:'누리 서비스의 이용 방법과 확인할 내용을 공개 자료를 바탕으로 설명합니다.',slug:'누리-서비스',keyword:'누리',cta:'공식 안내를 확인하세요.',url:'https://example.com/article',sources:[{title:'공식 안내',url:'https://example.com/guide'}],affiliate:false}};
  const result=preview(input);assert.match(result.html,/<h2>이용 방법<\/h2>/);assert.match(result.html,/<strong>안내<\/strong>/);assert.match(result.html,/&lt;script&gt;/);assert.doesNotMatch(result.html,/<script|href="javascript:|href="\/secret"/i);assert.match(result.document,/rel="canonical"/);assert.equal(result.analysis.headings[0].text,'이용 방법');assert.equal(result.analysis.links[0].url,'https://example.com/guide');assert.equal(result.analysis.score,100);
  const hostile=preview({...input,title:'<img src=x onerror=alert(1)>',seo:{...input.seo,title:'</title><script>bad</script>',description:'" onload="bad </script><script>bad</script>'}});

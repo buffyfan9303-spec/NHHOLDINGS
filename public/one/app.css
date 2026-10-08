@@ -62,3 +62,5 @@ th,.publishing-board th{background:#1d242a;border-color:#303a43;color:#abbac4}td
 .brand>img{display:block;width:150px;height:auto;max-width:100%}
 
 .btn.primary{background:#86d2b1;border-color:#86d2b1;color:#10261b}.btn.primary:hover{background:#a0dfc4;border-color:#a0dfc4;color:#10261b}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline-color:#9bd5bf}
+
+.publishing-settings-panel>.status-row{align-items:flex-start;margin-bottom:18px}.publishing-settings-panel>.status-row .caption{margin-top:6px}.publishing-settings-form{margin-top:20px}.publishing-time-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.publishing-time[hidden]{display:none!important}.publishing-saved-at{display:inline-block;margin-left:14px}@media(max-width:760px){.publishing-time-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.publishing-saved-at{display:block;margin:10px 0 0}}

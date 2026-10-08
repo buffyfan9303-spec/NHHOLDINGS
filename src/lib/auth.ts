@@ -35,4 +35,4 @@ export function authCookies(response:NextResponse,session:{access_token:string;r
  response.cookies.set('nh_access',session.access_token,{...options,maxAge:session.expires_in??3600});
  response.cookies.set('nh_refresh',session.refresh_token,{...options,maxAge:30*86400});
 }
-export function clearAuth(response:NextResponse){for(const name of ['nh_access','nh_refresh','nuri_admin'])response.cookies.set(name,'',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:0});}
+export function clearAuth(response:NextResponse,secure=process.env.NODE_ENV==='production'){for(const name of ['nh_access','nh_refresh','nuri_admin'])response.cookies.set(name,'',{httpOnly:true,secure,sameSite:'lax',path:'/',maxAge:0});}

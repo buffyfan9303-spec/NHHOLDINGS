@@ -43,6 +43,13 @@ async function remote(url,options={}){
  const v=await r.json().catch(()=>({}));if(!r.ok)fail(`채널 API 응답 ${r.status}. 계정 권한/토큰/이용 한도를 확인하세요.`,502);return v;
 }
 const manualBlog=p=>p.channel==='blog'&&(p.blogTarget==='tistory'||!p.blogTarget&&p.service==='tistory');
+const defaultPublishingSettings=()=>({timezone:'Asia/Seoul',dailyCount:5,times:['08:00','12:00','16:00','20:00','22:00'],enabled:false,version:1});
+function validatePublishingSettings(v,old){
+ if(!Number.isSafeInteger(v.dailyCount)||v.dailyCount<1||v.dailyCount>5)fail('하루 발행 수는 1~5개로 설정하세요.');
+ if(!Array.isArray(v.times)||v.times.length!==v.dailyCount||v.times.some(t=>typeof t!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t))||new Set(v.times).size!==v.times.length)fail('하루 발행 수만큼 서로 다른 시각을 설정하세요.');
+ if(v.timezone!=='Asia/Seoul'||typeof v.enabled!=='boolean'||v.enabled!==false)fail('한국 시각과 일시중지 상태로 저장해야 합니다.');
+ return {timezone:'Asia/Seoul',dailyCount:v.dailyCount,times:[...v.times],enabled:false,version:(old?.version??1)+1,updatedAt:now()};
+}
 function preflight(p){
  snsScope(p.service,p.business||'platform');
  if(Object.hasOwn(MANUAL_HOSTS,p.channel))fail('이 채널은 자동 게시 API가 연결되지 않았습니다. 직접 게시 후 발행 URL을 등록하세요.');
@@ -117,6 +124,7 @@ async function controller(options){
   businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content'),contentRevisions:list('content-revision').slice(0,100),growthCampaigns:list('growth-campaign'),growthResults:list('growth-result'),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
   accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics')},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
+  publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),
   observedAt:now(),demo:!!options.demo
  };}
  async function generate(input,email){
@@ -212,7 +220,13 @@ async function controller(options){
     if(['/api/content','/api/prompt','/api/plan','/api/channel'].includes(route)){snsScope(v.service,v.business||'platform');if(v.id){const old=get(route==='/api/plan'?'plan':route==='/api/channel'?'channel':'content',v.id);if(old)snsScope(old.service,old.business||'platform');}}
     if(/^\/api\/(?:content\/(?:schedule|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p)snsScope(p.service,p.business||'platform');}
     if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a)snsScope(a.service,a.business||'platform');}
-   if(route==='/api/social-app'){if(options.demo)fail('SNS 앱 연결은 운영 설정에서 등록하세요.');if(!Object.hasOwn(providers,v.provider))fail('SNS를 선택하세요.');const old=get('social-app',v.provider),c=old?.secret?decrypt(old.secret):{};c.clientId=text(v.clientId,'Client ID',500);if(v.clientSecret)c.clientSecret=text(v.clientSecret,'Client Secret',5000);if(!c.clientSecret)fail('Client Secret을 입력하세요.');if(v.provider==='instagram'){c.version=text(v.version||c.version||'v25.0','API 버전',12);if(!/^v\d+\.0$/.test(c.version))fail('API 버전을 확인하세요.');}await put('social-app',v.provider,{secret:encrypt(c),updatedAt:now()});await audit(email,'social.app_configured',v.provider);}
+   if(route==='/api/publishing/settings'){
+    if(options.demo)fail('샘플 환경에서는 운영 발행 설정을 변경할 수 없습니다.',403);
+    const id='tistory',old=get('publishing-settings',id);checkVersion(v.version,old,true);
+    const settings=validatePublishingSettings(v,old);
+    await transaction(async()=>{await put('publishing-settings',id,settings);await audit(email,'publishing.settings_saved',id);});
+   }
+   else if(route==='/api/social-app'){if(options.demo)fail('SNS 앱 연결은 운영 설정에서 등록하세요.');if(!Object.hasOwn(providers,v.provider))fail('SNS를 선택하세요.');const old=get('social-app',v.provider),c=old?.secret?decrypt(old.secret):{};c.clientId=text(v.clientId,'Client ID',500);if(v.clientSecret)c.clientSecret=text(v.clientSecret,'Client Secret',5000);if(!c.clientSecret)fail('Client Secret을 입력하세요.');if(v.provider==='instagram'){c.version=text(v.version||c.version||'v25.0','API 버전',12);if(!/^v\d+\.0$/.test(c.version))fail('API 버전을 확인하세요.');}await put('social-app',v.provider,{secret:encrypt(c),updatedAt:now()});await audit(email,'social.app_configured',v.provider);}
    else if(route==='/api/ai'){if(!['anthropic','openai'].includes(v.provider)||typeof v.enabled!=='boolean')fail('AI 공급자와 API 사용 설정을 확인해주세요.');const old=get('ai','config'),secret=v.token?encrypt({token:text(v.token,'API 키',5000)}):old?.provider===v.provider?old.secret:null,model=text(v.model,'모델 ID',120);if(!secret)fail('API 키를 입력해주세요.');await put('ai','config',{provider:v.provider,model,enabled:v.enabled,secret});await audit(email,'ai.configured',v.provider);await ctx.reload();return reply(view());}
    else if(route==='/api/refresh'){await refresh();return reply(view());}
    else if(route==='/api/ownership'){const b=businesses().find(b=>b.key===v.key);if(!b||b.excluded||typeof v.owned!=='boolean')fail('운영 사업장을 선택하세요.');await put('ownership',b.key,{owned:v.owned});await audit(email,'business.ownership',b.key);}
@@ -305,4 +319,4 @@ async function controller(options){
  }catch(e){return reply({error:e.code==='23505'?'이미 등록된 거래 고유번호입니다.':e.status?e.message:'작업을 완료하지 못했습니다. 연결과 입력값을 확인해주세요.'},e.code==='23505'?409:e.status||500);}}
  return {handle,view,refresh,tick};
 }
-module.exports={controller,preflight,parseSitemap,inspectPublication,manualBlog,SOURCES};
+module.exports={controller,preflight,parseSitemap,inspectPublication,manualBlog,defaultPublishingSettings,validatePublishingSettings,SOURCES};
