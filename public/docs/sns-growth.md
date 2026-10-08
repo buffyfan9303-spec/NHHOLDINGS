@@ -15,9 +15,9 @@
 
 계정은 아무 인기 주제나 뒤섞지 않는다. Instagram은 **다시 움직이게 하는 한 컷과 한 문장**, Threads는 **글만으로 완결되는 관찰과 유머**를 초기 약속으로 잡는다. 동기부여·구체적인 일상 공감·작은 실행을 그 안에서 시험한다. 건강 진단, 투자 추천, 출처 없는 유명인 인용, 타인의 일화로 꾸민 창작은 사용하지 않는다. 모든 글을 질문으로 끝내거나 매번 좋아요·댓글·태그를 요구하지 않는다. 현재 집중 채널은 티스토리·Instagram·Threads이며 X·Shorts·TikTok은 준비 단계다.
 
-Meta는 Threads의 대화·유머·텍스트를 동반한 미디어·플랫폼용 원작을 권고했다. 이는 2024년 공개 후 2025년 갱신된 플랫폼 집계 안내이며 한국의 새 계정에서 특정 형식이 이긴다는 증거는 아니다. Instagram도 원작 추천 정책을 설명하지만 정적 이미지의 저장·공유 가중치 공식은 공개하지 않았다. Shorts는 특정 형식을 우대한다고 설명하지 않고 시청 선택·지속 등과 개인화를 설명한다. [Threads 공식 안내](https://about.fb.com/news/2024/10/find-your-community-with-new-threads-educational-insights/), [Instagram 원작 추천](https://about.fb.com/ltam/news/2024/04/ajudando-o-criador-de-conteudo-a-encontrar-novos-publicos/), [Shorts 발견과 추천](https://support.google.com/youtube/answer/11914225?hl=en)
+Meta는 Threads의 대화·유머·텍스트를 동반한 미디어·플랫폼용 원작을 권고했다. 이는 2024년 공개된 플랫폼 집계 안내이며 한국의 새 계정에서 특정 형식이 이긴다는 증거는 아니다. Instagram도 원작 추천 정책을 설명하지만 정적 이미지의 저장·공유 가중치 공식은 공개하지 않았다. Shorts는 특정 형식을 우대한다고 설명하지 않고 시청 선택·지속 등과 개인화를 설명한다. [Threads 공식 안내](https://about.fb.com/news/2024/10/find-your-community-with-new-threads-educational-insights/), [Instagram 원작 추천](https://about.fb.com/ltam/news/2024/04/ajudando-o-criador-de-conteudo-a-encontrar-novos-publicos/), [Shorts 발견과 추천](https://support.google.com/youtube/answer/11914225?hl=en)
 
-2026-10-08 클라우드 조사: 네트워크 정책 때문에 Meta·Instagram·Threads 공식 원문을 열지 못했다. 2차 보도 요약상 Meta 크리에이터 허브는 대화 중심 조회, 주 2~5회 게시, 텍스트를 동반한 게시물을 강조하고 Instagram의 원작 보호는 릴스에서 사진·캐러셀로 확대됐다고 전해진다. 위 ‘2025년 갱신’ 표기와 이 요약은 모두 원문 확인 전이므로 발행 전 공식 원문으로 확인한다.
+2026-10-08 클라우드 조사에서는 네트워크 정책으로 공식 원문을 열지 못했으나 Codex가 위 Threads 공식 안내와 Meta의 2026년 발표를 별도로 확인했다. ‘2025년 갱신’ 날짜는 확인되지 않아 근거로 사용하지 않는다. Meta는 2025년 4분기 미국 Instagram 추천의 75%가 원작이라고 발표했다. 미국 플랫폼 집계이며 한국의 새 계정 도달이나 특정 카드의 성과를 보장하지 않는다. [Meta 2026년 발표](https://about.fb.com/news/2026/01/2026-ai-drives-performance/)
 
 ## 실제 조사에서 확인한 것과 확인하지 못한 것
 
@@ -102,6 +102,8 @@ Search Console의 우리 사이트 노출·클릭과 GA4 실제 제공 지표를
 
 실제 파일은 `public/one/studio.js`(성장·수익 화면), `src/server/dashboard.cjs`(저장 검증), `tests/content-tools.cjs`·`tests/studio-growth.cjs`(회귀 검사)다. 저장된 공통/채널 프롬프트는 기존 `nh_documents`와 반복 실행 경로를 재사용한다. 새 분석 SDK·유료 API·크롤러·플러그인을 설치하지 않았다.
 
-공식 웹 검색과 로그인된 Chrome의 공개 게시물·본인 인사이트 조회, Supabase SQL 읽기·설정 저장 후 대조, 기존 자동화 도구 호출이 성공했다. Chrome 업로드 권한과 이미지 업로드 동작은 확인했지만 Instagram 공개 발행과 Meta API OAuth 연결은 별개의 미완료 항목이다. 설치된 스킬은 content-creation·performance-report·imagegen을 사용했다. 생성 이미지 도구는 사용했으며 서버의 유료 OpenAI API를 켜거나 결제하지 않았다. 커넥터 존재를 인증·실사용 성공으로 표현하지 않는다.
+공식 웹 검색과 로그인된 Chrome의 공개 게시물·본인 인사이트 조회, Supabase SQL 읽기·설정 저장 후 대조, 기존 자동화 도구 호출이 성공했다. Instagram 창작 카드 1건은 Chrome에서 공개 발행 후 실제 URL·본문·이미지·alt·AI 라벨을 확인했다. Meta API OAuth 연결은 별개의 미완료 항목이다. 설치된 스킬은 content-creation·performance-report·imagegen을 사용했다. 생성 이미지 도구는 사용했으며 서버의 유료 OpenAI API를 켜거나 결제하지 않았다. 커넥터 존재를 인증·실사용 성공으로 표현하지 않는다.
+
+캡션에 ‘AI를 활용해 직접 만든 문장과 그림입니다’ 같은 제작 안내를 반복 삽입하지 않는다. 2026-10-08 사용자 의견을 반영해 첫 Instagram 글에서도 해당 문장을 제거하고 공개 화면 재조회를 완료했다. 필요한 AI 고지는 게시 화면의 플랫폼 라벨로 처리한다. 유명인 발언처럼 보이게 꾸미지 않되, 내부 원고의 ‘창작’ 표기를 공개 캡션마다 기계적으로 복사하지 않는다. [Meta AI 표시 안내](https://about.fb.com/news/2024/04/metas-approach-to-labeling-ai-generated-content-and-manipulated-media/)
 
 주 에이전트는 UI·프롬프트·통합 검증을 맡았다. GPT-6 Luna medium은 공식 정책·매체 분리 조사, Luna low는 공개 표본 조사와 UI 독립 검토를 맡아 조사 비용을 줄였다. 기존 publication_safety 에이전트는 좁은 서버 입력·중복·금융 분리 검사를 맡았다. 사용자 요청에 따라 로그인된 Claude Max의 Opus·high로 문장·구성·원본 생성 이미지 독립 비평도 실제 수행했다. 검토는 모델 재학습이 아니며 기존 작성 기준과 다음 작업 프롬프트에 반영한다. 검토자의 숫자·권장 규격·표본 해석도 다시 확인하고 임의 규칙은 채택하지 않는다. 수용 기준은 링크 없는 성장 캠페인 저장→재조회→화면 소비, 미확인/0 구분, 일별 중복 차단, 기존 수익·비용·권한 유지, PC/모바일 넘침 없음이다. 배포 SHA·실제 도메인 검증은 작업 결과 기록에서 별도로 남긴다.
