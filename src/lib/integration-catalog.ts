@@ -8,6 +8,14 @@ export type Integration = {
 };
 export const integrationCatalog: readonly Integration[] = [
   {
+    id:'naver-api-hub',name:'NAVER API HUB',category:'analytics',status:'requires-setup',
+    description:'뉴스·웹문서·이미지 검색과 검색어트렌드를 운영자가 수동 조회합니다. 쇼핑인사이트는 등록 안내만 제공하며 조회하지 않습니다.',
+    requirements:['NAVER Cloud Application의 해당 API 등록','서버 암호화 저장용 Client ID·Client Secret','발행 전 공식 원문의 날짜·신청 조건·이미지 권리 확인'],
+    freeUsage:'2026-10-09 공식 안내 기준 한시적 무료입니다. 실제 이용 한도·과금 전환 공지는 콘솔에서 확인하세요. 검색 트렌드는 0~100 상대 지수로 월간 절대 검색량이 아닙니다.',
+    docsUrl:'https://api.ncloud-docs.com/docs/naver-api-hub-overview',pricingUrl:'https://guide.ncloud-docs.com/docs/apihub-overview',
+    setupSteps:['네이버 클라우드 API HUB에서 검색·검색어트렌드를 등록합니다.','Application 인증 정보의 Client ID·Client Secret을 아래 네이버 연결 폼에 저장합니다.','자료 조회로 실제 응답과 확인 시각을 확인합니다. 자동 게시 권한을 연결하는 절차가 아닙니다.'],
+  },
+  {
     id:'youtube',name:'YouTube',category:'publishing',status:'manual-only',
     description:'영상 구성·제목·설명 초안과 직접 게시한 URL을 관리합니다. 영상 생성과 자동 업로드는 연결되지 않았습니다.',
     requirements:['직접 운영하는 YouTube 채널','실제 제작한 영상·음원 권리','향후 연동 시 Google Cloud·youtube.upload OAuth·프로젝트 검증'],

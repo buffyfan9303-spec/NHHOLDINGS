@@ -169,3 +169,12 @@ Google로 NURI에 로그인했다는 사실만으로 SNS 게시 권한이나 GA4
 이번 작업은 기존 Node·Git·Next.js·PostgreSQL·CUA 브라우저·MCP 환경을 재사용합니다. 이 안내 작성에는 로컬 코드 확인, Git/Node CLI와 공식 웹 문서 조회를 사용했습니다. 인증된 Git CLI, 실제 Supabase·Vercel 운영 연결의 기존 확인 기록은 README에 있습니다. 사용 가능한 호출 도구에서 Meta·X·Postiz 전용 MCP는 확인되지 않아 해당 도구의 설치·인증·호출 성공을 주장하지 않습니다. 추가 설치, hooks·별도 자동화, 외부 계정 생성, 유료 API 호출이나 운영 설정 변경은 하지 않았습니다. 예약 실행은 프로젝트의 기존 Vercel Cron 범위입니다.
 
 수용 기준은 카탈로그 12개 항목 유지, 항목별 요약 3~5단계, 위 세 콜백·권한과 서버 코드 일치, 비밀값 없는 공개 안내, TypeScript 확인입니다. **실제 SNS 인증·갱신·게시, AI 유료 생성, SMTP 발송은 사용자 계정 준비 후 별도 실검증해야 합니다.** Meta 개발자 문서의 직접 조회가 일시 제한된 부분은 공식 Meta Postman 문서와 기존 서버 코드를 대조했으며, 실제 앱 콘솔에서 요구하는 최신 검수 조건을 연결 시 다시 확인합니다.
+
+
+## NAVER API HUB · 2026-10-09
+
+공통 운영 검수는 [SNS 성장 기준](/docs/sns-growth.md)을 따릅니다. 설정 → 연결·API → 네이버 검색·트렌드 조사에서 Application 인증 정보의 Client ID와 Client Secret을 암호화 저장합니다. 키 저장과 실제 API 조회 성공은 별개이며 마지막 성공 조회의 확인 시각으로 구분합니다.
+
+뉴스·웹문서·이미지 검색은 최대10건, 검색어트렌드는 최대366일의 상대 지수를 수동 조회합니다. 이 지수는 월간 절대 검색량·SNS 예상 조회수·수익이 아닙니다. 이미지 결과는 참고 링크만 제공하며 상업사용권을 확인한 자료만 콘텐츠에 사용합니다. 행사·할인은 공식 원문에서 발행 직전 기간·접수·매진·취소 여부를 확인합니다. 쇼핑인사이트는 API 등록만 확인했으며 조회 기능은 추가하지 않았습니다. 페이지 진입·예약·자동 발행에 API 호출을 붙이지 않습니다.
+
+공식 규격: [인증·주소](https://api.ncloud-docs.com/docs/naver-api-hub-overview), [검색어트렌드](https://api.ncloud-docs.com/docs/naver-api-hub-search-trend), [이용 한도·한시적 무료 안내](https://guide.ncloud-docs.com/docs/apihub-overview). 기존 NAVER Developers의 인증 헤더와 혼용하지 않습니다. 운영자 전용 API와 기존 AES-GCM 저장/CAS를 재사용하며 새 스키마·패키지는 없습니다. 모의 요청 검증은 `node tests/naver.cjs`, 권한·암호화·CSRF·설정 충돌 검증은 기존 access-security 검사에 포함합니다. 실제 키 저장·배포·각 API 실제 응답은 운영 증거에서 별도로 확인합니다.

@@ -4,6 +4,7 @@ const {isDeepStrictEqual}=require('node:util');
 const {context}=require('./context.cjs');
 const {providers,ensureFresh}=require('./social.cjs');
 const adsense=require('./adsense.cjs');
+const naver=require('./naver.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
 const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'6개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={facebook:['facebook.com','www.facebook.com'],linkedin:['linkedin.com','www.linkedin.com'],pinterest:['pinterest.com','www.pinterest.com','kr.pinterest.com','pin.it'],youtube:['youtube.com','www.youtube.com','youtu.be'],tiktok:['tiktok.com','www.tiktok.com']};
@@ -158,6 +159,7 @@ async function controller(options){
   accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics').map(r=>options.demo||r.gaHostName==='doto1.tistory.com'?r:{...r,ga:null})},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
   publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),adsense:adsense.view(ctx),
+  naver:(()=>{const c=get('naver','config'),r=get('naver-research','latest');return {configured:!!c?.secret,appName:c?.appName||'nurione',version:c?.version??1,updatedAt:c?.updatedAt||null,report:r?.mode?r:null};})(),
   observedAt:now(),demo:!!options.demo
  };}
  async function generate(input,email){
@@ -254,7 +256,15 @@ async function controller(options){
     if(['/api/content','/api/prompt','/api/plan','/api/channel'].includes(route)){snsScope(v.service,v.business||'platform');if(v.id){const old=get(route==='/api/plan'?'plan':route==='/api/channel'?'channel':'content',v.id);if(old)snsScope(old.service,old.business||'platform');}}
     if(/^\/api\/(?:content\/(?:schedule|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p)snsScope(p.service,p.business||'platform');}
     if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a)snsScope(a.service,a.business||'platform');}
-   if(route==='/api/publishing/settings'){
+   if(route==='/api/naver/config'){
+    if(options.demo)fail('네이버 연결은 운영 설정에서 등록하세요.',403);
+    await transaction(async()=>{await ctx.lock('naver-config');await ctx.reload();const old=get('naver','config');checkVersion(v.version,old,true);const config=naver.validateConfig(v,old?.secret?decrypt(old.secret):{});await put('naver','config',{appName:text(v.appName||'nurione','Application 이름',60),secret:encrypt(config),version:(old?.version??1)+1,updatedAt:now()});await put('naver-research','latest',{});await audit(email,'naver.configured','config');});
+   }else if(route==='/api/naver/research'){
+    if(options.demo)fail('네이버 조회는 운영 설정에서 사용하세요.',403);
+    const c=get('naver','config');if(!c?.secret)fail('네이버 API HUB 키를 먼저 저장하세요.');
+    const result=await naver.request(decrypt(c.secret),v);
+    await transaction(async()=>{await ctx.lock('naver-config');await ctx.reload();if(get('naver','config')?.secret!==c.secret)fail('연결 설정이 변경됐습니다. 다시 조회하세요.',409);await put('naver-research','latest',result);await audit(email,'naver.researched',result.mode);});
+   }else if(route==='/api/publishing/settings'){
     if(options.demo)fail('샘플 환경에서는 운영 발행 설정을 변경할 수 없습니다.',403);
     const id='tistory',old=get('publishing-settings',id);checkVersion(v.version,old,true);
     const settings=validatePublishingSettings(v,old);
