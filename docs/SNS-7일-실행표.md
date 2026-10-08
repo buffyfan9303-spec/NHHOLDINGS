@@ -198,3 +198,13 @@
 | 18 | https://www.instagram.com/thegoodquote/p/DeLc1WzjHpq/ , https://www.instagram.com/thegoodquote/p/DeLPI97Fy9B/ | 디자인 참고 사례 내용 재확인 |
 | 19 | 오늘 공개된 Threads 글 URL(미상) | 형식(질문 엔딩 여부), 게시 시각, 인사이트 |
 | 20 | v2 문장 "큰 벽을 만났다. 좋아. 금 간 곳부터 간다." | 알려진 작품 대사·문장과 겹치지 않는지 검색 |
+
+## 2026-10-09 00:46 KST · 기존 /141 정정 완료
+
+공통 운영 기준은 [sns-growth](../public/docs/sns-growth.md)와 [협업 기록](COLLAB.md)을 따른다. Codex가 편집·저장·실제 공개/DB/UI 대조를 맡았고, 기존 Claude Max Sonnet/medium은 원고만 1회, Luna/medium은 공식 행동 조건·변경 문장만 반증했다. 설치·새 권한·유료API·새 SNS/CRM 연결 없음.
+
+- 공개 https://doto1.tistory.com/141 — ‘텍사스 홀덤 포지션: 프리플랍·플랍 이후 행동 순서’. 원래 URL·2025-06-19 01:36:18 KST·텍사스 홀덤 카테고리 유지, 정정2026-10-09 00:37:57 KST. 9인 자리 중복·버튼의 항상 마지막 일반화·근거 없는 전략·편집 잔재를 정리하고 3인 시작/헤즈업을 구분했다.
+- 자체 도해 https://nhholdings.xyz/content/tistory/holdem-first-action-order.webp — 960×1320, 59,590bytes. PR14 MERGED/main de6cab9, production READY·실제 MIME/바이트/hash 대조. 그림 전체·native 편집기·실제 PC/375px 공개 이미지 로드/alt/문장/가로넘침 확인. Tistory가 본문 붙여넣기의 alt를 제거해 native 도구로 저장했다. 이 절차를 앞으로도 생략하지 않는다.
+- NURI content 7ec734fd-1410-4ce8-b6fc-b84e90de87cb/version2, post-publication/version1 실제 최초 시각 별도. 저장→SQL→reload→읽기 전용 원고/URL 완전 일치. 공개 플랫폼에서 새 글로 재발행하지 않았다. 인기/검색량/조회 순위·성장/수익은 미확인이다. 성장 비교용 실제 게시 시각과 목록의 URL 등록 시각은 별도다.
+- 수용·증거: artifacts/operations/2026-10-09/position-141-preflight.json, public-pc/mobile.json/png, nuri-final/reload.json/png, verify-position-141.cjs PASS. 같은 자산 코드의 typecheck·전체 npm test PASS, 운영 문서만 추가하므로 다시 전체 검사를 돌리지 않는다.
+- 다음: 저장된 Tistory 슬롯과 10/09 11:30 Threads·13:30 Instagram 실제 관찰이 우선. 그 전 /152 원문과 공식 근거의 정정 필요 범위만 판단한다. /141 반복 발행·색인 요청·지난 슬롯 몰아 발행 없음. 월300만원 목표의 실수익 달성은 미검증이다.
