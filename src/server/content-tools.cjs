@@ -21,16 +21,17 @@ function validateSEO(value={}){
 }
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function renderMarkdown(body){return sanitize(md.render(string(body,'본문',20000)),{
- allowedTags:['p','br','hr','h1','h2','h3','h4','h5','h6','blockquote','ul','ol','li','strong','em','s','code','pre','a','table','thead','tbody','tr','th','td'],
- allowedAttributes:{a:['href','title','rel'],ol:['start'],th:['align'],td:['align']},allowedSchemes:['https'],allowProtocolRelative:false,
- transformTags:{a:(tag,attrs)=>{let href='';try{href=httpsURL(attrs.href||'');}catch{}return {tagName:'a',attribs:{...(href?{href}:{}),...(attrs.title?{title:attrs.title}:{}),rel:'noopener noreferrer nofollow'}};}}
+ allowedTags:['p','br','hr','h1','h2','h3','h4','h5','h6','blockquote','ul','ol','li','strong','em','s','code','pre','a','img','table','thead','tbody','tr','th','td'],
+ allowedAttributes:{a:['href','title','rel'],img:['src','alt','title','loading','decoding','style'],ol:['start'],th:['align'],td:['align']},allowedSchemes:['https'],allowProtocolRelative:false,
+ transformTags:{a:(tag,attrs)=>{let href='';try{href=httpsURL(attrs.href||'');}catch{}return {tagName:'a',attribs:{...(href?{href}:{}),...(attrs.title?{title:attrs.title}:{}),rel:'noopener noreferrer nofollow'}};},img:(tag,attrs)=>{let src='';try{src=httpsURL(attrs.src||'');}catch{}return {tagName:'img',attribs:{...(src?{src}:{}),alt:attrs.alt||'',...(attrs.title?{title:attrs.title}:{}),loading:'lazy',decoding:'async',style:'max-width:100%;height:auto'}};}},
+ exclusiveFilter:frame=>frame.tag==='img'&&!frame.attribs.src
 });}
 function inspect(body){
  const tokens=md.parse(body,{}),headings=[],links=[],lines=[];
  for(let i=0;i<tokens.length;i++){
   const t=tokens[i];if(t.type==='heading_open')headings.push({level:Number(t.tag.slice(1)),text:tokens[i+1]?.content||''});
   if(t.type==='inline'){
-   lines.push((t.children||[]).filter(t=>['text','code_inline','softbreak','hardbreak'].includes(t.type)).map(t=>t.type.includes('break')?' ':t.content).join(''));
+   lines.push((t.children||[]).filter(t=>['text','code_inline','softbreak','hardbreak','image'].includes(t.type)).map(t=>t.type.includes('break')?' ':t.content).join(''));
    let current;for(const child of t.children||[]){if(child.type==='link_open'){current={text:'',url:child.attrGet('href')};}else if(child.type==='link_close'){if(current?.url?.startsWith('https://'))links.push(current);current=null;}else if(current)current.text+=child.content||'';}
   }else if(['fence','code_block'].includes(t.type))lines.push(t.content);
  }return {headings,links,plain:lines.join('\n').trim()};
