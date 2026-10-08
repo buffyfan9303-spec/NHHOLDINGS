@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Codex / Claude collaboration
+
+Read [docs/COLLAB.md](docs/COLLAB.md) before starting work. Codex implements, commits and pushes on `codex/*`; Claude does so on `claude/*`. Both may create PRs. Codex owns reviewed integration into `main`, deployment and live verification; Claude must not push to `main`. Do not mutate the other agent's branch or bypass required checks. Record start/end, ownership, checks and remaining work in that document. Run `npm run typecheck` and `npm test` before a PR. Never commit secrets or `.env` files. Schema changes require `db/` migrations.
