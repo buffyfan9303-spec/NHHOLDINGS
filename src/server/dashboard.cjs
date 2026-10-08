@@ -312,10 +312,10 @@ async function controller(options){
    else if(route==='/api/content/publish'){await publish(text(v.id,'콘텐츠',80),email);}
    else if(route==='/api/content/check'){
     const p=get('content',text(v.id,'콘텐츠',80));if(!p||p.status!=='published')fail('게시 완료된 콘텐츠를 선택하세요.');
-    let a=get('channel',p.account);let result;
-    try{if(!options.demo&&accountFits(a,p)&&!Object.hasOwn(MANUAL_HOSTS,p.channel))a=await ensureFresh(ctx,{...a,id:p.account});result=Object.hasOwn(MANUAL_HOSTS,p.channel)?{checkStatus:'registered'}:options.demo?{checkStatus:'visible'}:await (options.inspect||inspectPublication)(p,accountFits(a,p)&&a.secret?decrypt(a.secret):null);}catch{result={checkStatus:'unavailable'};}
+    const registrationOnly=Object.hasOwn(MANUAL_HOSTS,p.channel)||p.manual===true&&!manualBlog(p);let a=get('channel',p.account);let result;
+    try{if(!options.demo&&accountFits(a,p)&&!registrationOnly)a=await ensureFresh(ctx,{...a,id:p.account});result=registrationOnly?{checkStatus:'registered'}:options.demo?{checkStatus:'visible'}:await (options.inspect||inspectPublication)(p,accountFits(a,p)&&a.secret?decrypt(a.secret):null);}catch{result={checkStatus:'unavailable'};}
     const current=get('content',v.id);if(current?.externalId!==p.externalId||current?.status!=='published')fail('게시 기록이 변경되었습니다. 다시 확인하세요.',409);
-    await writeContent(v.id,{...current,...result,checkedAt:Object.hasOwn(MANUAL_HOSTS,p.channel)?null:now()});await audit(email,Object.hasOwn(MANUAL_HOSTS,p.channel)?'content.url_registration_checked':'content.checked',v.id);
+    await writeContent(v.id,{...current,...result,checkedAt:registrationOnly?null:now()});await audit(email,registrationOnly?'content.url_registration_checked':'content.checked',v.id);
    }
    else if(route==='/api/plan'){
     scope(v.service,v.business||'platform');if(!Array.isArray(v.channels)||!v.channels.length||v.channels.some(x=>!CHANNELS.includes(x)))fail('채널을 선택하세요.');if(!Number.isInteger(v.days)||v.days<1||v.days>365)fail('생성 주기는 1~365일입니다.');
