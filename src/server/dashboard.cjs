@@ -3,6 +3,7 @@ const crypto=require('node:crypto'),dns=require('node:dns').promises;
 const {isDeepStrictEqual}=require('node:util');
 const {context}=require('./context.cjs');
 const {providers,ensureFresh}=require('./social.cjs');
+const adsense=require('./adsense.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
 const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'6개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={facebook:['facebook.com','www.facebook.com'],linkedin:['linkedin.com','www.linkedin.com'],pinterest:['pinterest.com','www.pinterest.com','kr.pinterest.com','pin.it'],youtube:['youtube.com','www.youtube.com','youtu.be'],tiktok:['tiktok.com','www.tiktok.com']};
@@ -126,7 +127,7 @@ async function controller(options){
   businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content'),contentRevisions:list('content-revision').slice(0,100),growthCampaigns:list('growth-campaign'),growthResults:list('growth-result'),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
   accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics')},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
-  publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),
+  publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),adsense:adsense.view(ctx),
   observedAt:now(),demo:!!options.demo
  };}
  async function generate(input,email){
@@ -261,6 +262,7 @@ async function controller(options){
     let c;try{c=JSON.parse(v.credentials);}catch{fail('Google 서비스 계정 JSON을 확인하세요.');}if(c.type!=='service_account'||typeof c.client_email!=='string'||!c.private_key?.includes('PRIVATE KEY'))fail('서비스 계정 JSON이 필요합니다.');
     crypto.createPrivateKey(c.private_key);await put('google','config',{propertyId,siteUrl,secret:encrypt({client_email:c.client_email,private_key:c.private_key})});await audit(email,'google.configured',siteUrl);
    }else if(route==='/api/google/report'){await googleReport(v.month);await audit(email,'google.report',v.month);}
+   else if(['/api/adsense/app','/api/adsense/account','/api/adsense/report'].includes(route)){if(options.demo)fail('AdSense는 운영 환경에서 연결·조회하세요.',403);if(route==='/api/adsense/app')await adsense.configure(ctx,v,email);else if(route==='/api/adsense/account')await adsense.select(ctx,v,email);else await adsense.report(ctx,v.month,email);}
    else if(route==='/api/prompt'){
     scope(v.service,'platform');if(v.channel!=='all'&&!CHANNELS.includes(v.channel))fail('게시 채널을 확인하세요.');
     const id=v.service+':'+v.channel;await put('prompt',id,{service:v.service,channel:v.channel,tone:text(v.tone||'','어조',200,true),instructions:text(v.instructions||'','작성 프롬프트',5000,true),updatedAt:now()});await audit(email,'prompt.saved',id);
@@ -301,7 +303,7 @@ async function controller(options){
    }else if(route==='/api/growth/result'){
     const campaignId=text(v.campaignId,'캠페인',80),campaign=get('growth-campaign',campaignId);if(!campaign||campaign.service!=='tistory')fail('SNS 독립 캠페인을 선택하세요.');scope(campaign.service,'platform');
     if(!CHANNELS.includes(v.channel))fail('실적 채널을 선택하세요.');const id=v.id?text(v.id,'실적',80):crypto.randomUUID(),old=get('growth-result',id);if(v.id&&!old)fail('실적이 없습니다.',404);checkVersion(v.version,old);
-    const values={};for(const field of ['impressions','clicks','leads','orders','revenue','cost']){if(!Number.isSafeInteger(v[field])||v[field]<0||v[field]>1e10)fail('실적은 0~100억의 정수로 입력하세요.');values[field]=v[field];}
+    const values={};for(const field of ['impressions','clicks','leads','orders','revenue','cost']){const value=v[field]??null;if(value!==null&&(!Number.isSafeInteger(value)||value<0||value>1e10))fail('실적은 0~100억의 정수로 입력하세요.');values[field]=value;}
     for(const field of ['views','reach','profileVisits','follows','unfollows','likes','replies','shares','saves']){const value=v[field]??null;if(value!==null&&(!Number.isSafeInteger(value)||value<0||value>1e10))fail('일별 성장 수치는 0~100억의 정수로 입력하세요.');values[field]=value;}
     const at=now(),day=date(v.day);await transaction(async()=>{
      if(campaign.model==='audience'){await ctx.lock('growth-result:'+campaignId+':'+day+':'+v.channel);await ctx.reload();if(list('growth-result').some(r=>r.id!==id&&r.campaignId===campaignId&&r.day===day&&r.channel===v.channel))fail('이 캠페인·날짜·채널의 일별 성장 기록이 이미 있습니다. 기존 기록을 수정하세요.',409);}
