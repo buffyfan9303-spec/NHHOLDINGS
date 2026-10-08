@@ -14,7 +14,7 @@ async function run(){
 
  let call;
  const news=await request(config,{mode:'news',query:'한글 이벤트'},async(url,options)=>{
-  call={url:new URL(url),options};return response({items:[{title:'<b>제목</b>',description:'설명',link:'https://news.example/item',pubDate:'Mon, 01 Jan 2026 00:00:00 +0900',originallink:'https://original.example/item'}]});
+  call={url:new URL(url),options};return response({items:[{title:'<b>&quot;할인&quot; &amp; 무료</b>',description:'&#39;조건&#39; &apos;확인&apos; &lt;script&gt;alert(1)&lt;/script&gt; &amp;quot; &#x110000; &#999999999999999999999; &#xZZ;',link:'https://news.example/item',pubDate:'Mon, 01 Jan 2026 00:00:00 +0900',originallink:'https://original.example/item'}]});
  });
  assert.equal(call.url.origin,'https://naverapihub.apigw.ntruss.com');
  assert.equal(call.url.pathname,'/search/v1/news');
@@ -25,7 +25,8 @@ async function run(){
  assert.equal(call.options.headers['X-NCP-APIGW-API-KEY-ID'],config.apiKeyId);
  assert.equal(call.options.headers['X-NCP-APIGW-API-KEY'],config.apiKey);
  assert.equal(call.options.signal.aborted,false);assert.equal(call.options.signal instanceof AbortSignal,true);
- assert.equal(news.items.length,1);assert.equal(news.items[0].title,'<b>제목</b>');
+ assert.equal(news.items.length,1);assert.equal(news.items[0].title,'"할인" & 무료');
+ assert.equal(news.items[0].description,"'조건' '확인' <script>alert(1)</script> &quot; &#x110000; &#999999999999999999999; &#xZZ;");
  assert.deepEqual(Object.keys(news.items[0]),['title','description','link','originalLink','pubDate']);
  assert.equal(news.items[0].originalLink,'https://original.example/item');
  assert.equal(JSON.stringify(news).includes(config.apiKey),false);

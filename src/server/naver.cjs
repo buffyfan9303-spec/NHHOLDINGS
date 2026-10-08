@@ -72,7 +72,19 @@ function safeUrl(value){
  if(typeof value!=='string'||value.length>2048||/[\r\n\0]/.test(value))return '';
  try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password?url.href:'';}catch{return '';}
 }
-function text(value,max=MAX_TEXT){return typeof value==='string'?value.slice(0,max):'';}
+function decodeEntity(entity){
+ const named={'&quot;':'"','&#39;':"'",'&apos;':"'",'&amp;':'&','&lt;':'<','&gt;':'>'};
+ if(Object.hasOwn(named,entity))return named[entity];
+ const hex=/^&#[xX]([\da-fA-F]+);$/.exec(entity),decimal=/^&#(\d+);$/.exec(entity);
+ if(!hex&&!decimal)return entity;
+ const codePoint=Number.parseInt((hex||decimal)[1],hex?16:10);
+ if(!Number.isInteger(codePoint)||codePoint<0||codePoint>0x10FFFF||(codePoint>=0xD800&&codePoint<=0xDFFF))return entity;
+ return String.fromCodePoint(codePoint);
+}
+function text(value,max=MAX_TEXT){
+ if(typeof value!=='string')return '';
+ return value.slice(0,max).replace(/<\/?b>/gi,'').replace(/&(?:quot;|#39;|apos;|amp;|lt;|gt;|#\d+;|#[xX][\da-fA-F]+;)/g,decodeEntity);
+}
 function numberOrNull(value){return Number.isSafeInteger(value)&&value>=0?value:null;}
 function trendData(input){
  if(!Array.isArray(input))return [];
