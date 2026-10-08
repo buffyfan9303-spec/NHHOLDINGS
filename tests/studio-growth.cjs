@@ -19,6 +19,54 @@ assert(calendar.includes('api-september')&&!calendar.includes('manual-october')&
 assert.equal(vm.runInContext("publicationTimeLabel({manual:true})",context),'URL 등록 시각');
 assert.equal(vm.runInContext("effectiveAt({status:'published',manual:true,publishedAt:'legacy'})",context),'legacy');
 context.state.month='2026-10';
+const publicationContext={state:{month:'2026-10',scope:'all'},labels:{blog:'블로그',instagram:'인스타그램',threads:'Threads'},statusLabels:{published:'게시 완료',scheduled:'예약',draft:'초안',review:'확인 필요'},Date:class extends Date{static now(){return Date.parse('2026-10-09T00:00:00Z');}},esc:context.esc,money:String,mark:()=>'',icon:()=>'',dt:v=>v,postAccount:()=>'',data:{services:[{id:'tistory',name:'SNS'}],tasks:[],contents:[
+ {id:'old',service:'tistory',channel:'blog',status:'published',manual:true,publishedAt:'2026-10-08T00:00:00Z',registeredAt:'2026-10-08T00:00:00Z'},
+ {id:'missing',service:'tistory',channel:'blog',status:'published',manual:true,publishedAt:'2026-10-08T00:00:00Z',registeredAt:'2026-10-08T00:00:00Z'},
+ {id:'api-sep',service:'tistory',channel:'blog',status:'published',publishedAt:'2026-09-30T14:59:59Z'},
+ {id:'api-oct',service:'tistory',channel:'threads',status:'published',publishedAt:'2026-09-30T15:00:00Z'},
+ {id:'observed',service:'tistory',channel:'instagram',status:'published',manual:true,registeredAt:'2026-10-08T00:00:00Z'},
+ {id:'future',service:'tistory',channel:'blog',status:'published',publishedAt:'2099-10-01T00:00:00Z'},
+ {id:'scheduled',service:'tistory',channel:'threads',status:'scheduled',scheduledAt:'2026-10-09T10:30:00Z'},
+ {id:'draft',service:'tistory',channel:'blog',status:'draft'},
+ {id:'review',service:'tistory',channel:'blog',status:'review'},
+ {id:'website',service:'crm',channel:'blog',status:'published',publishedAt:'2026-10-08T00:00:00Z'},
+ {id:'unsupported',service:'tistory',channel:'pinterest',status:'published',publishedAt:'2026-10-08T00:00:00Z'}
+],postPublications:[{service:'crm',contentId:'old',channel:'blog',publishedAt:'2026-10-08T00:00:00Z'},{service:'tistory',contentId:'old',channel:'blog',publishedAt:'2026-09-20T00:00:00Z'},{service:'tistory',contentId:'observed',channel:'blog',publishedAt:'2026-09-20T00:00:00Z'}],growthCheckpoints:[24,72,168].map(h=>({contentId:'observed',channel:'instagram',publishedAt:'2026-10-02T00:00:00Z',horizonHours:h}))}};
+vm.createContext(publicationContext);
+vm.runInContext(fs.readFileSync('public/one/app.js','utf8').split(/\r?\n/).filter(l=>/^(const (inScope|snsRecord|supportedChannel|snsPost|effectiveAt|kstMonth|actualPostAt)=|function (monthlyPublications|postState|channelPosts|publicationCounts|publicationPulse|siteCards)\()/.test(l)).join('\n'),publicationContext);
+const publicationStats=channel=>vm.runInContext(`monthlyPublications(${JSON.stringify(channel||'all')})`,publicationContext);
+assert.equal(publicationStats().published,2,'count confirmed actual KST publication month, not URL registration month');
+assert.equal(publicationStats().unknown,2,'unknown/manual registration and future dates are not confirmed publications');
+assert.equal(publicationStats('blog').published,0);
+assert.equal(publicationStats('blog').unknown,2);
+assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='missing'))",publicationContext),null,'legacy manual publishedAt is a registration timestamp, not a publication anchor');
+assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='old'))",publicationContext),'2026-09-20T00:00:00Z','matching SNS canonical record overrides raw timestamp and ignores another service');
+assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='observed'))",publicationContext),'2026-10-02T00:00:00Z','server checkpoint anchor works without duplicating three observation windows');
+const originalPublications=publicationContext.data.postPublications,originalCheckpoints=publicationContext.data.growthCheckpoints;
+publicationContext.data.postPublications=[{service:'tistory',contentId:'api-oct',channel:'threads',publishedAt:'2026-09-20T00:00:00Z'}];
+assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='api-oct'))",publicationContext),'2026-09-20T00:00:00Z','canonical also overrides nonmanual API timestamp');
+for(const publishedAt of ['not-a-date','2099-10-01T00:00:00Z']){
+ publicationContext.data.postPublications=[{service:'tistory',contentId:'api-oct',channel:'threads',publishedAt}];
+ assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='api-oct'))",publicationContext),null,'invalid explicit anchor stays unknown instead of masking it with an older fallback');
+}
+publicationContext.data.postPublications=[];publicationContext.data.growthCheckpoints=[{contentId:'observed',channel:'instagram',publishedAt:'2099-10-01T00:00:00Z'}];
+assert.equal(vm.runInContext("actualPostAt(data.contents.find(p=>p.id==='observed'))",publicationContext),null,'future manual checkpoint is unknown');
+publicationContext.data.postPublications=originalPublications;publicationContext.data.growthCheckpoints=originalCheckpoints;
+let pulse=vm.runInContext('publicationPulse()',publicationContext);
+assert(pulse.includes('이번 달 실제 게시</span><strong>2<small>건'));
+assert(pulse.includes('시각 확인분 · 미확인 2건(전체)'));
+assert(vm.runInContext('siteCards()',publicationContext).includes('2<small>이번 달 실제 게시'));
+Object.assign(publicationContext,{manualChannels:new Set(['youtube','tiktok']),channelIcon:()=>'',campaigns:()=>[],empty:()=>''});
+Object.assign(publicationContext.state,{page:'overview',channel:'all',postStatus:'all'});
+const publicationAppSource=fs.readFileSync('public/one/app.js','utf8');
+vm.runInContext(publicationAppSource.split(/\r?\n/).find(l=>l.startsWith('function channelSummary()'))+'\n'+publicationAppSource.match(/function mobileDashboard\(\)\{[\s\S]*?\n\}/)[0],publicationContext);
+const channelHTML=vm.runInContext('channelSummary()',publicationContext),mobileHTML=vm.runInContext('mobileDashboard()',publicationContext);
+assert(channelHTML.includes('<strong>1</strong><span>이번 달 게시')&&channelHTML.includes('시각 미확인 2건(전체)'));
+assert(mobileHTML.includes('<strong>2</strong><span>실제 게시')&&mobileHTML.includes('게시 시각 확인분 · 시각 미확인 2건(전체)'));
+assert(mobileHTML.includes('목록은 게시·URL 등록·예약 기록월 기준입니다.'));
+for(const id of ['old','missing','scheduled','draft','review'])assert(vm.runInContext('channelPosts().some(p=>p.id==='+JSON.stringify(id)+')',publicationContext),'management history/status remains visible: '+id);
+publicationContext.state.month='2026-09';assert.equal(publicationStats().published,2,'past-month actual posts remain countable even when imported this month');
+publicationContext.state.scope='mind';assert.equal(publicationStats().published,0);assert.equal(publicationStats().unknown,0);
 let html=context.window.NuriStudio.render('growth');
 assert(html.includes('계정 성장'));assert(html.includes('&lt;성장&gt;'));assert(!html.includes('value="undefined"'));
 assert(html.includes('<strong>미확인</strong>'));assert(!/name="url"[^>]*required/.test(html));
