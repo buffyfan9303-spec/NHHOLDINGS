@@ -1,5 +1,8 @@
 # 누리원 · Codex / Claude 협업 기준
 
+- SNS 카드 기호 수정 시작 · 2026-10-09 14:05 KST · Codex 총괄, codex/nuri-unified. 사용자 지정 범위는 ‘SNS 카드 이미지 안’이다. 낮은 모델 gpt-6-luna/medium에 화면 아이콘 읽기만 분리했으나 사용자 답변으로 범위가 확정되어 즉시 중단했다. root는 최근 Play 카드·TerraScape와 SVG 원문을 직접 읽고 Play의 구독 취소 기호가 새로고침으로 오인되는 의미 오류를 확인했다. 기존 SVG·Sharp·CLI·자동화 도구를 재사용하고 새 패키지/플러그인/hooks·유료호출·Claude 추가 작업은 불필요하다. 소유 파일은 같은 로컬 초안의 v2 SVG/PNG·검수 근거와 기존 성장 기준·SNS 자동화의 이미지 검수 문구다. 수용은 명확한 삭제/취소 의미·동일 크기/선/기준선·전체1080/375 실제 렌더·원고/alt 일치이며 공개 원본·일정·게시량·DB 스키마를 변경하지 않는다.
+- SNS 카드 기호 수정 종료 · 2026-10-09 14:17 KST · Play v2는 자체 SVG의 삭제/취소 기호를 정리하고 기존 Sharp로1080×1350/375×469 PNG를 내보냈다. root가 두 최종 이미지를 직접 확인했고 같은 로컬 초안 imageRevision2/파일명을 수정했다. v1은 보존, 공개·NURI 서버 저장은 미실행이며 플랫폼 검수/게시 보류를 유지한다. 기존 public/docs/sns-growth.md와 SNS heartbeat에 의미·형태·폰트 의존·크기/선/정렬·모바일 검수를 반영했다. 첫 자동화 저장은 Python cp949 stdout을 UTF8로 읽은 탓에 기존 한글을 손상시킨 오류가 있었고 숨기지 않는다. 최신 직접 heartbeat 원문이 손상 prefix의 cp949→UTF8 변환과 정확히 일치함을 반증·확인해 원문과 이름을 복구했다. 이후 ASCII JSON 출력→도구 저장→TOML readback으로 전체prompt/name 정확일치·U+FFFD0·일정/ACTIVE/대상/created_at 보존을 검증했다. render-card-symbol-fix.cjs/검수 JSON과 card-symbol-automation-proof.json에 범위/복구 근거 보존. 제품 코드/패키지/스키마 변화 없고 문서 diff·로컬 export/초안 일관성만 검사한다. 낮은 모델의 범위 밖 UI 감사를 중단했고 새 서버/Chrome/유료호출0. goal의 기존 외부 게시 차단은 그대로이며 다음 실제 슬롯에는 같은 초안 v2의 공식 사실·현재 계정·전체 이미지·실제 플랫폼 요구사항을 다시 확인한다.
+
 적용일: 2026-10-08 KST. 저장소: `buffyfan9303-spec/NHHOLDINGS`. 이 문서와 [AGENTS.md](../AGENTS.md), 최신 사용자 지시를 함께 따른다. 비밀키와 사용자 비공개 자료를 작업 지시문에 복사하지 않는다.
 
 ## 목표와 역할
