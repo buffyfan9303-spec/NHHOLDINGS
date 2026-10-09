@@ -56,7 +56,7 @@ let pulse=vm.runInContext('publicationPulse()',publicationContext);
 assert(pulse.includes('이번 달 실제 게시</span><strong>2<small>건'));
 assert(pulse.includes('시각 확인분 · 미확인 2건(전체)'));
 assert(vm.runInContext('siteCards()',publicationContext).includes('2<small>이번 달 실제 게시'));
-Object.assign(publicationContext,{manualChannels:new Set(['youtube','tiktok']),channelIcon:()=>'',campaigns:()=>[],empty:()=>''});
+Object.assign(publicationContext,{manualChannels:new Set(['bluesky']),channelIcon:()=>'',campaigns:()=>[],empty:()=>''});
 Object.assign(publicationContext.state,{page:'overview',channel:'all',postStatus:'all'});
 const publicationAppSource=fs.readFileSync('public/one/app.js','utf8');
 vm.runInContext(publicationAppSource.split(/\r?\n/).find(l=>l.startsWith('function channelSummary()'))+'\n'+publicationAppSource.match(/function mobileDashboard\(\)\{[\s\S]*?\n\}/)[0],publicationContext);

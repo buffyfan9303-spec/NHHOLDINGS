@@ -6,11 +6,11 @@ const {providers,ensureFresh}=require('./social.cjs');
 const adsense=require('./adsense.cjs');
 const naver=require('./naver.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
-const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'6개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
-const MANUAL_HOSTS={facebook:['facebook.com','www.facebook.com'],linkedin:['linkedin.com','www.linkedin.com'],pinterest:['pinterest.com','www.pinterest.com','kr.pinterest.com','pin.it'],youtube:['youtube.com','www.youtube.com','youtu.be'],tiktok:['tiktok.com','www.tiktok.com']};
-const SOCIAL_URL_CHANNELS=['instagram','threads','x'];
-const SOCIAL_PERMALINKS={instagram:[['instagram.com','www.instagram.com'],/^\/(?:(?!(?:accounts|explore|stories|direct)\/)[A-Za-z0-9._]{1,30}\/)?(p|reels?)\/([A-Za-z0-9_-]{5,64})\/?$/],threads:[['threads.net','www.threads.net','threads.com','www.threads.com'],/^\/@([A-Za-z0-9._]{1,30})\/post\/([A-Za-z0-9_-]{5,64})\/?$/],x:[['x.com','www.x.com','mobile.x.com','twitter.com','www.twitter.com','mobile.twitter.com'],/^\/(?:([A-Za-z0-9_]{1,15})|i\/web)\/status\/([1-9]\d{0,19})\/?$/]};
-function socialPermalink(channel,url){let u;try{u=url instanceof URL?url:new URL(String(url));}catch{return null;}const d=Object.hasOwn(SOCIAL_PERMALINKS,channel)&&SOCIAL_PERMALINKS[channel];if(!d||u.protocol!=='https:'||u.username||u.password||u.port||!d[0].includes(u.hostname))return null;const m=d[1].exec(u.pathname);if(!m)return null;if(channel==='instagram')return {href:'https://www.instagram.com/'+(m[1]==='p'?'p':'reel')+'/'+m[2]+'/',key:m[2]};if(channel==='threads')return {href:'https://www.threads.com/@'+m[1]+'/post/'+m[2],key:m[2]};return {href:'https://x.com/'+(m[1]||'i/web')+'/status/'+m[2],key:m[2]};}
+const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'5개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
+const MANUAL_HOSTS={bluesky:['bsky.app']};
+const SOCIAL_URL_CHANNELS=['instagram','threads','x','bluesky'];
+const SOCIAL_PERMALINKS={instagram:[['instagram.com','www.instagram.com'],/^\/(?:(?!(?:accounts|explore|stories|direct)\/)[A-Za-z0-9._]{1,30}\/)?(p|reels?)\/([A-Za-z0-9_-]{5,64})\/?$/],threads:[['threads.net','www.threads.net','threads.com','www.threads.com'],/^\/@([A-Za-z0-9._]{1,30})\/post\/([A-Za-z0-9_-]{5,64})\/?$/],x:[['x.com','www.x.com','mobile.x.com','twitter.com','www.twitter.com','mobile.twitter.com'],/^\/(?:([A-Za-z0-9_]{1,15})|i\/web)\/status\/([1-9]\d{0,19})\/?$/],bluesky:[['bsky.app'],/^\/profile\/((?:did:plc:[a-z2-7]{24}|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+))\/post\/([a-z2-7]{13})\/?$/]};
+function socialPermalink(channel,url){let u;try{u=url instanceof URL?url:new URL(String(url));}catch{return null;}const d=Object.hasOwn(SOCIAL_PERMALINKS,channel)&&SOCIAL_PERMALINKS[channel];if(!d||u.protocol!=='https:'||u.username||u.password||u.port||!d[0].includes(u.hostname))return null;const m=d[1].exec(u.pathname);if(!m)return null;if(channel==='instagram')return {href:'https://www.instagram.com/'+(m[1]==='p'?'p':'reel')+'/'+m[2]+'/',key:m[2]};if(channel==='threads')return {href:'https://www.threads.com/@'+m[1]+'/post/'+m[2],key:m[2]};if(channel==='bluesky')return {href:'https://bsky.app/profile/'+m[1]+'/post/'+m[2],key:m[1]+':'+m[2]};return {href:'https://x.com/'+(m[1]||'i/web')+'/status/'+m[2],key:m[2]};}
 const snsRecord=p=>p?.service==='tistory'&&(p.business||'platform')==='platform';
 const accountFits=(a,p)=>snsRecord(a)&&snsRecord(p)&&a.channel===p.channel;
 const now=()=>new Date().toISOString(),hash=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -60,6 +60,7 @@ function validatePublishingSettings(v,old){
 }
 function preflight(p){
  snsScope(p.service,p.business||'platform');
+ if(!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');
  if(Object.hasOwn(MANUAL_HOSTS,p.channel))fail('이 채널은 자동 게시 API가 연결되지 않았습니다. 직접 게시 후 발행 URL을 등록하세요.');
  if(manualBlog(p))fail('티스토리는 공식 글쓰기 API 종료로 발행 링크를 직접 등록하세요.');
  if(p.channel==='instagram'&&!p.media)fail('인스타그램에는 공개 이미지 HTTPS 주소가 필요합니다.');
@@ -68,6 +69,7 @@ function preflight(p){
  if(p.channel==='instagram'&&Array.from(p.body).length>2200)fail('인스타그램 캡션을 2200자 이하로 줄이세요.');
 }
 async function inspectPublication(p,c,request=fetch){
+ if(!CHANNELS.includes(p.channel))return {checkStatus:'unavailable'};
  if(Object.hasOwn(MANUAL_HOSTS,p.channel))return {checkStatus:'unavailable'};
  if(manualBlog(p)){
   const r=await request('https://doto1.tistory.com/sitemap.xml',{redirect:'error',signal:AbortSignal.timeout(20000)});
@@ -89,7 +91,7 @@ async function inspectPublication(p,c,request=fetch){
  return {checkStatus:record.status&&record.status!=='publish'?'missing':'visible',...(typeof link==='string'&&/^https:\/\//.test(link)?{link}:{} )};
 }
 
-function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,...Object.fromEntries(['facebook','linkedin','pinterest','youtube','tiktok'].map(channel=>[channel,`[샘플 초안] ${topic}\n${name}의 공개 서비스 안내를 확인하세요. 직접 게시용 초안입니다.`])),blog:`[샘플 초안]\n${name}의 ${topic}를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.`,instagram:`[샘플] ${topic}\n${name}의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내`,threads:`[샘플] ${topic}\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. ${name}에서 시작해 보세요.`,x:`[샘플] ${topic} — ${name}의 서비스 소식을 확인하세요.`})};}
+function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,...Object.fromEntries(['bluesky'].map(channel=>[channel,`[샘플 초안] ${topic}\n${name}의 공개 서비스 안내를 확인하세요. 직접 게시용 초안입니다.`])),blog:`[샘플 초안]\n${name}의 ${topic}를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.`,instagram:`[샘플] ${topic}\n${name}의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내`,threads:`[샘플] ${topic}\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. ${name}에서 시작해 보세요.`,x:`[샘플] ${topic} — ${name}의 서비스 소식을 확인하세요.`})};}
 
 async function cloudGenerate(prompt,c,decrypt){if(!c?.enabled||!c.secret||!c.model)fail('설정에서 AI API 계정과 모델을 연결해주세요.',503);const {token}=decrypt(c.secret),anthropic=c.provider==='anthropic';const r=await fetch(anthropic?'https://api.anthropic.com/v1/messages':'https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',...(anthropic?{'x-api-key':token,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+token})},body:JSON.stringify(anthropic?{model:c.model,max_tokens:6000,messages:[{role:'user',content:prompt}]}:{model:c.model,max_completion_tokens:6000,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}}),signal:AbortSignal.timeout(120000)});if(!r.ok)fail('AI API 응답 '+r.status+'. 키·모델·이용 한도를 확인해주세요.',502);const v=await r.json();return anthropic?v.content?.filter(x=>x.type==='text').map(x=>x.text).join(''):v.choices?.[0]?.message?.content;}
 async function controller(options){
@@ -140,6 +142,7 @@ async function controller(options){
  }
  async function createDrafts(source,records,email,action){
   snsScope(source.service,source.business||'platform');
+  if(records.some(p=>!CHANNELS.includes(p.channel)))fail('운영에서 제외된 채널입니다.');
   const ids=[];await transaction(async()=>{for(const record of records){const id=crypto.randomUUID(),at=now();ids.push(id);await writeContent(id,{service:source.service,business:source.business||'platform',campaignId:source.campaignId||id,growthCampaign:source.growthCampaign||'',channel:record.channel,...(record.channel==='blog'?{blogTarget:source.blogTarget||(source.service==='tistory'?'tistory':'wordpress')}:{}),title:record.title,body:record.body,seo:validateSEO(source.seo),media:record.media||'',ruleBased:record.ruleBased===true,ai:false,status:'draft',sourceContent:source.id,createdAt:at,updatedAt:at,version:1});}await audit(email,action,source.id+':'+ids.join(','));});return {ids};
  }
   let refreshPromise,workerBusy=false,aiBusy=false;
@@ -241,7 +244,7 @@ async function controller(options){
    for(const g of list('generation').filter(g=>snsRecord(g)&&g.status==='running'&&Date.parse(g.startedAt)<Date.now()-600000))await put('generation',g.id,{...g,status:'failed',completedAt:now(),error:'생성 응답이 중단되었습니다. 작성 내역을 확인한 뒤 다시 실행해주세요.'});
     for(const p of list('content').filter(p=>snsRecord(p)&&p.status==='scheduled'&&Date.parse(p.scheduledAt)<=Date.now()))await publish(p.id,'예약 실행').catch(()=>{});
     for(const candidate of list('plan').filter(p=>snsRecord(p)&&p.enabled&&Date.parse(p.nextAt)<=Date.now())){
-    const p={...get('plan',candidate.id),id:candidate.id};if(aiBusy||!snsRecord(p)||!p.enabled||!(Date.parse(p.nextAt)<=Date.now()))continue;
+    const p={...get('plan',candidate.id),id:candidate.id};p.channels=(Array.isArray(p.channels)?p.channels:[]).filter(c=>CHANNELS.includes(c));if(!p.channels.length)continue;if(aiBusy||!snsRecord(p)||!p.enabled||!(Date.parse(p.nextAt)<=Date.now()))continue;
     const nextAt=new Date(Date.now()+p.days*86400000).toISOString();await put('plan',p.id,{...p,nextAt,lastRun:now()});const revision=get('plan',p.id);
     try{const r=await generate(p,'자동 기획');await ctx.reload();const current=get('plan',p.id),auto=current?.enabled&&current.autoPublish&&isDeepStrictEqual(current,revision);await transaction(async()=>{for(const id of r.ids){const post=get('content',id);if(auto){const account=list('channel').find(a=>accountFits(a,post)&&a.verifiedAt);if(account&&post.channel!=='instagram'){try{preflight(post);await writeContent(id,{...post,status:'scheduled',scheduledAt:now(),account:account.id});}catch(e){await writeContent(id,{...post,error:e.message});}}}}await put('plan',p.id,{...current,lastResult:'초안 '+r.ids.length+'개 생성 · 게시 상태는 콘텐츠 목록에서 확인'});});}
     catch(e){await put('plan',p.id,{...get('plan',p.id),lastResult:e.message});}
@@ -254,8 +257,8 @@ async function controller(options){
    if(route==='/api/state'&&req.method==='GET')return reply(view());
    if(req.method!=='POST')fail('지원하지 않는 요청입니다.',405);
     if(['/api/content','/api/prompt','/api/plan','/api/channel'].includes(route)){snsScope(v.service,v.business||'platform');if(v.id){const old=get(route==='/api/plan'?'plan':route==='/api/channel'?'channel':'content',v.id);if(old)snsScope(old.service,old.business||'platform');}}
-    if(/^\/api\/(?:content\/(?:schedule|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p)snsScope(p.service,p.business||'platform');}
-    if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a)snsScope(a.service,a.business||'platform');}
+    if(/^\/api\/(?:content\/(?:schedule|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p){snsScope(p.service,p.business||'platform');if(route!=='/api/content/cancel'&&!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');}}
+    if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a){snsScope(a.service,a.business||'platform');if(!CHANNELS.includes(a.channel))fail('운영에서 제외된 채널입니다.');}}
    if(route==='/api/naver/config'){
     if(options.demo)fail('네이버 연결은 운영 설정에서 등록하세요.',403);
     await transaction(async()=>{await ctx.lock('naver-config');await ctx.reload();const old=get('naver','config');checkVersion(v.version,old,true);const config=naver.validateConfig(v,old?.secret?decrypt(old.secret):{});await put('naver','config',{appName:text(v.appName||'nurione','Application 이름',60),secret:encrypt(config),version:(old?.version??1)+1,updatedAt:now()});await put('naver-research','latest',{});await audit(email,'naver.configured','config');});
