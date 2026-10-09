@@ -2,8 +2,9 @@
 const MarkdownIt=require('markdown-it'),sanitize=require('sanitize-html');
 const twitterTextModule=require('twitter-text'),twitterText=twitterTextModule.default||twitterTextModule;
 const md=new MarkdownIt({html:false,linkify:false,typographer:false,breaks:true});
-const CHANNELS=['blog','instagram','threads','x','facebook','linkedin','pinterest','youtube','tiktok'];
-const CHANNEL_LIMITS={blog:20000,instagram:2200,threads:500,x:280,facebook:5000,linkedin:3000,pinterest:500,youtube:5000,tiktok:2200};
+const CHANNELS=['blog','instagram','threads','x','bluesky'];
+// ponytail: manual Bluesky drafts use a conservative UTF-16 cap; add grapheme/byte validation with API publishing.
+const CHANNEL_LIMITS={blog:20000,instagram:2200,threads:500,x:280,bluesky:300};
 function fail(message){throw Object.assign(new Error(message),{status:400});}
 function string(v,label,max,optional=false){if(typeof v!=='string'||v.length>max||(!optional&&!v.trim()))fail(label+'을 확인하세요.');return v.trim();}
 function httpsURL(v,label='HTTPS 주소',optional=true){
@@ -87,7 +88,7 @@ function repurpose(post,channels){
  if(!Array.isArray(channels)||!channels.length||channels.length>CHANNELS.length||channels.some(c=>!CHANNELS.includes(c)))fail('재가공할 채널을 선택하세요.');
  const title=string(post.title,'제목',300),body=string(post.body,'본문',20000),seo=validateSEO(post.seo),plain=inspect(body).plain,url=httpsURL(seo.url||post.link||''),cta=seo.cta||'원문에서 자세한 내용을 확인하세요.',marker='[규칙 기반 홍보 초안]';
  return [...new Set(channels)].map(channel=>{
-  const limit=CHANNEL_LIMITS[channel],suffix='\n\n'+fit(cta,channel==='x'?50:['threads','pinterest'].includes(channel)?100:500,channel)+(url?'\n'+url:'');
+  const limit=CHANNEL_LIMITS[channel],suffix='\n\n'+fit(cta,channel==='x'?50:['threads','bluesky'].includes(channel)?100:500,channel)+(url?'\n'+url:'');
   if(weight(marker+suffix,channel)>=limit)fail('원문 링크 또는 다음 행동이 채널 제한보다 깁니다.');
   return {channel,title,body:marker+'\n'+fit(title+'\n\n'+(channel==='blog'?body:plain),limit-weight(marker+'\n'+suffix,channel),channel)+suffix,ruleBased:true,ai:false};
  });
