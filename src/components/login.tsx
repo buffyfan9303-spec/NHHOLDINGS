@@ -9,6 +9,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{text: string; error: boolean} | null>(null);
   const market = portal === 'market';
+  const identifierLogin = !market && !signup && !recovery;
 
   useEffect(() => {
     if (new URLSearchParams(location.search).get('error') === 'google_failed') {
@@ -54,11 +55,11 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
           {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '관리자 승인 후 이용할 수 있습니다.'}</p>}
         </header>
         <a href={`/api/auth/google?portal=${portal}`} className="nh-google-button">Google로 계속하기</a>
-        <div className="nh-login-divider">또는 이메일로</div>
+        <div className="nh-login-divider">{identifierLogin ? '또는 아이디·이메일로' : '또는 이메일로'}</div>
         <form onSubmit={submit} aria-busy={busy}>
           <div className="nh-login-field">
-            <label htmlFor="login-email">이메일</label>
-            <input id="login-email" name="email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false} placeholder="name@company.com" required maxLength={254}/>
+            <label htmlFor="login-email">{identifierLogin ? '아이디 또는 이메일' : '이메일'}</label>
+            <input id="login-email" name="email" type={identifierLogin ? 'text' : 'email'} autoComplete="username" inputMode={identifierLogin ? 'text' : 'email'} autoCapitalize="none" spellCheck={false} placeholder={identifierLogin ? '아이디 또는 name@company.com' : 'name@company.com'} required maxLength={254}/>
           </div>
           {!recovery && <div className="nh-login-field">
             <label htmlFor="login-password">비밀번호</label>

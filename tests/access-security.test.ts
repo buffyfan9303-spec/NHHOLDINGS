@@ -16,7 +16,7 @@ import {accessStatus,isOwner} from '../src/lib/auth';
 test('portal separation, owner approvals, read-only access and immediate revocation',async()=>{
  const db=new PGlite(),previousFetch=globalThis.fetch,global=globalThis as typeof globalThis&{nhPool?:unknown},previousPool=global.nhPool,previousEnv={...process.env};
  const owner={id:'00000000-0000-4000-8000-000000000001',email:'owner@example.invalid',email_confirmed_at:new Date().toISOString()},viewer={id:'00000000-0000-4000-8000-000000000002',email:'viewer@example.invalid',email_confirmed_at:new Date().toISOString(),user_metadata:{role:'owner',approved:true}},origin='http://127.0.0.1:3120';
- const query=async(sql:string,args:unknown[]=[])=>{if(sql.startsWith('SELECT pg_advisory_xact_lock'))return {rows:[],rowCount:1};const result=await db.query(sql,args);return {...result,rowCount:result.affectedRows??result.rows.length};};
+ const query=async(sql:string,args:unknown[]=[])=>{if(sql.startsWith('SELECT pg_advisory_xact_lock'))return {rows:[],rowCount:1};const result=await db.query(sql,args);return {...result,rowCount:result.affectedRows??result.rows.length};};let aliasLogoutRequests=0;
  try{
   await db.exec((await readFile('db/dashboard.sql','utf8')).split('ALTER TABLE')[0]);
   global.nhPool={query,connect:async()=>({query,release(){}})};
@@ -25,12 +25,17 @@ test('portal separation, owner approvals, read-only access and immediate revocat
    if(url.includes('/token?')){const value=JSON.parse(String(init?.body));return Response.json({access_token:value.email===owner.email?'owner-token':'viewer-token',refresh_token:'test-refresh',expires_in:3600});}
    if(url.endsWith('/admin/users/'+viewer.id))return Response.json(viewer);
    if(url.endsWith('/user'))return Response.json(user);
+   if(url.endsWith('/logout?scope=local')){aliasLogoutRequests++;return new Response(null,{status:204});}
    throw new Error('Unexpected authentication call');
   };
   const req=(path:string,token='',payload?:unknown)=>new NextRequest(origin+path,{method:payload?'POST':'GET',headers:{Origin:origin,...(token?{Cookie:'nh_access='+token}:{}),'Content-Type':'application/json'},...(payload?{body:JSON.stringify(payload)}:{})});
   const attempt=(portal:'one'|'market')=>login(req('/api/auth','',{action:'login',email:viewer.email,password:'secure-test-password',portal}));
   const ctx={params:Promise.resolve({route:['state']})};
   assert.equal(isOwner(viewer),false);assert.equal(isOwner({...owner,email_confirmed_at:undefined}),false);
+  const secondOperator={id:'00000000-0000-4000-8000-000000000003',email:'zero@example.invalid',email_confirmed_at:new Date().toISOString()};
+  assert.equal(isOwner(secondOperator),false);Object.assign(process.env,{SECOND_OPERATOR_USER_ID:secondOperator.id,SECOND_OPERATOR_EMAIL:secondOperator.email});assert.equal(isOwner(secondOperator),true);
+  for(const candidate of [{...secondOperator,email:viewer.email},{...secondOperator,id:viewer.id},{...secondOperator,email_confirmed_at:undefined},{...secondOperator,is_anonymous:true}])assert.equal(isOwner(candidate),false,'secondary operator requires the trusted ID/email pair and confirmed identity');
+  process.env.SECOND_OPERATOR_EMAIL='';assert.equal(isOwner(secondOperator),false);delete process.env.SECOND_OPERATOR_USER_ID;delete process.env.SECOND_OPERATOR_EMAIL;
   assert.equal((await dashboard(req('/api/dashboard/state'),ctx)).status,401);
   assert.equal((await accessList(req('/api/access','viewer-token'))).status,403);
   assert.equal((await (await attempt('market')).json()).destination,'/nurimarket');assert.equal(await accessStatus(viewer),'none');
@@ -40,6 +45,12 @@ test('portal separation, owner approvals, read-only access and immediate revocat
   const approval=await review(req('/api/access','owner-token',{id:viewer.id,action:'approve',version:initial.version}));assert.equal(approval.status,200);const approved=(await approval.json()).request;
   assert.equal((await review(req('/api/access','owner-token',{id:viewer.id,action:'deny',version:initial.version}))).status,409);
   assert.equal((await (await attempt('one')).json()).destination,'/dashboard');assert.equal((await (await attempt('market')).json()).destination,'/nurimarket');
+  await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','login-id','zero',$1)",[JSON.stringify({userId:viewer.id,email:viewer.email})]);
+  const aliasAttempt=(email:string,portal='one',action='login')=>login(req('/api/auth','',{action,email,password:'secure-test-password',portal}));
+  const aliasLogin=await aliasAttempt(' ZERO ');assert.equal(aliasLogin.status,200);assert.deepEqual(await aliasLogin.json(),{destination:'/dashboard',owner:false,readOnly:true,access:'approved'},'login ID keeps the existing verified identity and permissions');
+  const unknownAlias=await aliasAttempt('unregistered');assert.equal(unknownAlias.status,400);const unknownError=(await unknownAlias.json()).error;assert.equal((await aliasAttempt('zero','market')).status,400);assert.equal((await aliasAttempt('zero','one','signup')).status,400,'IDs do not replace verified signup emails');
+  await db.query("UPDATE nh_documents SET data=$1 WHERE workspace='live' AND kind='login-id' AND id='zero'",[JSON.stringify({userId:owner.id,email:viewer.email})]);
+  const mismatchedAlias=await aliasAttempt('zero');assert.equal(mismatchedAlias.status,400);assert.equal((await mismatchedAlias.json()).error,unknownError);assert.equal(mismatchedAlias.cookies.get('nh_access'),undefined,'email reassignment or mismatched auth ID cannot grant access');assert.equal(aliasLogoutRequests,1,'rejected provider session is logged out');
   const session=await (await dashboard(req('/api/dashboard/session','viewer-token'),{params:Promise.resolve({route:['session']})})).json();assert.equal(session.owner,false);assert.equal(session.readOnly,true);
   await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','channel','fixture',$1)",[JSON.stringify({label:'공개 계정',service:'market',channel:'x',username:'public-handle',verifiedAt:'2026-10-07',loginUsername:'private-login',token:'private-token'})]);
   const view=await dashboard(req('/api/dashboard/state','viewer-token'),ctx);assert.equal(view.status,200);const state=await view.json();assert.deepEqual(state.accounts,[{id:'fixture',label:'공개 계정',service:'market',channel:'x',username:'public-handle',verifiedAt:'2026-10-07'}]);assert.deepEqual(state.aiConfig,{});assert.deepEqual(state.naver,{});assert.deepEqual(state.audit,[]);

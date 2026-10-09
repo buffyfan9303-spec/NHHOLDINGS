@@ -4,7 +4,7 @@ export type AccessStatus='pending'|'approved'|'denied'|'revoked';
 export type AccessRecord={email:string;status:AccessStatus;requestedAt:string;updatedAt:string;reviewedAt?:string;reviewer?:string};
 export const confirmedIdentity=(u:Identity|null)=>!!u&&!u.is_anonymous&&!!u.email_confirmed_at&&!!u.email;
 export const ownerEmail=()=>process.env.OPERATOR_EMAIL?.trim().toLowerCase();
-export const isOwner=(u:Identity|null)=>!!u&&!u.is_anonymous&&!!u.email_confirmed_at&&!!ownerEmail()&&!!process.env.OPERATOR_USER_ID&&u.id===process.env.OPERATOR_USER_ID&&u.email?.toLowerCase()===ownerEmail();
+export const isOwner=(u:Identity|null)=>!!u&&!u.is_anonymous&&!!u.email_confirmed_at&&((!!ownerEmail()&&!!process.env.OPERATOR_USER_ID&&u.id===process.env.OPERATOR_USER_ID&&u.email?.toLowerCase()===ownerEmail())||(!!process.env.SECOND_OPERATOR_USER_ID&&!!process.env.SECOND_OPERATOR_EMAIL?.trim()&&u.id===process.env.SECOND_OPERATOR_USER_ID&&u.email?.toLowerCase()===process.env.SECOND_OPERATOR_EMAIL.trim().toLowerCase()));
 export async function accessStatus(user:Identity|null):Promise<AccessStatus|'owner'|'none'>{
  if(isOwner(user))return 'owner';if(!confirmedIdentity(user))return 'none';
  const {pool}=await import('../server/postgres.cjs');
