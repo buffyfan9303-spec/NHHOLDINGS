@@ -1,0 +1,16 @@
+{
+  "updatedAt": "2026-11-16T02:58:24Z",
+  "project": "NHHOLDINGS (NURI ONE + NURI MARKET)",
+  "sourceTarget": "/Users/flare/Developer/엔에이치홀딩스/개발/NHHOLDINGS/claude-unified",
+  "branch": "claude/unified-ops",
+  "baselineHead": "cd1fcbc5b295ff8a2a0ce8bd9cc013da35461816",
+  "design": "docs/UNIFIED-ONE-MARKET.md",
+  "ledger": "docs/ops/TASKS.json",
+  "latestHumanSteering": {
+    "at": "2026-11-16T02:58:24Z",
+    "quote": "이거 제대로 너가 설계해서 누리 원 누리 마켓 둘다 전부 잘 돌아가게 만들어 클로드 코드 누리원 프로젝트에서 제대로 진행할 수 있게 / 승인 없이 모든 것들은 전부 진행",
+    "interpretation": "설계서의 P0(T1~T4)를 claude/unified-ops에서 구현·로컬 검증하고 커밋. P1은 P0 검증 뒤. push·PR은 저장소 규칙(CLAUDE.md)이 허용하는 claude/* 한정. main·codex/* 수정, 운영 DB 쓰기, 실결제, MARKET_MODE·LIVE_APPROVED 변경, 환경변수 값 읽기는 승인 범위 밖."
+  },
+  "phase": "DESIGN_DONE_P0_READY",
+  "notes": "새 지시는 명시적 취소·대체가 아니면 TASKS.json에 추가한다. docs/COLLAB.md에 시작·종료를 기록한다."
+}

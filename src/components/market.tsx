@@ -84,15 +84,16 @@ export default function Market({ path }: { path: string[] }) {
     setSheet(null);
   }
   if (section === "admin") return <Admin />;
-  if (error && !catalog) return <div className="market-shell"><main className="load-state"><h1>NURI MARKET</h1><p className="error-text">{error}</p><button className="primary" onClick={load}>다시 불러오기</button></main></div>;
-  if (!catalog) return <div className="market-shell"><main className="load-state"><div className="wordmark"><img src="/brand/nuri-market-light.svg" alt="NURI MARKET" width="7906" height="1120"/></div><p>작은 취향을 모으는 중</p><div className="loading-line" /></main></div>;
+  const shellClass = section === "home" ? "market-shell market-lounge" : "market-shell";
+  if (error && !catalog) return <div className={shellClass}><main className="load-state"><h1>NURI MARKET</h1><p className="error-text" role="alert">{error}</p><button className="primary" onClick={load}>다시 불러오기</button></main></div>;
+  if (!catalog) return <div className={shellClass}><main className="load-state"><div className="wordmark"><img src="/brand/nuri-market-light.svg" alt="NURI MARKET" width="7906" height="1120"/></div><p role="status">상품을 불러오는 중…</p><div className="loading-line" /></main></div>;
   const product = section === "product" ? catalog.products.find(item => item.slug === path[1]) : undefined;
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const onProduct = Boolean(product);
-  return <div className="market-shell">
+  return <div className={shellClass}>
     <a className="skip-link" href="#main-content">본문으로 바로가기</a>
     <div className="preview-strip">{catalog.mode === "preview" ? "샘플 컬렉션 · 체험 주문만 가능합니다" : catalog.mode === "test" ? "결제 테스트 운영 · 실제 판매 전 점검 중" : canPlaceOrder(catalog) ? "NURI MARKET 공식 스토어" : "판매 준비 중 · 운영 확인이 끝난 뒤 주문할 수 있습니다"}</div>
-    <header className="header"><div className="header-inner"><Link href="/" className="wordmark" aria-label="NURI MARKET 홈"><img src="/brand/nuri-market-light.svg" alt="NURI MARKET" width="7906" height="1120"/></Link><nav className="desktop-links" aria-label="주요 메뉴"><Link href="/search" aria-current={section === "search" ? "page" : undefined}>모든 상품</Link><Link href="/search?category=clicker">클릭커</Link><Link href="/search?category=apparel">의류·모자</Link><Link href="/search?category=figure">작은 오브제</Link></nav><div className="header-actions"><Link className="icon-button" href="/search" aria-label="상품 검색"><Icon name="search" /></Link><Link className="icon-button desktop-only" href="/wishlist" aria-label="관심 상품"><Icon name="heart" /></Link><Link className="icon-button" href="/cart" aria-label={`장바구니 ${cartCount}개`}><Icon name="bag" />{cartCount > 0 && <span className="count-badge">{cartCount}</span>}</Link><Link href="/my" className="desktop-only account-link">마이</Link><Link href="/nurimarket/login" className="account-link">로그인</Link></div></div></header>
+    <header className="header"><div className="header-inner"><Link href="/" className="wordmark" aria-label="NURI MARKET 홈"><img src="/brand/nuri-market-light.svg" alt="NURI MARKET" width="7906" height="1120"/></Link>{section !== "home" && <nav className="desktop-links" aria-label="주요 메뉴"><Link href="/search" aria-current={section === "search" ? "page" : undefined}>모든 상품</Link><Link href="/search?category=clicker">클릭커</Link><Link href="/search?category=apparel">의류·모자</Link><Link href="/search?category=figure">작은 오브제</Link></nav>}<div className="header-actions"><Link className="icon-button" href="/search" aria-label="상품 검색"><Icon name="search" /></Link><Link className="icon-button desktop-only" href="/wishlist" aria-label="관심 상품"><Icon name="heart" /></Link><Link className="icon-button" href="/cart" aria-label={`장바구니 ${cartCount}개`}><Icon name="bag" />{cartCount > 0 && <span className="count-badge">{cartCount}</span>}</Link><Link href="/my" className="desktop-only account-link">마이</Link><Link href="/nurimarket/login" className="account-link">로그인</Link></div></div></header>
     {(section === "home" || section === "search") && <Suspense fallback={<CategoryLinks active={section === "home" ? "all" : ""} />}><CategoryNavigation section={section} /></Suspense>}
     <main ref={mainRef} id="main-content" data-route={routeKey || "home"} className={`main ${onProduct ? "product-main" : ""}`}>
       {section === "home" && <Home catalog={catalog} wishes={wishes} wish={wish} />}
@@ -136,14 +137,69 @@ function Reveal({children}:{children:React.ReactNode}) {
     const observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){if(document.documentElement.dataset.marketInput!=="keyboard"&&!matchMedia("(prefers-reduced-motion: reduce)").matches)animation=element.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:280,easing:"cubic-bezier(0.23, 1, 0.32, 1)"});observer.disconnect();}},{threshold:0.08});observer.observe(element);return()=>{observer.disconnect();animation?.cancel();};},[]);
   return <div ref={ref}>{children}</div>;
 }
+function LoungeHero({ hasProducts }: { hasProducts: boolean }) {
+  return (
+    <section className="lounge-hero" aria-labelledby="lounge-title">
+      <div className="lounge-photo lounge-photo-room" aria-hidden="true">
+        <img src="/market/counter-editorial.jpg" alt="" width="1536" height="1024" fetchPriority="high" />
+      </div>
+      <div className="lounge-hero-copy">
+        <h1 id="lounge-title">오래 손이 가는<br />작은 것들.</h1>
+        <p>클릭커, 작은 오브제, 테이블 클럽.</p>
+        <a className="lounge-cta" href={hasProducts ? "#market-collection" : "#lounge-story"}>{hasProducts ? "컬렉션 보기" : "누리마켓 소개"} <Icon name="arrow" size={16} /></a>
+      </div>
+    </section>
+  );
+}
+
+function LoungeEditorial() {
+  return (
+    <section id="lounge-story" className="lounge-editorial" aria-labelledby="lounge-editorial-title" tabIndex={-1}>
+      <div className="lounge-photo lounge-photo-detail">
+        <img src="/market/counter-editorial.jpg" alt="따뜻한 조명 아래 놓인 금속 클릭커 콘셉트 이미지" width="1536" height="1024" loading="lazy" />
+      </div>
+      <div className="lounge-editorial-copy">
+        <h2 id="lounge-editorial-title">손끝에 남는 감각</h2>
+        <p>나무의 결, 손끝에 닿는 금속, 누르는 감각. 일상에서 자꾸 손이 가는 물건을 고릅니다.</p>
+        <Link href="/policy/shipping">배송·교환·반품 안내 <Icon name="arrow" size={16} /></Link>
+      </div>
+    </section>
+  );
+}
+
 function Home({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: string[]; wish: (id: string) => void }) {
   const [slide,setSlide]=useState(0),[category,setCategory]=useState("all");
   const gesture=useRef<{id:number;x:number;y:number;horizontal:boolean}|null>(null);
   const suppressClick=useRef(false);
   const campaigns=[{eyebrow:"SMALL THINGS, GOOD DAYS",title:<>손안에 담는<br/>좋아하는 것들.</>,description:"기분 좋은 한 번의 클릭, 내 곁의 작은 오브제.",link:"손끝의 즐거움 발견하기",href:"/search?category=clicker"},{eyebrow:"FROM THE TABLE, TO EVERYDAY",title:<>테이블 밖에서도,<br/>나답게.</>,description:"가볍게 쓰고, 편하게 입는 테이블 클럽.",link:"테이블 클럽 둘러보기",href:"/search?category=apparel"}];
   const collection=[...catalog.products].sort((a,b)=>Number(stockOf(b)>0)-Number(stockOf(a)>0)||["clicker","figure","apparel","gear"].indexOf(a.category)-["clicker","figure","apparel","gear"].indexOf(b.category));
-  if(catalog.mode==="live")return <section className="catalog-section"><div className="section-heading"><div><h2>상품</h2><p>공개된 상품을 확인해 주세요.</p></div></div>{!canPlaceOrder(catalog)&&<p className="hint">실제 결제 운영 확인이 끝난 뒤 주문을 받을 수 있습니다.</p>}<ProductGrid products={collection} wishes={wishes} wish={wish} shipping={catalog.settings.shipping} empty="새 상품을 준비하고 있습니다."/></section>;
+  if (catalog.mode === "live") {
+    return (
+      <>
+        <LoungeHero hasProducts={collection.length > 0} />
+        {collection.length > 0 && (
+          <section id="market-collection" className="catalog-section" aria-labelledby="market-collection-title" tabIndex={-1}>
+            <div className="section-heading">
+              <h2 id="market-collection-title">컬렉션</h2>
+              <Link href="/search">전체 상품 <Icon name="arrow" size={16} /></Link>
+            </div>
+            {!canPlaceOrder(catalog) && <p className="hint">판매 준비가 끝난 뒤 주문할 수 있습니다.</p>}
+            <ProductGrid products={collection} wishes={wishes} wish={wish} shipping={catalog.settings.shipping} />
+          </section>
+        )}
+        <LoungeEditorial />
+        {collection.length === 0 && (
+          <section className="lounge-opening" aria-labelledby="lounge-opening-title">
+            <h2 id="lounge-opening-title">첫 컬렉션 준비 중</h2>
+            <p>상품이 공개되면 이곳에서 만나보실 수 있어요.</p>
+          </section>
+        )}
+      </>
+    );
+  }
   return <>
+    <LoungeHero hasProducts={collection.length > 0} />
+    <LoungeEditorial />
     <section className={`hero hero-campaign hero-campaign-${slide}`} aria-roledescription="캐러셀" aria-label="NURI 샘플 컬렉션"
       onPointerDown={event=>{
         suppressClick.current=false;
@@ -179,7 +235,7 @@ function Home({ catalog, wishes, wish }: { catalog: CatalogResponse; wishes: str
       <div className="hero-controls"><span>샘플 컬렉션 · 제작 방향 미리보기</span><div aria-label="배너 선택">{campaigns.map((campaign,index)=><button key={campaign.eyebrow} aria-label={`${index+1}번 배너: ${index===0?"클릭커와 작은 오브제":"테이블 클럽"}`} aria-pressed={slide===index} onClick={()=>setSlide(index)}><i/></button>)}<span aria-live="polite">0{slide+1} / 02</span></div></div>
     </section>
     <div className="discovery-shortcuts">{[{id:"clicker",label:"기분 좋은 한 번의 클릭",sub:"클릭커",image:"clicker",number:"01"},{id:"figure",label:"작지만 확실한 존재감",sub:"미니 피규어",image:"figure",number:"02"},{id:"apparel",label:"오늘도 편하게, 나답게",sub:"의류·모자",image:"cap",number:"03"},{id:"gear",label:"테이블 위의 작은 차이",sub:"홀덤 굿즈",image:"gear",number:"04"}].map(item => <Link key={item.id} href={`/search?category=${item.id}`}><div><img src={`/products/${item.image}.webp`} width="120" height="120" alt="" loading="lazy"/></div><div className="shortcut-copy"><span>{item.number} / EXPLORE</span><strong>{item.sub}</strong><p>{item.label}</p></div><Icon name="arrow" size={16}/></Link>)}</div>
-    <section className="catalog-section"><div className="section-heading"><div><span className="eyebrow">THE NURI EDIT</span><h2>오늘의 작은 발견<span>.</span></h2><p>좋아하는 마음으로 고른, 누리의 컬렉션.</p></div><Link href="/search">전체 상품<Icon name="arrow" size={16}/></Link></div>
+    <section id="market-collection" className="catalog-section" tabIndex={-1}><div className="section-heading"><div><span className="eyebrow">THE NURI EDIT</span><h2>오늘의 작은 발견<span>.</span></h2><p>좋아하는 마음으로 고른, 누리의 컬렉션.</p></div><Link href="/search">전체 상품<Icon name="arrow" size={16}/></Link></div>
       <div className="collection-controls"><div className="collection-tabs" aria-label="홈 컬렉션 분류">{categories.map(item=><button key={item.id} aria-pressed={category===item.id} onClick={()=>changeView(()=>setCategory(item.id), ".product-grid")} className={category===item.id?"active":""}>{item.label}</button>)}</div><span>{catalog.products.filter(item=>category==="all"||item.category===category).length} ITEMS</span></div>
       <ProductGrid products={collection.filter(item=>category==="all"||item.category===category)} wishes={wishes} wish={wish} shipping={catalog.settings.shipping}/>
     </section>
