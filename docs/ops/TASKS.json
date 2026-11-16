@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "goal": "누리원+누리마켓 통합 안정화(설계서 UNIFIED-ONE-MARKET.md)",
+  "constraints": {
+    "branch": "claude/unified-ops",
+    "main": "forbidden",
+    "codexBranches": "forbidden",
+    "liveMode": "forbidden",
+    "prodDbWrite": "forbidden",
+    "envValues": "forbidden"
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "soft 404 제거(허용 경로만 200, 나머지 404, /api 미정의는 JSON 404)",
+      "status": "pending",
+      "priority": "P0",
+      "files": [
+        "src/app/[...slug]/page.tsx",
+        "src/app/not-found.tsx",
+        "src/app/api/[...rest]/route.ts"
+      ],
+      "accept": "UNIFIED-ONE-MARKET.md 6장 표"
+    },
+    {
+      "id": "T2",
+      "title": "robots.ts·sitemap.ts·/api/health",
+      "status": "pending",
+      "priority": "P0",
+      "dependsOn": [
+        "T1"
+      ],
+      "files": [
+        "src/app/robots.ts",
+        "src/app/sitemap.ts",
+        "src/app/api/health/route.ts"
+      ]
+    },
+    {
+      "id": "T3",
+      "title": "정확히 /one만 /dashboard로 308(/one/* 정적 자산 제외)",
+      "status": "pending",
+      "priority": "P0",
+      "files": [
+        "next.config.ts"
+      ]
+    },
+    {
+      "id": "T4",
+      "title": "T1~T3 회귀 테스트 + 출처 문 동작 고정 테스트, npm test에 포함",
+      "status": "pending",
+      "priority": "P0",
+      "dependsOn": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "files": [
+        "tests/",
+        "package.json"
+      ]
+    },
+    {
+      "id": "T5",
+      "title": "ONE 대시보드 MARKET 집계 빈 칸(monthly·inventory·readiness·미답변 문의) 채우기",
+      "status": "pending",
+      "priority": "P1",
+      "dependsOn": [
+        "T4"
+      ],
+      "files": [
+        "src/lib/dashboard.ts"
+      ]
+    },
+    {
+      "id": "T6",
+      "title": "로컬 NURI ONE ↔ 호스팅 ONE 기능 패리티 표(이식 여부는 사용자 결정)",
+      "status": "pending",
+      "priority": "P1",
+      "output": "docs/PARITY-ONE.md"
+    },
+    {
+      "id": "T7",
+      "title": "쇼핑몰 개시 준비: 입력 UI·검증·PG 테스트 모드 흐름(실개시는 사용자·Codex)",
+      "status": "pending",
+      "priority": "P1",
+      "approval": "사용자 입력·승인 필요"
+    },
+    {
+      "id": "T8",
+      "title": "크론 실행·플랜 허용 읽기 확인과 상태 표시",
+      "status": "pending",
+      "priority": "P1"
+    },
+    {
+      "id": "T9",
+      "title": "하위 도메인 분리 결정 문서(one.nhholdings.xyz)",
+      "status": "pending",
+      "priority": "P2",
+      "approval": "사용자 결정"
+    },
+    {
+      "id": "T10",
+      "title": "로컬 NURI ONE·MARKET README에 정본이 NHHOLDINGS임을 명시(삭제·이동 금지)",
+      "status": "pending",
+      "priority": "P2"
+    }
+  ]
+}
