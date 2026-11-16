@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./market-lounge.css";
 
 export const metadata: Metadata = {
   title: { default: "NURI MARKET | 작은 취향, 가까운 일상", template: "%s | NURI MARKET" },

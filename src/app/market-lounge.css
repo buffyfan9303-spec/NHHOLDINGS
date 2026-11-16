@@ -1,0 +1,215 @@
+.market-shell.market-lounge {
+  --lounge-bg: #e7dcd0;
+  --lounge-photo-surround: #d3bfac;
+  --lounge-text: #352820;
+  --lounge-text-muted: #59463b;
+  --lounge-brass: #694727;
+  --lounge-panel: #dacabb;
+  --lounge-ink: #faf4e8;
+  --lounge-muted: #d1c2b2;
+  --lounge-line: #c2ac98;
+  --lounge-amber: #e8bb80;
+  --lounge-gutter: clamp(12px, 3.4vw, 48px);
+  --lounge-radius: clamp(20px, 3vw, 40px);
+  --lounge-width: min(100% - var(--lounge-gutter) * 2, 1320px);
+  background: var(--lounge-bg);
+  color: var(--lounge-text);
+}
+.market-shell.market-lounge .preview-strip { background: #ddcdbd; color: #594435; }
+.market-shell.market-lounge .header,
+.market-shell.market-lounge .category-strip,
+.market-shell.market-lounge .bottom-nav { background: var(--lounge-bg); color: var(--lounge-text); border-color: var(--lounge-line); }
+.market-shell.market-lounge :is(.header,.category-strip,.bottom-nav) a { color: var(--lounge-text-muted); }
+.market-shell.market-lounge :is(.header,.category-strip,.bottom-nav) a:is(:hover,.active) { color: var(--lounge-brass); }
+.market-shell.market-lounge .category-strip a.active { border-color: var(--lounge-brass); }
+.market-shell.market-lounge :is(a,button,summary):focus-visible { outline-color: var(--lounge-brass); }
+.market-shell.market-lounge .lounge-hero a:focus-visible { outline-color: var(--lounge-amber); }
+.market-shell.market-lounge .main {
+  max-width: none;
+  width: 100%;
+  padding: 0;
+  background: radial-gradient(ellipse 65% 480px at 50% 510px, var(--lounge-photo-surround), transparent 100%);
+}
+.market-shell.market-lounge .main > :not(.lounge-hero) { width: var(--lounge-width); margin-inline: auto; }
+.market-shell.market-lounge .catalog-section,
+.market-shell.market-lounge .catalog-section .section-heading { color: var(--ink); }
+.market-shell.market-lounge .catalog-section { background: var(--paper); padding: clamp(18px,4vw,48px); margin-block: 32px; border-radius: var(--lounge-radius); }
+.market-shell.market-lounge .catalog-section .section-heading { margin-top: 0; }
+.market-shell.market-lounge .footer { background: var(--lounge-panel); color: var(--lounge-text-muted); border-color: var(--lounge-line); }
+.market-shell.market-lounge .footer :is(a,.seller-info,.copyright) { color: var(--lounge-text-muted); }
+.lounge-hero {
+  display: grid;
+  align-items: end;
+  position: relative;
+  isolation: isolate;
+  width: var(--lounge-width);
+  margin: clamp(12px, 2vw, 24px) auto 0;
+  min-height: clamp(460px,62svh,660px);
+  border-radius: var(--lounge-radius);
+  overflow: hidden;
+  background: #38271d;
+  box-shadow: 0 18px 40px -24px #5a392b70;
+}
+.lounge-photo { overflow: hidden; }
+.lounge-photo img {
+  position: absolute;
+  top: 50%;
+  width: 200%;
+  max-width: none;
+  height: auto;
+  transform: translateY(-50%);
+}
+.lounge-photo-room { position: absolute; inset: 0; z-index: -2; }
+.lounge-photo-room img { left: 0; top: 45%; filter: brightness(1.28) saturate(.90); }
+.lounge-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg,#2b1b13b8 0%,#2b1b135f 36%,transparent 70%), linear-gradient(0deg,#2b1b13a8,transparent 61%);
+}
+.lounge-hero-copy { width: 100%; padding: clamp(24px, 5.4vw, 76px); }
+.lounge-hero h1 {
+  color: var(--lounge-ink);
+  font: 500 clamp(40px,5.8vw,81px)/1.17 "AppleMyungjo","Nanum Myeongjo",serif;
+  letter-spacing: -.055em;
+  word-break: keep-all;
+  text-wrap: balance;
+}
+.lounge-hero p { color: var(--lounge-muted); margin-block: 16px 24px; }
+.lounge-cta,
+.lounge-editorial-copy a { display: inline-flex; gap: 14px; align-items: center; min-height: 46px; }
+.lounge-cta { border: 1px solid #ba9977; border-radius: 12px; padding: 9px 19px; color: #332217; background: #ecd9c2; }
+@media (hover: hover) {
+  .lounge-cta:hover { background: var(--lounge-amber); color: #332217; }
+}
+.lounge-editorial {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .85fr);
+  align-items: center;
+  gap: clamp(24px, 5.5vw, 84px);
+}
+.lounge-photo-detail {
+  position: relative;
+  aspect-ratio: 1.48;
+  background-color: #2a1e17;
+  border-radius: 32% 32% var(--lounge-radius) var(--lounge-radius) / 20% 20% var(--lounge-radius) var(--lounge-radius);
+}
+.lounge-photo-detail img { right: 0; top: 48%; filter: brightness(1.13); }
+.lounge-editorial-copy { align-self: center; padding: 16px clamp(16px, 3vw, 44px) 16px 0; }
+.lounge-editorial-copy h2 { font: 500 clamp(28px,4vw,54px)/1.22 "AppleMyungjo","Nanum Myeongjo",serif; text-wrap: balance; }
+.lounge-editorial-copy p { color: var(--lounge-text-muted); margin-block: 10px 12px; max-width: 36ch; }
+.lounge-editorial-copy a { color: var(--lounge-brass); }
+@media (max-width: 680px) {
+  .lounge-photo-room img { top: 0; transform: none; }
+  .lounge-hero::before { background: linear-gradient(0deg,#2b1b13 3%,#2b1b13dc 26%,#2b1b1329 58%,transparent 78%); }
+  .lounge-hero-copy { padding: 24px; }
+  .lounge-hero h1 { font-size: clamp(32px,9.4vw,54px); }
+  .lounge-editorial { grid-template-columns: 1fr; gap: 12px; }
+  .lounge-photo-detail { border-radius: 24% 24% 18px 18px / 18% 18% 18px 18px; }
+  .lounge-editorial-copy { padding: 12px 12px 8px; }
+}
+
+.market-shell.market-lounge .preview-strip { min-height: 29px; height: auto; padding: 4px 12px; text-align: center; }
+
+.market-shell.market-lounge .category-strip a {
+  border-radius: 0;
+  font-weight: 550;
+}
+.market-shell.market-lounge .category-strip a.active { font-weight: 750; }
+.market-shell.market-lounge .category-strip { top: 68px; }
+.market-shell.market-lounge .header-inner { height: 68px; }
+.market-shell.market-lounge .header .header-actions .icon-button,
+.market-shell.market-lounge .header .header-actions .account-link { min-height: 44px; }
+.market-shell.market-lounge .header .header-actions .icon-button { min-width: 44px; }
+.market-shell.market-lounge .header .header-actions .account-link {
+  display: inline-flex;
+  align-items: center;
+}
+@media (max-width:760px) {
+  .market-shell.market-lounge .header .header-actions .account-link.desktop-only { display: none; }
+}
+.market-shell.market-lounge .count-badge {
+  background: var(--lounge-amber);
+  color: #352820;
+  border-radius: 3px;
+}
+.market-shell.market-lounge .lounge-editorial {
+  background: transparent;
+  color: var(--lounge-text);
+  margin-block: clamp(30px, 5vw, 76px) 0;
+}
+.market-shell.market-lounge .catalog-section :is(a,button):focus-visible {
+  outline-color: #785226;
+}
+.lounge-editorial-copy a {
+  color: var(--lounge-brass);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.lounge-opening {
+  margin-block: clamp(26px, 5vw, 68px);
+  padding: 20px clamp(12px, 3vw, 36px);
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 22px;
+  flex-wrap: wrap;
+}
+.lounge-opening::before {
+  content: "";
+  position: absolute;
+  inset: 0 3% auto;
+  height: 1px;
+  background: linear-gradient(90deg,transparent,var(--lounge-line) 20% 80%,transparent);
+}
+.lounge-opening h2 { font-size: clamp(21px,2.3vw,30px); }
+.lounge-opening p { color: var(--lounge-text-muted); }
+.market-shell.market-lounge .collection-tabs button {
+  background: transparent;
+  color: #56554d;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.market-shell.market-lounge .collection-tabs button.active {
+  border-color: #846135;
+  color: #2d261d;
+}
+.market-shell.market-lounge .catalog-section .wish-button { border-radius: 10px; }
+.market-shell.market-lounge .catalog-section .product-visual { border-radius: 18px; }
+.market-shell.market-lounge .catalog-section .soldout { border-radius: 2px; }
+.market-shell.market-lounge .footer {
+  width: var(--lounge-width);
+  max-width: none;
+  margin-inline: auto;
+  border: 0;
+  border-radius: var(--lounge-radius) var(--lounge-radius) 0 0;
+  padding-inline: clamp(18px, 4vw, 48px);
+}
+#lounge-story, #market-collection { scroll-margin-top: 16px; }
+@media (max-width:760px) {
+  .market-shell.market-lounge .header-inner { height: 60px; }
+  .market-shell.market-lounge .category-strip { top: 60px; }
+  .market-shell.market-lounge .header .header-actions { gap: 0; }
+}
+@media (max-width:680px) {
+  .market-shell.market-lounge .lounge-editorial { margin-top: 28px; }
+  .lounge-opening { margin-block: 24px; }
+  .lounge-hero { min-height: 460px; }
+  .market-shell.market-lounge .bottom-nav { border-radius: 16px 16px 0 0; }
+}
+
+.market-shell.market-lounge .load-state {
+  min-height: 100svh;
+  padding-inline: 24px;
+}
+.market-shell.market-lounge .load-state p { color: var(--lounge-text-muted); }
+.market-shell.market-lounge .load-state .error-text { color: #902d20; }
+.market-shell.market-lounge .load-state .primary {
+  background: var(--lounge-amber);
+  color: #352820;
+  border-radius: 12px;
+  min-height: 44px;
+}
