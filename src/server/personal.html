@@ -11,12 +11,14 @@
  <link rel="stylesheet" href="/one/personal.css">
  <link rel="stylesheet" href="/one/personal-files.css">
  <link rel="stylesheet" href="/one/personal-automation.css">
+ <link rel="stylesheet" href="/one/personal-ai.css">
 </head>
 <body class="personal-app">
  <a class="personal-skip" href="#personal-main">본문으로 이동</a>
  <header class="personal-top">
   <a class="personal-brand" href="/personal" aria-label="누리원 내 업무 홈">NURI <span>ONE</span></a>
   <div class="personal-account">
+   <button type="button" id="personal-ai-open" aria-expanded="false" aria-controls="personal-ai-root">AI 비서</button>
    <span id="personal-account"></span>
    <a href="/dashboard" id="personal-owner" hidden>운영 대시보드</a>
    <button type="button" id="personal-logout">로그아웃</button>
@@ -76,6 +78,7 @@
    <section data-personal-view="mail" hidden aria-label="메일 예약"><div id="personal-mail-root"></div></section>
    <section data-personal-view="files" hidden aria-label="비공개 저장소"><div id="personal-files-root"></div></section>
   </main>
+  <aside id="personal-ai-root" aria-label="AI 비서"></aside>
  </div>
  <dialog id="personal-editor" aria-labelledby="personal-editor-title">
   <form id="personal-form" class="personal-form">
@@ -98,6 +101,7 @@
  </dialog>
  <script src="/one/personal-files.js" defer></script>
  <script src="/one/personal-automation.js" defer></script>
+ <script src="/one/personal-ai.js" defer></script>
  <script src="/one/personal.js" defer></script>
 </body>
 </html>

@@ -14,6 +14,9 @@
   };
   const formatter=new Intl.DateTimeFormat('ko-KR',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Seoul'});
   const views=new Map();
+  const cardIdPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
+  const imageProviders=['instagram','threads'];
+  let socialCard=null;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const safeLink=value=>{
     try {
@@ -126,7 +129,7 @@
       ].join('');
       return `<li class="personal-row auto-row"><div class="personal-row-text">
         <div class="auto-row-heading"><strong>${escape(title)}</strong><span class="auto-state" data-state="${escape(item.status)}">${statusLabel(item.status)}</span></div>
-        <div class="personal-row-meta auto-meta"><span>${escape(channel||'채널 미확인')}</span>${validTime(item.scheduledAt)}</div>
+        <div class="personal-row-meta auto-meta"><span>${escape(channel||'채널 미확인')}</span>${item.cardId?'<span>'+escape((item.cardTitle||'카드뉴스')+' · '+(item.cardSlide+1)+'장')+'</span>':''}${validTime(item.scheduledAt)}</div>
         ${review?`<p class="auto-review">${escape(item.error||item.reason||review.trim())}</p>`:''}
         ${link?`<a class="personal-link" href="${escape(link)}" referrerpolicy="no-referrer" rel="noopener noreferrer" target="_blank">게시물 열기</a>`:''}
         </div>${buttons?`<div class="personal-row-actions auto-row-actions">${buttons}</div>`:''}</li>`;
@@ -215,7 +218,7 @@
       if(view.read===ticket) {
         view.loading=false;
         view.read=null;
-        if(current(view))setControls(view);
+        if(current(view)){setControls(view);openSelectedCard(view);}
       }
     }
   }
@@ -230,7 +233,7 @@
     view.fields.querySelector('input,select,textarea')?.focus();
   }
 
-  function draftEditor(view,item) {
+  function draftEditor(view,item,cardChoice=null) {
     if(view.kind==='mail'){
       return modal(view,'draft',item?.id,`
         <label>받는 사람<input name="to" type="email" required maxlength="254" value="${escape(item?.to)}"></label>
@@ -240,7 +243,7 @@
     }
     if(!view.data.accounts.length)return note(view,'SNS 계정을 연결한 뒤 초안을 작성해 주세요.',true);
     const accounts=view.data.accounts;
-    const account=item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):accounts[0].id;
+    const account=cardChoice?.accountId||(item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):accounts[0].id);
     const bool=(value)=>option('','선택',value==null?'':String(value))+option('true','예',String(value))+option('false','아니요',String(value));
     modal(view,'draft',item?.id,`
      ${item?.status==='scheduled'?'<p class="auto-caption">편집을 저장하면 현재 예약이 해제됩니다. 게시 시각을 다시 승인해 주세요.</p>':''}
@@ -248,31 +251,103 @@
      <label>제목<input name="title" required maxlength="160" value="${escape(item?.title)}"></label>
      <label>본문<textarea name="body" rows="6" maxlength="5000" required>${escape(item?.body)}</textarea></label>
      <p class="auto-caption" data-auto-media-note></p>
-     <label data-auto-channel-field="image">공개 이미지 주소<input name="mediaUrl" type="url" maxlength="2000" value="${escape(item?.mediaUrl)}"></label>
+     <div data-auto-channel-field="image"><label for="personal-sns-image-source">게시 이미지</label>
+     <select id="personal-sns-image-source" name="imageSource">
+      ${option('url','공개 이미지 주소',!cardChoice&&!item?.cardId?'url':'')}
+      ${option('card','내 카드뉴스',cardChoice||item?.cardId?'card':'')}
+     </select></div>
+     <label data-auto-channel-field="image" data-auto-image-source="url">공개 이미지 주소<input name="mediaUrl" type="url" maxlength="2000" value="${escape(item?.mediaUrl)}"></label>
+     <div class="auto-field-pair" data-auto-channel-field="image" data-auto-image-source="card">
+      <label>카드뉴스<select name="cardId">${option('','카드 목록을 불러오는 중','')}</select></label>
+      <label>페이지<select name="cardSlide">${option('','카드뉴스 선택','')}</select></label>
+      <p class="auto-caption auto-card-description" data-auto-card-description aria-live="polite"></p>
+     </div>
      <label data-auto-channel-field="youtube">비공개 YouTube 영상 주소 또는 ID<input name="videoId" maxlength="2000" value="${escape(item?.videoId)}"></label>
      <div class="auto-field-pair" data-auto-channel-field="youtube">
       <label>아동용 콘텐츠<select name="madeForKids">${bool(item?.madeForKids)}</select></label>
       <label>변경·합성 콘텐츠<select name="synthetic">${bool(item?.synthetic)}</select></label>
      </div>`,item?'게시 초안 편집':'새 게시 초안','초안 저장');
+    view.editor.cards=new Map();
+    view.editor.existingCard=item?.cardId?item:null;
+    view.editor.preselectedCard=cardChoice?.id||null;
     setDraftFields(view);
+    if(view.form.elements.imageSource.value==='card')void loadDraftCards(view);
+  }
+
+  function cardPage(view, selected='') {
+    const {cardId,cardSlide}=view.form.elements;
+    const card=view.editor.cards.get(cardId.value);
+    cardSlide.innerHTML=card?.slides.length?card.slides.map((slide,index)=>
+      option(String(index),(index+1)+'장 · '+slide.headline,String(selected))).join(''):option('','카드뉴스 선택','');
+    const slide=card?.slides[Number(cardSlide.value)];
+    view.fields.querySelector('[data-auto-card-description]').textContent=slide?
+      '이미지 대체 텍스트 · '+[slide.label,slide.headline,slide.body].filter(Boolean).join('. '):'';
+  }
+
+  async function loadDraftCards(view) {
+    const editor=view.editor;
+    if(!current(view)||editor.kind!=='draft'||editor.cardLoading)return;
+    if(editor.cardsLoaded)return;
+    editor.cardLoading=true;
+    const ticket=new AbortController();
+    view.cardRead?.abort();
+    view.cardRead=ticket;
+    const status=view.fields.querySelector('[data-auto-card-description]');
+    status.textContent='내 카드뉴스를 불러오고 있습니다.';
+    try {
+      const response=await fetch('/api/personal/ai/cards',{cache:'no-store',signal:ticket.signal,headers:{'X-Personal-Account':view.owner}});
+      if(!response.ok)throw Error('내 카드뉴스를 불러오지 못했습니다. 다시 선택해 주세요.');
+      const result=await response.json();
+      if(!current(view)||view.editor!==editor||view.cardRead!==ticket||ticket.signal.aborted)return;
+      const selected=editor.preselectedCard||view.form.elements.cardId.value||editor.existingCard?.cardId;
+      for(const card of result.cards||[]){
+        if(cardIdPattern.test(card.id)&&Array.isArray(card.slides))editor.cards.set(card.id,card);
+      }
+      if(selected&&cardIdPattern.test(selected)&&!editor.cards.has(selected)){
+        const previous=await fetch('/api/personal/ai/cards/'+selected,{
+          cache:'no-store',signal:ticket.signal,headers:{'X-Personal-Account':view.owner},
+        });
+        const card=previous.ok?(await previous.json()).card:null;
+        if(!current(view)||view.editor!==editor||view.cardRead!==ticket||ticket.signal.aborted)return;
+        if(card?.id===selected&&Array.isArray(card.slides))editor.cards.set(card.id,card);
+      }
+      view.form.elements.cardId.innerHTML=option('','최근 카드뉴스 선택',selected)+[...editor.cards.values()].map(card=>
+        option(card.id,card.title,selected)).join('');
+      editor.cardsLoaded=true;
+      const sameExisting=!!selected&&selected===editor.existingCard?.cardId;
+      cardPage(view,sameExisting?editor.existingCard.cardSlide:0);
+      if(!editor.cards.size)status.textContent='저장한 카드뉴스가 없습니다. AI 비서에서 먼저 만들어 주세요.';
+      else if(editor.preselectedCard&&!editor.cards.has(editor.preselectedCard))status.textContent='선택한 카드뉴스를 확인할 수 없습니다.';
+      editor.preselectedCard=null;
+    }catch(error){
+      if(current(view)&&view.editor===editor&&!ticket.signal.aborted){
+        status.textContent=error.message;
+        view.form.elements.cardId.innerHTML=option('','다시 선택해 주세요.','');
+      }
+    }finally{
+      editor.cardLoading=false;
+      if(view.cardRead===ticket)view.cardRead=null;
+    }
   }
 
   function setDraftFields(view) {
     const provider=connectionFor(view,{accountId:view.form.elements.accountId.value})?.provider;
-    const youtube=provider==='youtube',imageAllowed=['instagram','threads'].includes(provider);
+    const youtube=provider==='youtube',imageAllowed=imageProviders.includes(provider);
+    const imageSource=view.form.elements.imageSource.value;
     view.form.elements.title.maxLength=youtube?100:160;
     view.form.elements.body.maxLength={threads:1000,instagram:4400}[provider]||5000;
     for(const group of view.fields.querySelectorAll('[data-auto-channel-field]')){
       const image=group.dataset.autoChannelField==='image';
-      group.hidden=image?!imageAllowed:!youtube;
+      const source=group.dataset.autoImageSource;
+      group.hidden=image?!imageAllowed||!!source&&source!==imageSource:!youtube;
       for(const field of group.querySelectorAll('input,select')){
         field.disabled=group.hidden;
-        field.required=!group.hidden&&(!image||provider==='instagram');
+        field.required=!group.hidden&&(!image||source==='card'||source==='url'&&provider==='instagram');
       }
     }
     view.fields.querySelector('[data-auto-media-note]').textContent=youtube?
       'YouTube Studio의 비공개 영상과 제목·설명을 일치시켜 주세요.':
-      provider==='instagram'?'Instagram에 올릴 공개 HTTPS JPEG 이미지가 필요합니다.':
+      provider==='instagram'?'내 카드뉴스 한 장이나 공개 HTTPS JPEG를 선택해 주세요.':
       provider==='threads'?'Threads는 텍스트만 작성해도 됩니다.':provider==='x'?'X는 텍스트만 예약할 수 있으며 본문은 가중 280자 이내여야 합니다.':'';
   }
 
@@ -281,7 +356,7 @@
     const account=mail?item.to:connectionFor(view,item)?.label;
     modal(view,'schedule',item.id,`<div class="auto-approval-preview"><strong>${escape(subject)}</strong>
       <p class="auto-caption">${escape((mail?'받는 사람 ':'게시 계정 ')+(account||'미확인'))}</p>
-      <p>${escape(item.body)}</p></div>
+      <p>${escape(item.body)}</p>${!mail&&item.cardId?'<p class="auto-caption">첨부 이미지 · '+escape(item.cardTitle||'카드뉴스')+' '+(item.cardSlide+1)+'장</p><p class="auto-caption">'+escape(item.altText)+'</p>':''}</div>
       <div class="auto-field-pair">
         <label>예약 날짜<input name="day" type="date" required></label>
         <label>예약 시간 <small>한국 시간</small><input name="time" type="time" required></label>
@@ -381,6 +456,7 @@
         const change=id?{id,version}:{};
         const draft=view.kind==='mail'?{action:'draft',to:fields.to,subject:fields.subject,body:fields.body}:
           {action:'save',accountId:fields.accountId,title:fields.title,body:fields.body,mediaUrl:fields.mediaUrl||'',videoId:fields.videoId||'',
+            ...(fields.cardId?{cardId:fields.cardId,cardSlide:Number(fields.cardSlide)}:{}),
             ...(fields.madeForKids!==undefined?{madeForKids:fields.madeForKids==='true',synthetic:fields.synthetic==='true'}:{})};
         return mutate(view,{...draft,...change},'초안을 저장했습니다.');
       }
@@ -441,6 +517,7 @@
   function suspendView(view) {
     view.epoch++;
     view.read?.abort();
+    view.cardRead?.abort();
     view.read=null;
     view.loading=false;
     view.needsRefresh=true;
@@ -448,6 +525,27 @@
     if(view.dialog.open)view.dialog.close();
     const secret=view.form.elements.clientSecret;
     if(secret)secret.value='';
+  }
+
+  function openSelectedCard(view) {
+    if(view.kind!=='social'||!current(view)||!view.data||view.loading||view.busy||!socialCard||socialCard.owner!==view.owner||
+       location.hash!=='#social')return;
+    const pending=socialCard;
+    socialCard=null;
+    const account=view.data.accounts.find(a=>imageProviders.includes(a.provider)&&a.ready&&!a.paused);
+    if(!account){
+      note(view,'카드뉴스를 올리려면 Instagram 또는 Threads 계정을 연결해 주세요.',true);
+      return;
+    }
+    draftEditor(view,null,{id:pending.id,accountId:account.id});
+  }
+
+  function selectSocialCard(id) {
+    const owner=window.NuriPersonalAccount;
+    if(!owner||typeof id!=='string'||!cardIdPattern.test(id))return;
+    socialCard={id,owner};
+    if(location.hash!=='#social')location.hash='social';
+    else mount('social');
   }
 
   function mount(kind) {
@@ -463,9 +561,12 @@
     const prior=views.get(kind);
     if(prior?.root===root&&prior.owner===owner){
       if(prior.needsRefresh&&!prior.busy){
-        if(prior.openDraft){prior.dialog.showModal();prior.openDraft=false;}
+        if(prior.openDraft){
+          prior.dialog.showModal();prior.openDraft=false;
+          if(prior.form.elements.imageSource?.value==='card')void loadDraftCards(prior);
+        }
         void load(prior);
-      }
+      }else openSelectedCard(prior);
       return;
     }
     if(prior)suspendView(prior);
@@ -476,9 +577,19 @@
     view.form=root.querySelector('[data-auto-form]');
     view.fields=root.querySelector('[data-auto-fields]');
     view.form.addEventListener('submit',event=>submit(view,event));
-    view.form.addEventListener('change',event=>{if(kind==='social'&&event.target.name==='accountId')setDraftFields(view);});
+    view.form.addEventListener('change',event=>{
+      if(kind!=='social'||view.editor?.kind!=='draft')return;
+      const name=event.target.name;
+      if(name==='accountId'||name==='imageSource'){
+        setDraftFields(view);
+        if(view.form.elements.imageSource.value==='card')void loadDraftCards(view);
+      }
+      if(name==='cardId')cardPage(view,0);
+      if(name==='cardSlide')cardPage(view,event.target.value);
+    });
     view.dialog.addEventListener('cancel',event=>{if(view.busy)event.preventDefault();});
     view.dialog.addEventListener('close',()=>{
+      view.cardRead?.abort();
       const secret=view.form.elements.clientSecret;
       if(secret)secret.value='';
     });
@@ -491,5 +602,5 @@
   }
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')suspend();});
   window.addEventListener('pagehide',suspend);
-  window.NuriPersonalAutomation={mount,suspend};
+  window.NuriPersonalAutomation={mount,suspend,selectSocialCard};
 })();

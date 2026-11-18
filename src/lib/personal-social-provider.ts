@@ -14,6 +14,7 @@ export type SocialDraft = {
   videoId: string;
   madeForKids: boolean;
   synthetic: boolean;
+  altText?: string;
 };
 
 // The existing business workflow may still use legacy Threads origins. These
@@ -121,6 +122,7 @@ export async function publishPersonalPost(
     const fields: Record<string, string> = threads
       ? {media_type: post.mediaUrl ? 'IMAGE' : 'TEXT', text: post.body, ...(post.mediaUrl ? {image_url: post.mediaUrl} : {})}
       : {image_url: post.mediaUrl, caption: post.body};
+    if (post.altText) fields.alt_text = post.altText;
     container = mediaId((await meta(accountUrl + (threads ? '/threads' : '/media'), config.token, fields)).id);
   }
   const field = threads ? 'status' : 'status_code';

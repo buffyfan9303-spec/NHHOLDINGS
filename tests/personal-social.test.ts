@@ -7,6 +7,8 @@ import {GET as list, POST as change} from '../src/app/api/personal/social/route'
 import {GET as callback} from '../src/app/api/personal/social/[provider]/route';
 import {runPersonalSocial} from '../src/lib/personal-social';
 import {context} from '../src/server/context.cjs';
+import {createPersonalCard} from '../src/lib/personal-cards';
+import {getPersonalCardMedia} from '../src/lib/personal-card-media';
 
 const origin = 'https://personal-social.example.invalid';
 const accounts = {
@@ -65,6 +67,22 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     await last;
     return {query, release};
   };
+  let attachedCard: {id:string; slide:number; alt:string} | null = null;
+  let signedImageRequests = 0;
+  async function verifyCardAttachment(fields: URLSearchParams) {
+    assert.ok(attachedCard);
+    assert.equal(fields.get('alt_text'),attachedCard.alt);
+    const media = new URL(fields.get('image_url')!);
+    assert.equal(media.origin,origin);
+    assert.equal(media.pathname,'/api/personal/ai/card-media/'+attachedCard.id+'.jpg');
+    const token = media.searchParams.get('token');
+    assert.ok(token);
+    assert.equal(await getPersonalCardMedia(attachedCard.id+'.jpg',''),null);
+    const grant = await getPersonalCardMedia(attachedCard.id+'.jpg',token);
+    assert.equal(grant?.card.id,attachedCard.id);
+    assert.equal(grant?.slide,attachedCard.slide);
+    signedImageRequests++;
+  }
   let lostPublish = false;
   let holdMedia = false;
   let videoOwner = 'UC' + 'A'.repeat(22);
@@ -115,7 +133,13 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
         }
         if (url.pathname === '/access_token') return Response.json({access_token:url.searchParams.get('access_token')?.replace('-short','-grant'),expires_in:86400*40});
         if (url.pathname === '/v1.0/me') return Response.json({id:token==='owner-grant'?'3111':'3112',username:token==='owner-grant'?'owner_handle':'friend_handle'});
-        if (/\/threads$/.test(url.pathname)) return Response.json({id:'5511'});
+        if (/\/threads$/.test(url.pathname)) {
+          if(attachedCard) {
+            assert.equal(fields.get('media_type'),'IMAGE');
+            await verifyCardAttachment(fields);
+          }
+          return Response.json({id:'5511'});
+        }
         if (url.pathname === '/v1.0/5511') return Response.json({status:holdMedia?'IN_PROGRESS':'FINISHED'});
         if (/\/threads_publish$/.test(url.pathname)) {
           if (lostPublish) throw new Error('fixture response loss after publication');
@@ -132,7 +156,8 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
         assert.equal(token,'ig-grant');
         if (url.pathname === '/v25.0/me') return Response.json({user_id:'8111',username:'my_instagram'});
         if (url.pathname === '/v25.0/8111/media') {
-          assert.equal(fields.get('image_url'),'https://images.example.com/personal.jpg');
+          if(attachedCard)await verifyCardAttachment(fields);
+          else assert.equal(fields.get('image_url'),'https://images.example.com/personal.jpg');
           return Response.json({id:'8222'});
         }
         if (url.pathname === '/v25.0/8222') return Response.json({status_code:'FINISHED'});
@@ -272,12 +297,17 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     await api('owner',{action:'disconnect',accountId:owner.id});
     assert.deepEqual((await state('owner')).accounts,[]);
 
-    async function connectProvider(who: Person, provider: string, clientId: string) {
-      await api(who,{action:'configure',provider,clientId,clientSecret:provider+'-app-key'});
+    async function connectProvider(who: Person, provider: string, clientId: string, clientSecret = provider+'-app-key') {
+      await api(who,{action:'configure',provider,clientId,clientSecret});
       assert.match((await finish(who,await begin(who,provider))).headers.get('Location') ?? '',/sns=connected#social$/);
       return (await state(who)).accounts.find((item: {provider:string})=>item.provider===provider);
     }
     const instagram = await connectProvider('owner','instagram','4001');
+    const card = await createPersonalCard(accounts.owner.id,{title:'내 카드뉴스',slides:[
+      {headline:'표지',body:'첫 페이지'},
+      {headline:'작업 가이드',body:'두 번째 페이지',label:'알아보기'},
+    ]});
+    const foreignCard = await createPersonalCard(accounts.friend.id,{title:'친구 소유 카드',slides:[{headline:'공유하지 않는 페이지'}]});
     const instagramInput = {action:'save',accountId:instagram.id,title:'내 Instagram',body:'내 이미지 게시'};
     await api('owner',instagramInput,400);
     const instagramDraft = (await api('owner',{...instagramInput,mediaUrl:'https://images.example.com/personal.jpg'})).post;
@@ -285,8 +315,44 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     assert.equal((await runPersonalSocial()).published,1);
     assert.equal((await state('owner')).posts.find((post: {id:string})=>post.id===instagramDraft.id).link,'https://www.instagram.com/p/Personal/');
 
+    await api('owner',{...instagramInput,cardId:foreignCard.id,cardSlide:0},404);
+    await api('owner',{...instagramInput,cardId:card.id,cardSlide:2},400);
+    await api('owner',{...instagramInput,cardId:card.id,cardSlide:1,mediaUrl:'https://images.example.com/personal.jpg'},400);
+    const cardDraft = (await api('owner',{...instagramInput,cardId:card.id,cardSlide:1})).post;
+    assert.equal(cardDraft.cardTitle,card.title);
+    assert.equal(cardDraft.cardId,card.id);
+    assert.equal(cardDraft.mediaUrl,'');
+    assert.equal(cardDraft.altText,'알아보기. 작업 가이드. 두 번째 페이지');
+    assert.equal(signedImageRequests,0);
+    assert.equal((await runPersonalSocial()).published,0,'draft is not dispatched');
+    const cardApproval = (await approve('owner',cardDraft)).post;
+    assert.equal(signedImageRequests,0,'approval stores the data without issuing a URL');
+    attachedCard={id:card.id,slide:1,alt:cardDraft.altText};
+    await due('owner',cardApproval.id);
+    assert.equal((await runPersonalSocial()).published,1);
+    assert.equal(signedImageRequests,1);
+    assert.doesNotMatch(JSON.stringify(await state('owner')),/card-media|\?token=/);
+    const storedCardPost = (await database.query("SELECT data FROM nh_documents WHERE workspace='live' AND kind='personal-social-post' AND id=$1", [
+      accounts.owner.id + ':' + cardDraft.id,
+    ])).rows[0];
+    assert.doesNotMatch(JSON.stringify(storedCardPost),/card-media|\?token=/);
+
+    lostPublish=false;
+    const threads = await connectProvider('owner','threads','2731','owner-app-key');
+    const cardThreads = (await api('owner',{action:'save',accountId:threads.id,title:'카드뉴스 스레드',body:'내 카드뉴스',cardId:card.id,cardSlide:1})).post;
+    await due('owner',(await approve('owner',cardThreads)).post.id);
+    holdMedia=true;
+    assert.equal((await runPersonalSocial()).published,0);
+    assert.equal(signedImageRequests,2);
+    await due('owner',cardThreads.id,true);
+    holdMedia=false;
+    assert.equal((await runPersonalSocial()).published,1);
+    assert.equal(signedImageRequests,2,'rechecking an existing container does not mint a new signed URL');
+    attachedCard=null;
+
     const channel = await connectProvider('owner','youtube','owner-google.apps.googleusercontent.com');
     const youtubeInput = {action:'save',accountId:channel.id,title:youtube.title,body:youtube.body,videoId:youtube.id,madeForKids:false,synthetic:true};
+    await api('owner',{...youtubeInput,cardId:card.id,cardSlide:0},400);
     const youtubeDraft = (await api('owner',youtubeInput)).post;
     await due('owner',(await approve('owner',youtubeDraft)).post.id);
     videoOwner = 'UC' + 'B'.repeat(22);
@@ -301,6 +367,7 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     const x = await connectProvider('owner','x','x-project-id');
     const xInput = {action:'save',accountId:x.id,title:'개인 X',body:'내 개인 X 게시'};
     await api('owner',{...xInput,body:'한'.repeat(141)},400);
+    await api('owner',{...xInput,cardId:card.id,cardSlide:0},400);
     const xDraft = (await api('owner',xInput)).post;
     await due('owner',(await approve('owner',xDraft)).post.id);
     assert.equal((await runPersonalSocial()).published,1);

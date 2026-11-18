@@ -104,7 +104,7 @@ function websitesPage(){
 const assistantLinks=[
  ['task','내 할 일','/personal#tasks'],['clock','내 일정','/personal#schedule'],
  ['file','메모','/personal#notes'],['channels','내 SNS','/personal#social'],
- ['mail','메일 예약','/personal#mail'],['server','비공개 저장소','/personal#files'],
+ ['mail','메일 예약','/personal#mail'],['server','비공개 저장소','/personal#files'],['content','AI 비서','/personal?ai=1'],
 ];
 let assistantData=null,assistantLoading=false,assistantCheckedAt=0;
 function personalRollup(){

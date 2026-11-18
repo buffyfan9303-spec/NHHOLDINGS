@@ -124,7 +124,7 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     assert.equal((await business(req('/api/dashboard/state', 'first'), route('state'))).status, 403);
     assert.equal((await changeBusiness(req('/api/dashboard/task', 'first', {title: 'cross-scope'}), route('task'))).status, 403);
     const redirected = await dashboard(req('/dashboard', 'first'));
-    assert.equal(redirected.headers.get('Location'), origin + '/personal');
+    assert.equal(redirected.headers.get('Location'), '/personal');
     const personalAuth = await authStatus(req('/api/auth?portal=one', 'first'));
     assert.equal((await personalAuth.json()).destination, '/personal');
     const signedIn = await login(req('/api/auth', '', {action: 'login', email: users.first.email, password: 'safe-fixture', portal: 'one'}));

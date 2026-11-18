@@ -11,6 +11,9 @@ const shell=fs.readFileSync('src/server/personal.html','utf8')
 const css=['public/one/personal.css','public/one/personal-automation.css'].map(path=>fs.readFileSync(path,'utf8'));
 const actor='personal-fixture-a',nextActor='personal-fixture-b';
 const img='https://media.example.invalid/cover.jpg';
+const card={id:'760cbde9-6ce8-436f-a47f-a544ad52f159',title:'개인 카드뉴스',slides:[
+ {headline:'첫째 장',body:'첫째의 내용'},{headline:'둘째 장',body:'둘째의 내용',label:'안내'},
+]};
 const providers=[
  {id:'instagram',name:'Instagram',configured:true,appSource:'default'},
  {id:'threads',name:'Threads',configured:true,appSource:'default'},
@@ -36,17 +39,18 @@ async function scenario(page) {
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),kind=url.pathname.split('/').at(-1);
   if(url.origin==='https://threads.com'&&url.pathname==='/oauth/authorize'){
-   return route.fulfill({contentType:'text/html; charset=utf-8',body:'<!doctype html><h1>가상 승인 화면</h1>'});
+   return route.fulfill({contentType:'text/html',body:'<!doctype html><h1>Mock OAuth consent</h1>'});
   }
   if(url.origin!==source)return route.abort();
   if(url.pathname==='/personal')return route.fulfill({contentType:'text/html',body:shell});
-  if(!['/api/personal/social','/api/personal/mail'].includes(url.pathname))return route.abort();
+  if(!['/api/personal/social','/api/personal/mail','/api/personal/ai/cards'].includes(url.pathname))return route.abort();
   const owner=req.headers()['x-personal-account'];
   assert([actor,nextActor].includes(owner),'request is scoped');
   const body=req.method()==='POST'?req.postDataJSON():null;
   requests.push({owner,kind,body});
   const reply=data=>route.fulfill({json:data});
   if(req.method()==='GET'){
+   if(kind==='cards')return reply({cards:owner===actor?[card]:[],nextPage:null});
    if(delayRead&&kind==='social'&&owner===actor){
     const wait=delayRead;delayRead=null;
     await wait;
@@ -69,6 +73,11 @@ async function scenario(page) {
   if(body.action==='save'||body.action==='draft'){
    const record={...body,status:'draft',id:body.id||'fixture-'+(++sequence),version:(body.version||0)+1};
    if(kind==='social')record.provider=accounts.find(a=>a.id===body.accountId).provider;
+   if(record.cardId===card.id){
+    record.cardTitle=card.title;
+    const slide=card.slides[record.cardSlide];
+    record.altText=[slide.label,slide.headline,slide.body].filter(Boolean).join('. ');
+   }
    if(record.provider==='x'&&weight(body.body,'x')>280){
     return route.fulfill({status:400,json:{error:'채널의 본문 글자 수 제한을 확인해 주세요.'}});
    }
@@ -126,7 +135,7 @@ async function scenario(page) {
  await dialog.getByLabel('제목').fill('가상 게시물 <img src=x>');
  await dialog.getByLabel('본문').fill('게시할 모의 본문');
  assert.equal(await dialog.locator('form').evaluate(form=>form.checkValidity()),false,'Instagram requires an image');
- await dialog.getByLabel('공개 이미지 주소').fill(img);
+ await dialog.getByRole('textbox',{name:'공개 이미지 주소',exact:true}).fill(img);
  await submit('초안 저장');
  await expectText(social,'초안을 저장했습니다.');
  assert.equal(action('social','save').mediaUrl,img);
@@ -160,7 +169,7 @@ async function scenario(page) {
  await dialog.locator('[name="accountId"]').selectOption('threads-a');
  assert.equal(await dialog.locator('[name="mediaUrl"]').evaluate(field=>field.required),false);
  await dialog.locator('[name="accountId"]').selectOption('x-a');
- assert.equal(await dialog.getByLabel('공개 이미지 주소').isVisible(),false);
+ assert.equal(await dialog.getByRole('textbox',{name:'공개 이미지 주소',exact:true}).isVisible(),false);
  assert.equal(await dialog.locator('[name="videoId"]').isVisible(),false);
  await dialog.getByLabel('제목').fill('가상 X 원고');
  await dialog.getByLabel('본문').fill('가'.repeat(141));
@@ -168,7 +177,7 @@ async function scenario(page) {
  await expectText(dialog,'채널의 본문 글자 수 제한을 확인해 주세요.');
  assert.equal(await dialog.getByLabel('본문').inputValue(),'가'.repeat(141));
  await dialog.locator('[name="accountId"]').selectOption('video-a');
- assert.equal(await dialog.getByLabel('공개 이미지 주소').isVisible(),false);
+ assert.equal(await dialog.getByRole('textbox',{name:'공개 이미지 주소',exact:true}).isVisible(),false);
  await dialog.getByLabel('제목').fill('다음 모의 YouTube 영상');
  await dialog.getByLabel('본문').fill('같은 설명 확인');
  await dialog.locator('[name="videoId"]').fill('abcdefghijk');
@@ -179,6 +188,34 @@ async function scenario(page) {
  assert.equal(action('social','save').madeForKids,false);
  assert.equal(action('social','save').synthetic,true);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+
+ await button(social,'새 초안').click();
+ await dialog.locator('[name="accountId"]').selectOption('threads-a');
+ await dialog.locator('[name="imageSource"]').selectOption('card');
+ await dialog.locator('[name="cardId"] option').filter({hasText:card.title}).waitFor({state:'attached'});
+ await dialog.locator('[name="cardId"]').selectOption(card.id);
+ await expectText(dialog,'이미지 대체 텍스트 · 첫째 장. 첫째의 내용');
+ await button(dialog,'닫기').click();
+ await page.evaluate(id=>window.NuriPersonalAutomation.selectSocialCard(id),card.id);
+ await dialog.locator('[name="cardId"] option:checked').filter({hasText:card.title}).waitFor({state:'attached'});
+ assert.equal(await dialog.locator('[name="accountId"]').inputValue(),'threads-a');
+ await dialog.locator('[name="cardSlide"]').selectOption('1');
+ await expectText(dialog,'이미지 대체 텍스트 · 안내. 둘째 장. 둘째의 내용');
+ await dialog.getByLabel('제목').fill('내 카드 게시 원고');
+ await dialog.getByLabel('본문').fill('카드뉴스를 올릴 모의 문구');
+ await submit('초안 저장');
+ const cardRow=social.locator('.auto-row').filter({hasText:'내 카드 게시 원고'});
+ await expectText(cardRow,card.title+' · 2장');
+ assert.equal(action('social','save').cardId,card.id);
+ assert.equal(action('social','save').cardSlide,1);
+ assert.equal(action('social','save').mediaUrl,'');
+ await button(cardRow,'원고 승인 및 예약').click();
+ await expectText(dialog,'첨부 이미지 · '+card.title+' 2장');
+ const cardStamp=await dateAndTime();
+ await submit('게시 예약');
+ await expectText(cardRow,'예약됨');
+ assert.equal(action('social','schedule').scheduledAt,cardStamp);
+ assert.ok(requests.some(({kind,owner})=>kind==='cards'&&owner===actor));
 
  await view('mail');
  const gmail=root('mail');
@@ -237,7 +274,7 @@ async function scenario(page) {
  await dialog.getByLabel('계정 이름').fill('다른 개인 Threads');
  await submit('승인 화면 열기');
  await page.waitForURL('https://threads.com/oauth/authorize?state=mock');
- await page.getByRole('heading',{name:'가상 승인 화면'}).waitFor();
+ await page.getByRole('heading',{name:'Mock OAuth consent'}).waitFor();
 }
 
 (async()=>{

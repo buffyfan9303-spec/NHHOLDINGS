@@ -11,7 +11,7 @@
   const day = () => dayFormatter.format(new Date());
   const timeFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   let items = [], agenda = [], view = '', currentItem = null, editorKind = null, accountId = null, ready = false, saving = false;
-  let checkNumber = 0, activeCheck = null, suspendedEditor = false, editRevision = 0;
+  let checkNumber = 0, activeCheck = null, suspendedEditor = false, editRevision = 0, openAssistant = new URLSearchParams(location.search).has('ai');
   const editor = el('personal-editor');
   const form = el('personal-form');
   const tabs = [...document.querySelectorAll('[data-personal-link]')];
@@ -142,6 +142,11 @@
       if(revision!==editRevision){void load();return;}
       accountId=result.account.id;
       window.NuriPersonalAccount=accountId;
+      window.NuriPersonalAI?.mount?.();
+      if(openAssistant){
+        openAssistant=false;
+        el('personal-ai-open').click?.();
+      }
       items = result.items;
       agenda = result.agenda||[];
       el('personal-account').textContent = result.account.email;
@@ -281,6 +286,7 @@
     ready=false;
     window.NuriPersonalAccount=null;
     window.NuriPersonalAutomation?.suspend?.();
+    window.NuriPersonalAI?.suspend?.();
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }
   function checkAccount(){mask();void load();}

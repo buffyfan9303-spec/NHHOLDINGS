@@ -24,11 +24,11 @@ function fixture() {
     addEventListener:(type,fn)=>events.set(type,fn),
   };
   const location = {
-    hash:'',reloads:0,redirect:null,
+    hash:'',search:'',reloads:0,redirect:null,
     assign(path){this.redirect=path;},reload(){this.reloads++;},
   };
   const sandbox = {
-    document,location,AbortController,
+    document,location,AbortController,URLSearchParams,
     window:{addEventListener:(type,fn)=>events.set(type,fn)},
     fetch:(path,options)=>new Promise(resolve=>requests.push({path,options,resolve})),
   };

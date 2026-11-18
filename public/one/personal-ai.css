@@ -1,0 +1,238 @@
+#personal-ai-root {
+  min-width:0;
+}
+#personal-ai-root:not(.is-open) {
+  display:none;
+}
+#personal-ai-open[aria-expanded="true"] {
+  background:var(--teal-soft);
+  color:var(--teal);
+}
+.personal-ai-dock {
+  position:fixed;
+  inset:0 0 0 auto;
+  width:min(100%,420px);
+  max-width:none;
+  height:100dvh;
+  max-height:none;
+  margin:0;
+  padding:clamp(13px,3vw,20px);
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:0;
+  background:var(--surface);
+  color:var(--ink);
+}
+.personal-ai-dock[open] {
+  display:grid;
+  grid-template:
+    "head" auto
+    "settings" auto
+    "status" auto
+    "history" minmax(0,1fr)
+    "compose" auto / minmax(0,1fr);
+}
+.personal-ai-dock::backdrop {
+  background:rgb(11 18 16 / .52);
+}
+.personal-ai-top {
+  grid-area:head;
+  display:flex;
+  justify-content:space-between;
+  gap:5px 12px;
+  flex-wrap:wrap;
+  align-items:center;
+  min-height:51px;
+  border-bottom:1px solid var(--line);
+}
+.personal-ai-top h2 {
+  color:var(--ink);
+}
+.personal-ai-actions {
+  display:flex;
+  align-items:center;
+  gap:4px 8px;
+  flex-wrap:wrap;
+}
+.personal-ai-settings {
+  grid-area:settings;
+  min-width:0;
+  max-height:min(42dvh,270px);
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:12px 4px 15px;
+  border-bottom:1px solid var(--line);
+}
+.personal-ai-status {
+  grid-area:status;
+  margin:8px 0 4px;
+  color:var(--muted);
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.personal-ai-status:empty {
+  display:none;
+}
+.personal-ai-status.is-error {
+  color:var(--danger);
+}
+.personal-ai-history {
+  grid-area:history;
+  min-height:0;
+  min-width:0;
+  padding:0 3px 12px;
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.personal-ai-turns {
+  display:grid;
+  gap:13px;
+  margin:12px 0 0;
+  padding:0;
+  list-style:none;
+}
+.personal-ai-turn {
+  min-width:0;
+  padding-bottom:13px;
+  border-bottom:1px solid var(--line);
+}
+.personal-ai-turn p {
+  margin:4px 0 0;
+  color:var(--ink);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.personal-ai-question {
+  padding:9px 11px;
+  background:var(--teal-soft);
+  border-radius:8px;
+  font-size:14px;
+}
+.personal-ai-answer {
+  padding:10px 2px 0;
+  font-size:14px;
+}
+.personal-ai-turn :is(.personal-ai-question,.personal-ai-answer)>strong {
+  font-size:12px;
+  color:var(--teal);
+}
+.personal-ai-time {
+  display:block;
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.personal-ai-answer [data-ai-live]:empty {
+  height:1lh;
+}
+.personal-ai-receipt,.personal-ai-card {
+  display:grid;
+  justify-items:start;
+  gap:5px;
+  min-width:0;
+  margin:8px 0 4px;
+  padding:7px 9px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  overflow-wrap:anywhere;
+}
+.personal-ai-card-image {
+  display:block;
+  width:min(100%,250px);
+  aspect-ratio:1;
+  object-fit:contain;
+  background:var(--bg);
+  border-radius:6px;
+}
+.personal-ai-card-count {
+  color:var(--muted);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.personal-ai-compose {
+  grid-area:compose;
+  min-width:0;
+  max-height:min(44dvh,300px);
+  padding:12px 4px 4px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  border-top:1px solid var(--line);
+}
+.personal-ai-options {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.personal-ai-dock label {
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.personal-ai-dock textarea {
+  min-height:68px;
+  font-size:16px;
+}
+.personal-ai-dock select {
+  appearance:none;
+  overflow:hidden;
+  padding-inline:12px 38px;
+  font:inherit;
+  text-overflow:ellipsis;
+  background-image:linear-gradient(45deg,transparent 42%,var(--muted) 43% 59%,transparent 60%),
+                   linear-gradient(-45deg,transparent 42%,var(--muted) 43% 59%,transparent 60%);
+  background-position:right 20px center,right 15px center;
+  background-repeat:no-repeat;
+  background-size:6px 6px;
+}
+.personal-ai-dock :is(select,.personal-ai-history):focus-visible {
+  outline:2px solid var(--teal);
+  outline-offset:-2px;
+}
+.personal-ai-mode-note {
+  margin:0;
+  color:var(--muted);
+  font-size:12px;
+}
+@media(min-width:1200px) {
+  .personal-workspace:has(>#personal-ai-root.is-open) {
+    grid-template-columns:148px minmax(0,1fr) clamp(320px,28vw,420px);
+    gap:clamp(18px,2vw,28px);
+    max-width:1550px;
+  }
+  #personal-ai-root.is-open {
+    position:sticky;
+    top:16px;
+    align-self:start;
+  }
+  .personal-ai-dock {
+    position:relative;
+    inset:auto;
+    width:100%;
+    height:min(780px,calc(100dvh - 115px));
+    border-radius:12px;
+  }
+}
+@media(forced-colors:active) {
+  .personal-ai-dock select {
+    appearance:auto;
+    background-image:none;
+    padding-inline-end:12px;
+  }
+}
+@media(prefers-reduced-motion:no-preference) {
+  .personal-ai-dock[open] {
+    animation:personal-ai-enter .28s var(--arrive) both;
+  }
+  .personal-ai-dock::backdrop {
+    animation:personal-ai-veil .22s ease-out both;
+  }
+  @keyframes personal-ai-enter {
+    from {opacity:.5;transform:translateX(14px)}
+    to {opacity:1;transform:none}
+  }
+  @keyframes personal-ai-veil {
+    from {opacity:0}
+    to {opacity:1}
+  }
+}

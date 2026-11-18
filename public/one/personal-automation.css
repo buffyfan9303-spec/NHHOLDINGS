@@ -212,3 +212,4 @@
     to {opacity:1}
   }
 }
+.auto-card-description {grid-column:1 / -1;overflow-wrap:anywhere}

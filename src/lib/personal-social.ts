@@ -10,6 +10,8 @@ import {pool} from '@/server/postgres.cjs';
 import {uuidPattern} from '@/server/personal-workspace.cjs';
 import {validMetadata, videoId} from '@/server/youtube.cjs';
 import {weight} from '@/server/content-tools.cjs';
+import {getPersonalCard} from './personal-cards';
+import {mintPersonalCardImage} from './personal-card-media';
 
 type Actor = {id: string; email: string};
 type StoredApp = Owned & {fingerprint: string; secret: string};
@@ -35,7 +37,8 @@ type Flow = Owned & {
   used: boolean;
 };
 type PostStatus = 'draft' | 'scheduled' | 'publishing' | 'published' | 'review' | 'cancelled';
-type Post = Owned & SocialDraft & {
+type CardMedia = {cardId: string; cardSlide: number; cardTitle: string; altText: string};
+type Post = Owned & SocialDraft & Partial<CardMedia> & {
   status: PostStatus;
   ownerEmail: string;
   scheduledAt: string | null;
@@ -130,8 +133,9 @@ async function app(store: Store, provider: PersonalProvider): Promise<App | null
 
 function postView({id, data}: RecordOf<Post>) {
   const {accountId, provider, title, body, mediaUrl, videoId, madeForKids, synthetic, scheduledAt, status, version,
-    link, error, uncertain, publishedAt} = data;
-  return {id, accountId, provider, title, body, mediaUrl, videoId, madeForKids, synthetic, scheduledAt, status, version, link, error, uncertain, publishedAt};
+    link, error, uncertain, publishedAt, cardId, cardSlide, cardTitle, altText} = data;
+  return {id, accountId, provider, title, body, mediaUrl, videoId, madeForKids, synthetic, scheduledAt, status, version, link, error, uncertain, publishedAt,
+    cardId: cardId ?? null, cardSlide: cardSlide ?? null, cardTitle: cardTitle ?? null, altText: altText ?? null};
 }
 
 export async function personalSocialState(actor: Actor) {
@@ -246,8 +250,22 @@ async function ensureIdle(store: Store, matches: (post: Post) => boolean) {
   if ((await store.list<Post>(kinds.post)).some(({data}) => data.status === 'publishing' && matches(data))) throw activePublish();
 }
 
-function postFields(input: Record<string, unknown>, account: RecordOf<Account>): SocialDraft {
+async function ownedCardSelection(actor: string, input: Record<string, unknown>): Promise<CardMedia | null> {
+  if (input.cardId == null || input.cardId === '') {
+    if (input.cardSlide != null && input.cardSlide !== '') throw new MarketError('편집한 카드뉴스를 선택해 주세요.');
+    return null;
+  }
+  if (typeof input.cardId !== 'string' || input.mediaUrl) throw new MarketError('게시 이미지 출처를 하나만 선택해 주세요.');
+  const card = await getPersonalCard(actor, recordId(input.cardId));
+  const cardSlide = integer(input.cardSlide, '카드뉴스 페이지', 0, card.slides.length - 1);
+  const selected = card.slides[cardSlide];
+  const altText = [selected.label, selected.headline, selected.body].filter(Boolean).join('. ');
+  return {cardId:card.id, cardSlide, cardTitle:card.title, altText};
+}
+
+function postFields(input: Record<string, unknown>, account: RecordOf<Account>, card: CardMedia | null): SocialDraft & Partial<CardMedia> {
   const provider = account.data.provider;
+  if (card && provider !== 'instagram' && provider !== 'threads') throw new MarketError('카드 이미지는 Instagram과 Threads에서 사용할 수 있습니다.');
   const title = textValue(input.title, '제목', 160);
   const body = textValue(input.body, '본문', provider === 'threads' ? 1000 : provider === 'instagram' ? 4400 : 5000);
   if (provider === 'youtube') {
@@ -257,14 +275,14 @@ function postFields(input: Record<string, unknown>, account: RecordOf<Account>):
   }
   const mediaUrl = imageUrl(textValue(input.mediaUrl ?? '', '이미지 주소', 2000, true));
   if (provider === 'x' && mediaUrl) throw new MarketError('X 예약에는 텍스트 본문을 입력해 주세요.');
-  if (provider === 'instagram' && !mediaUrl) throw new MarketError('Instagram에 사용할 공개 JPEG 이미지 URL을 입력해 주세요.');
+  if (provider === 'instagram' && !mediaUrl && !card) throw new MarketError('Instagram에 사용할 공개 JPEG 이미지 URL을 입력해 주세요.');
   const length = provider === 'x' ? weight(body, 'x') : provider === 'threads' ? threadLength(body) : Array.from(body).length;
   const limit = provider === 'x' ? 280 : provider === 'threads' ? 500 : 2200;
   if (length > limit) throw new MarketError('채널의 본문 글자 수 제한을 확인해 주세요.');
-  return {accountId: account.id, provider, title, body, mediaUrl, videoId: '', madeForKids: false, synthetic: false};
+  return {accountId: account.id, provider, title, body, mediaUrl, videoId: '', madeForKids: false, synthetic: false, ...(card ?? {})};
 }
 
-function newPost(actor: Actor, draft: SocialDraft): Post {
+function newPost(actor: Actor, draft: SocialDraft & Partial<CardMedia>): Post {
   return {
     ...draft, ownerId: actor.id, version: 1, ownerEmail: actor.email, status: 'draft', scheduledAt: null,
     connectionId: null, claimUntil: null, checkedAt: null, container: '', containerChecks: 0, uncertain: false,
@@ -281,6 +299,8 @@ async function approvedAccount(store: Store, post: Pick<Post, 'accountId' | 'pro
 }
 
 export async function changePersonalSocial(actor: Actor, input: Record<string, unknown>) {
+  // Saved cards are immutable. Read their scoped contents before taking the shared application connection.
+  const card = input.action === 'save' ? await ownedCardSelection(actor.id, input) : null;
   return socialTransaction(actor.id, async db => {
     const store = socialStore(actor.id, db);
     if (input.action === 'configure') {
@@ -323,7 +343,7 @@ export async function changePersonalSocial(actor: Actor, input: Record<string, u
     if (input.action === 'save') {
       const account = await store.get<Account>(kinds.account, recordId(input.accountId));
       if (!account) throw noAccount();
-      data = newPost(actor, postFields(input, account));
+      data = newPost(actor, postFields(input, account, card));
     } else if (input.action === 'cancel') {
       if (previous!.status !== 'scheduled') throw new MarketError('예약된 게시물만 취소할 수 있습니다.', 409);
       data = {...previous!, status: 'cancelled', connectionId: null, error: null};
@@ -431,12 +451,23 @@ export async function runPersonalSocial() {
           throw approvalRequired();
         }
       }
-      const outcome = await publishPersonalPost(post, account.data, token, post.container, async () => {
+      const verifyDispatch = async () => {
         if (!(await workerAllowed(pool(), actor))) throw new MarketError('개인 비서 사용 권한을 확인해 주세요.', 403);
         const latest = await store.get<Post>(kinds.post, id);
         if (latest?.data.version !== post.version || !latest.data.claimUntil || Date.parse(latest.data.claimUntil) <= Date.now()) {
           throw new MarketError('게시 예약이 변경되었습니다.', 409);
         }
+      };
+      let mediaUrl = post.mediaUrl;
+      if (post.cardId && !post.container) {
+        if (post.cardSlide === undefined || !['instagram','threads'].includes(post.provider)) {
+          throw new MarketError('승인한 카드뉴스 페이지를 확인해 주세요.', 409);
+        }
+        await verifyDispatch();
+        mediaUrl = await mintPersonalCardImage(actor.id, post.cardId, post.cardSlide);
+      }
+      const outcome = await publishPersonalPost({...post,mediaUrl}, account.data, token, post.container, async () => {
+        await verifyDispatch();
         sending = true;
       });
       if ('pending' in outcome && outcome.pending) {
