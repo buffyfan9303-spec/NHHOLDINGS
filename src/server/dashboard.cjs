@@ -5,6 +5,7 @@ const {context}=require('./context.cjs');
 const {providers,ensureFresh}=require('./social.cjs');
 const adsense=require('./adsense.cjs');
 const naver=require('./naver.cjs');
+const operatorPush=require('./operator-push.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
 const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'5개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={bluesky:['bsky.app']};
@@ -293,6 +294,11 @@ async function controller(options){
    if(route==='/api/session'&&req.method==='GET')return reply({authenticated:true,email,setup:false,demo:options.demo});
    if(route==='/api/state'&&req.method==='GET')return reply(view());
    if(req.method!=='POST')fail('지원하지 않는 요청입니다.',405);
+   if(route==='/api/push/subscription'){
+    if(options.demo)fail('샘플에서는 알림을 연결할 수 없습니다.',404);
+    await operatorPush.update(ctx,v,email);
+    return reply({ok:true});
+   }
     if(['/api/content','/api/prompt','/api/plan','/api/channel'].includes(route)){snsScope(v.service,v.business||'platform');if(v.id){const old=get(route==='/api/plan'?'plan':route==='/api/channel'?'channel':'content',v.id);if(old)snsScope(old.service,old.business||'platform');}}
     if(/^\/api\/(?:content\/(?:schedule|pause|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p){snsScope(p.service,p.business||'platform');if(route!=='/api/content/cancel'&&!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');}}
     if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a){snsScope(a.service,a.business||'platform');if(!CHANNELS.includes(a.channel))fail('운영에서 제외된 채널입니다.');}}
@@ -517,6 +523,9 @@ async function controller(options){
    await ctx.reload();return reply(view());
 
  }catch(e){return reply({error:e.code==='23505'?'이미 등록된 거래 고유번호입니다.':e.status?e.message:'작업을 완료하지 못했습니다. 연결과 입력값을 확인해주세요.'},e.code==='23505'?409:e.status||500);}}
- return {handle,view,refresh,tick};
+ return {handle,view,refresh,tick:async()=>{
+  await tick();
+  if(!options.demo&&operatorPush.config()){await ctx.reload();await operatorPush.dispatch(ctx);}
+ }};
 }
 module.exports={controller,preflight,parseSitemap,inspectPublication,manualBlog,defaultPublishingSettings,validatePublishingSettings,SOURCES};
