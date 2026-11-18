@@ -47,23 +47,31 @@ async function requestVideo(token, params, request, update) {
  return await response.json().catch(() => fail('YouTube 응답 형식을 확인할 수 없습니다.',502));
 }
 
-async function readVideo(id, token, request = fetch) {
+async function readVideo(id, token, request = fetch, {statistics=false}={}) {
  if (!videoPattern.test(id || '') || typeof token !== 'string' || !token) fail('영상과 YouTube 연결을 확인하세요.');
- const body = await requestVideo(token, {part:'snippet,status',id}, request);
+ const body = await requestVideo(token, {part:statistics?'snippet,status,statistics':'snippet,status',id}, request);
  return Array.isArray(body.items) && body.items.length === 1 && body.items[0].id === id ? body.items[0] : null;
 }
 
-async function checkReady(post, account, config, request = fetch) {
- if (!channelPattern.test(account?.userId || '') || config?.authType !== 'oauth2') fail('공식 OAuth로 연결한 YouTube 채널을 선택하세요.');
+async function preparation(post, account, config, request = fetch) {
+ if (!channelPattern.test(account?.userId || '') || config?.authType !== 'oauth2') return {state:'account',message:'공식 OAuth로 연결한 YouTube 채널을 선택하세요.'};
  const video = await readVideo(post.youtubeVideoId,config.token,request);
- if (!video || video.snippet?.channelId !== account.userId) fail('선택한 채널의 영상인지 YouTube Studio에서 확인하세요.');
- if (video.status?.privacyStatus !== 'private' || video.status.publishAt) fail('공개·일부 공개·Studio에서 예약한 영상은 누리원에서 공개할 수 없습니다.');
- if (video.status.uploadStatus !== 'processed') fail('YouTube에서 영상 처리가 끝난 뒤 다시 확인하세요.');
+ if (!video || video.snippet?.channelId !== account.userId) return {state:'account',message:'선택한 채널의 영상인지 YouTube Studio에서 확인하세요.'};
+ if (video.status?.privacyStatus !== 'private' || video.status.publishAt) return {state:'privacy',message:'공개·일부 공개·Studio에서 예약한 영상은 누리원에서 공개할 수 없습니다.'};
+ const status=video.status.uploadStatus;
+ if (['failed','rejected','deleted'].includes(status)) return {state:'failed',message:'YouTube Studio에서 영상 처리 실패 사유를 확인하세요.'};
+ if (status !== 'processed') return {state:'processing',message:'YouTube에서 영상 처리가 끝난 뒤 다시 확인하세요.'};
  const description = video.snippet?.description;
  if (video.snippet?.title !== post.title || typeof description !== 'string' || description.replace(/\r\n/g,'\n').trim() !== post.body.replace(/\r\n/g,'\n').trim()) {
-  fail('누리원에서 검토한 제목·설명과 YouTube Studio의 영상 정보가 다릅니다.');
+  return {state:'metadata',message:'누리원에서 검토한 제목·설명과 YouTube Studio의 영상 정보가 다릅니다.'};
  }
- return video;
+ return {state:'ready',video};
+}
+
+async function checkReady(post, account, config, request = fetch) {
+ const result=await preparation(post,account,config,request);
+ if(result.state!=='ready')fail(result.message);
+ return result.video;
 }
 
 async function publish(post, account, config, request = fetch, beforeWrite = ()=>{}) {
@@ -77,4 +85,4 @@ async function publish(post, account, config, request = fetch, beforeWrite = ()=
  if (result.id !== video.id || result.status?.privacyStatus !== 'public') fail('YouTube 공개 응답을 확인하지 못했습니다. Studio에서 확인하세요.',502);
  return {externalId:video.id,link:watchUrl(video.id)};
 }
-module.exports = {videoId,channelPattern,watchUrl,studioUrl,validMetadata,readVideo,checkReady,publish};
+module.exports = {videoId,channelPattern,watchUrl,studioUrl,validMetadata,readVideo,preparation,checkReady,publish};

@@ -19,6 +19,8 @@ window.NuriOperator = (() => {
   p.status==='scheduled'&&Date.parse(p.scheduledAt)<Date.now()-5*60000?'예약 지연':'');
  const readyAccounts=()=>data.accounts.filter(a=>snsRecord(a)&&['instagram','youtube'].includes(a.channel));
  const needsConnection=()=>['instagram','youtube'].filter(channel=>!readyAccounts().some(a=>a.channel===channel&&a.verifiedAt&&!a.connectionError));
+ const info=id=>(data.snsFollowups||[]).find(row=>row.id===id);
+ const preparationMessage={ready:'영상 처리와 원고 대조 완료',processing:'YouTube에서 영상 처리 중',metadata:'원고 대조 필요',privacy:'공개 상태 확인 필요',account:'채널 확인 필요',failed:'영상 처리 실패',unavailable:'처리 상태 조회 지연'};
  const supported = p => snsPost(p) && requiresApproval(p);
  const channelName = p => p.channel==='youtube'?'YouTube':'Instagram';
  const mediaReady = p => p.channel==='youtube'?!!p.youtubeVideoId&&typeof p.youtubeMadeForKids==='boolean'&&typeof p.youtubeSynthetic==='boolean':!!webLink(p.videoUrl||p.media);
@@ -44,12 +46,13 @@ window.NuriOperator = (() => {
   const accountOptions = accounts.map(account => [account.id, accountName(account)]);
   return `<form class="schedule-form approval-form form-grid" data-id="${esc(post.id)}">
    <input type="hidden" name="version" value="${post.version ?? 1}">
-   ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account)}
+   ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account||post.youtubeCheck?.account)}
    ${formField('게시 시각 · 한국 시간', 'at', dateField(post.scheduledAt), 'datetime-local', 'required')}
    ${post.uncertain || post.status === 'review' && !['preflight','connection'].includes(post.attempt?.code) ? `<div class="full">${checkbox(channel+'에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
    <label class="check-label full"><input type="checkbox" name="approved" required>위 원고와 미디어, 선택한 계정과 시각을 확인했습니다.</label>
    <div class="full"><button class="btn primary" type="submit" ${!accounts.length || !ready ? 'disabled' : ''}>${post.status === 'paused' ? '다시 승인하고 예약' : '승인하고 예약'}</button></div>
    ${!accounts.length ? '<p class="caption full">설정에서 '+channel+' 계정을 연결하고 확인하세요.</p>' : ''}
+   ${!data.demo&&post.channel==='youtube'&&post.youtubeVideoId&&accounts.length&&['draft','paused','approved'].includes(post.status)?`<div class="full"><button class="btn" type="button" data-action="youtube-track" data-id="${esc(post.id)}">선택 채널로 처리 상태 확인</button></div>`:''}
    ${!ready ? '<p class="caption full">'+(post.channel==='youtube'?'원고에 비공개 영상과 공개 설정을 등록하세요.':'원고에 공개 사진 또는 릴스 주소를 추가하세요.')+'</p>' : ''}
   </form>`;
  }
@@ -67,7 +70,9 @@ window.NuriOperator = (() => {
   const yesNo=value=>value===true?'예':value===false?'아니요':'미입력';
   const status=diagnostics(post)||statusLabels[post.status];
   const published=post.status==='published';
-  const permalink=published&&webLink(post.link);
+  const followup=info(post.id),prep=followup?.preparation;
+  const ownerCheck=post.youtubeCheck&&['draft','approved','paused'].includes(post.status);
+  const permalink=published&&webLink(post.link||followup?.publication?.link);
   const actions = session.readOnly ? '' : (post.status === 'scheduled' && post.approval ? button('일시정지', 'pause', post.id) : '')
    + (['paused', 'scheduled'].includes(post.status) ? button('예약 취소', 'cancel', post.id) : '')
    + (isYouTube && post.status==='review' && post.uncertain ? button('YouTube 공개 여부 확인', 'youtube-reconcile', post.id) : '')
@@ -82,6 +87,9 @@ window.NuriOperator = (() => {
    </div>
    <p class="caption">${post.status === 'publishing' ? channel+' 응답을 기다리는 중입니다.' : published&&post.publishedAt ? '게시 '+dt(post.publishedAt)+' KST' : post.scheduledAt ? '예약 '+dt(post.scheduledAt) + ' KST' : '게시 계정과 일정을 선택해 주세요.'}${post.approval ? ' · 승인 ' + dt(post.approval.at) : ''}</p>
    ${post.attempt?.at ? `<p class="caption">마지막 기록 <time datetime="${esc(post.attempt.at)}">${dt(post.attempt.at)} KST</time></p>` : ''}
+   ${ownerCheck?`<p class="caption" role="status">${esc(preparationMessage[prep?.state]||'처리 상태 조회 대기')}${prep?.checkedAt?' · '+esc(dt(prep.checkedAt))+' KST':''}${prep?.message?' · '+esc(prep.message):''}</p>`:''}
+   ${published&&post.checkStatus==='visible'?`<p class="caption">채널 조회로 게시 확인 · ${esc(dt(post.checkedAt))} KST</p>`:''}
+   ${published&&!post.manual&&followup?.publication?.state&&followup.publication.state!=='visible'?'<p class="caption">채널의 공개 결과를 확인하는 중입니다.</p>':''}
    ${post.error ? `<p class="warning">${esc(post.error)}</p>` : ''}
    <details class="approval-preview">
     <summary>원고와 미디어 보기</summary>
@@ -135,7 +143,13 @@ window.NuriOperator = (() => {
  }
 
  function reveal(id) {
-  const article = document.getElementById('approval-' + id);
+  let article=document.getElementById('approval-'+id);
+  if(!article&&data.contents.some(post=>post.id===id&&supported(post))){
+   resetFilters();
+   filters.status=data.contents.find(post=>post.id===id)?.status==='published'?'published':'all';
+   render();
+   article=document.getElementById('approval-'+id);
+  }
   if (!article) return;
   const details = article.querySelector('details');
   details.open = true;
@@ -147,7 +161,8 @@ window.NuriOperator = (() => {
   if (!session?.pushPublicKey || !('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) return '';
   return `<section class="panel panel-inner section-gap">
    <h2>이 기기의 게시 알림</h2>
-   <p class="panel-desc">Instagram 승인함의 새 활동을 알림으로 받을 수 있습니다.</p>
+   <p class="panel-desc">예약 지연, 계정 연결, 게시 결과 확인이 필요한 경우 알려드립니다.</p>
+   <label class="check-label"><input type="checkbox" id="device-regular-activity">일반 Instagram 활동도 받기</label>
    <div class="toolbar"><button type="button" class="btn" data-device-push="connect">알림 받기</button><button type="button" class="btn" data-device-push="disconnect">알림 끄기</button></div>
    <p class="caption" id="device-push-status" role="status"></p>
   </section>`;
@@ -179,7 +194,7 @@ window.NuriOperator = (() => {
    const applicationServerKey=Uint8Array.from(atob(encoded),char=>char.charCodeAt(0));
    const saved=await worker.pushManager.getSubscription();
    const subscription=saved||await worker.pushManager.subscribe({userVisibleOnly:true,applicationServerKey});
-   try {await api('push/subscription',{enabled:true,subscription:subscription.toJSON()});}
+   try {await api('push/subscription',{enabled:true,activity:document.getElementById('device-regular-activity')?.checked===true,subscription:subscription.toJSON()});}
    catch (error) {if(!saved)await subscription.unsubscribe().catch(()=>{});throw error;}
    status.textContent='이 기기의 게시 알림을 켰습니다.';
   } catch (error) {
@@ -308,5 +323,23 @@ window.NuriOperator = (() => {
   if ('serviceWorker' in navigator && !location.search) navigator.serviceWorker.register('/one/operator-sw.js', {scope:'/dashboard'}).catch(() => {});
  }
 
- return {render:renderApproval, pendingCount, attentionCount, needsConnection, resetFilters, diagnostics, contentControl, reveal, init, pushPanel, disconnectPush};
+ function performance(){
+  const posts=new Map(data.contents.filter(p=>supported(p)&&p.status==='published'&&kstMonth(p.publishedAt)===state.month).map(p=>[p.id,p]));
+  const rows=[];
+  for(const [id,p] of posts){
+   const measurements=info(id)?.metrics;
+   if(!measurements?.length)continue;
+   for(const m of measurements){
+    const sample=m.sample;
+    const stateLabel={observed:'수집 완료',upcoming:'수집 예정',due:'수집 대기',missed:'조회 가능 시간 경과'}[m.state];
+    const note=sample?.reason==='permission'?'성과 권한 확인 필요':sample?.reason==='watch-pending'?'시청 지표 집계 대기':sample?.reason==='unavailable'?'채널 응답 미확인':'';
+    const watch=sample?.averageWatchSeconds!=null?money(sample.averageWatchSeconds)+'초 · '+esc(sample.watchDay)+' (미국 태평양 시간)':'—';
+    const title=esc(p.title);
+    rows.push(row([channelName(p),title,m.hours===24?'24시간':'7일',stateLabel+(note?`<small class="row-note">${note}</small>`:''),money(sample?.views),money(sample?.reach),watch,sample?.observedAt?dt(sample.observedAt)+' KST':'—']));
+   }
+  }
+  return `<section class="panel studio-tools section-gap"><h2>게시물 자동 성과</h2><p class="caption">24시간·7일 경과 후 조회한 누적 값입니다. 날짜가 표시된 YouTube 평균 시청 시간은 해당 날짜 집계입니다.</p>
+  ${rows.length?table(['채널','게시물','경과','상태','누적 조회','누적 도달','평균 시청','수집 시각'],rows):empty('연결한 채널의 공개 게시물이 생기면 성과를 수집합니다.')}</section>`;
+ }
+ return {render:renderApproval,performance, pendingCount, attentionCount, needsConnection, resetFilters, diagnostics, contentControl, reveal, init, pushPanel, disconnectPush};
 })();

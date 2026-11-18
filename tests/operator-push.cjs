@@ -53,6 +53,18 @@ async function main(){
  await dispatch(ctx,async()=>{throw Object.assign(Error('expired fixture'),{statusCode:410});});
  assert.equal(ctx.list('push-device')[0].active,false);
 
+ await update(ctx,{enabled:true,activity:false,subscription:{endpoint:address,keys}},owner);
+ ctx.audits.unshift({id:5,action:'content.saved',target:'draft'});
+ await dispatch(ctx,send);
+ assert.equal(payloads.length,1);
+ await ctx.put('content','needs-result',{service:'tistory',channel:'youtube',status:'review',uncertain:true,title:'비공개 제목'});
+ ctx.audits.unshift({id:6,action:'sns.attention.result',target:'needs-result'});
+ await dispatch(ctx,send);
+ await dispatch(ctx,send);
+ assert.deepEqual(payloads.at(-1),{type:'sns-attention',id:'needs-result',reason:'result'});
+ assert.equal(payloads.length,2);
+ assert(!JSON.stringify(payloads).includes('비공개 제목'));
+
  const events=new Map();
  const notices=[];
  const destinations=[];
@@ -78,6 +90,10 @@ async function main(){
  assert(!JSON.stringify(notices).includes('원고 제목'));
  await event('notificationclick',{notification:{tag:notices[0].tag,close(){}}});
  assert.deepEqual(destinations,['https://nuri.example.test/dashboard#approval']);
+ await event('push',{data:{json:()=>payloads.at(-1)}});
+ assert.equal(notices.at(-1).body,'채널의 게시 결과를 확인하세요.');
+ await event('notificationclick',{notification:{tag:notices.at(-1).tag,data:notices.at(-1).data,close(){}}});
+ assert.equal(destinations.at(-1),'https://nuri.example.test/dashboard#approval/tistory/needs-result');
  console.log('Approval activity push passed: private payload, device ownership, deduplication, expiry, and approval navigation.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

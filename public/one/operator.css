@@ -75,3 +75,18 @@
  .approval-filters {grid-template-columns:repeat(2,minmax(0,1fr))}
  .approval-filters .field:last-child {grid-column:1 / -1}
 }
+
+.site-user-delta {font-variant-numeric:tabular-nums}
+.site-user-trend .panel-head {flex-wrap:wrap}
+.user-trend-chart {display:grid;grid-template-columns:repeat(30,minmax(0,1fr));align-items:end;gap:clamp(2px,0.3vw,5px);height:92px;margin-top:16px;border-bottom:1px solid var(--line)}
+.user-trend-chart i {height:var(--user-trend-height);background:var(--teal);border-radius:3px 3px 0 0;opacity:.75}
+.user-trend-chart .gap {height:0;border-bottom:2px dotted var(--muted);background:none}
+.user-trend-range {display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-variant-numeric:tabular-nums}
+.site-user-trend details {margin-top:10px}
+.site-user-trend summary {min-height:44px;padding-block:13px;cursor:pointer}
+.site-user-trend dl {display:grid;grid-template-columns:repeat(auto-fit,minmax(116px,1fr));gap:8px 12px}
+.site-user-trend dl div {display:flex;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.site-user-trend dd {margin:0;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width: 480px) {
+ .site-operation-grid .metric-tile strong {font-size:clamp(18px,5.1vw,24px);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+}
