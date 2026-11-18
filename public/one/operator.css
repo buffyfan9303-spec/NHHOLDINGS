@@ -10,7 +10,7 @@
 .approval-card .toolbar {margin-top: 8px}
 .approval-card .btn {min-height: 44px}
 .approval-preview {margin-top: 10px}
-.approval-preview summary {cursor: pointer; color: var(--ink); width: fit-content; padding: 9px 0}
+.approval-preview summary {cursor: pointer; color: var(--ink); width: fit-content; min-height: 44px; line-height: 22px; padding: 11px 0}
 .approval-preview .approval-caption {white-space: pre-wrap; overflow-wrap: anywhere; padding-bottom: 12px}
 .approval-image {display: grid; width: fit-content; gap: 8px; color: var(--muted); margin-bottom: 12px}
 .approval-image img {width: min(240px, 100%); height: auto; aspect-ratio: 1; object-fit: contain; background: var(--bg); border-radius: 8px}
