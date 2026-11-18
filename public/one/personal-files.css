@@ -143,3 +143,8 @@
   .personal-file-list li.just-uploaded { animation: none; }
   .personal-file-panel progress::-webkit-progress-value { transition: none; }
 }
+.personal-drive-filter {display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-block:14px}
+.personal-drive-filter label {font-size:.86rem;color:var(--muted)}
+.personal-drive-filter :is(input,select) {min-width:0;max-width:100%;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;color:var(--ink);background:var(--inset)}
+.personal-drive-filter input {flex:1 1 130px}
+@media(max-width:680px) {.personal-drive-filter :is(input,select) {font-size:16px}}

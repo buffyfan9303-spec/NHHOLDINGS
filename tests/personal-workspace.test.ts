@@ -4,6 +4,8 @@ import test from 'node:test';
 import {PGlite} from '@electric-sql/pglite';
 import {NextRequest} from 'next/server';
 import {GET as list, POST as save} from '../src/app/api/personal/route';
+import {GET as listRevenue, POST as saveRevenue} from '../src/app/api/personal/revenue/route';
+import {GET as listSites, POST as saveSite} from '../src/app/api/personal/sites/route';
 import {POST as review} from '../src/app/api/access/route';
 import {GET as business, POST as changeBusiness} from '../src/app/api/dashboard/[...route]/route';
 import {GET as authStatus, POST as login} from '../src/app/api/auth/route';
@@ -51,6 +53,14 @@ const req = (path: string, who = '', payload?: object, from = origin, expectedId
 const personalGet = (who = '', query = '') => list(req('/api/personal' + query, who));
 const personalSave = (who: string, payload: object, from?: string, expectedId = account(who)?.id) =>
   save(req('/api/personal', who, payload, from, expectedId));
+const siteGet = (who = '', query = '') =>
+  listSites(req('/api/personal/sites' + query, who, undefined, origin, account(who)?.id));
+const siteSave = (who: string, payload: object, from = origin, expectedId = account(who)?.id) =>
+  saveSite(req('/api/personal/sites', who, payload, from, expectedId));
+const revenueGet = (who = '', month = '2026-11') =>
+  listRevenue(req('/api/personal/revenue?month=' + month, who, undefined, origin, account(who)?.id));
+const revenueSave = (who: string, payload: object, from = origin, expectedId = account(who)?.id) =>
+  saveRevenue(req('/api/personal/revenue', who, payload, from, expectedId));
 const route = (part: string) => ({params: Promise.resolve({route: [part]})});
 const state = async (who: string, query?: string) => {
   const response = await personalGet(who, query);
@@ -108,6 +118,8 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     assert.equal((await personalGet('first')).status, 403);
     await requestOneAccess(users.first);
     await requestOneAccess(users.second);
+    assert.equal((await siteGet()).status, 401);
+    assert.equal((await siteGet('first')).status, 403);
     await db.query("INSERT INTO nh_documents VALUES('live','access',$1,$2,now())", [
       users.viewer.id, JSON.stringify({status: 'approved', email: users.viewer.email}),
     ]);
@@ -198,8 +210,77 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     assert.deepEqual((await state('first')).items, [newState], 'the id prefix and ownership field must both match');
     assert.deepEqual((await state('owner')).items.map((row: {id: string}) => row.id).sort(), [link.id, schedule.id].sort());
 
+    const siteDraft = {action:'create', id:itemId, name:'첫째의 웹사이트', url:'example.com/portfolio',
+      registrar:'가비아', host:'Vercel', renewOn:'2026-12-30', ownerId:users.owner.id};
+    assert.equal((await siteGet('viewer')).status, 403);
+    assert.equal((await siteSave('first', siteDraft, origin, users.second.id)).status, 409);
+    assert.equal((await siteSave('first', siteDraft, 'https://unexpected.example.invalid')).status, 403);
+    for (const url of ['http://example.com','https://127.0.0.1','https://[::1]','http://user:pass@example.com',
+      'https://u:p@example.com','https://example.com/?value=secret','https://example.com:8080','https://service.internal','https://example.com/#secret']) {
+      assert.equal((await siteSave('first', {...siteDraft, url})).status, 400, url);
+    }
+    assert.equal((await siteSave('first', {...siteDraft, renewOn:'2026-02-30'})).status, 400);
+    const recording = await siteSave('first', siteDraft);
+    assert.equal(recording.status, 200);
+    assert.equal(recording.headers.get('Cache-Control'), 'private, no-store');
+    const site = (await recording.json()).site;
+    assert.equal(site.url, 'https://example.com/portfolio');
+    assert.equal(site.ownerId, undefined);
+    assert.deepEqual((await (await siteSave('first', siteDraft)).json()).site, site);
+    for (const who of ['second','owner']) {
+      assert.deepEqual((await (await siteGet(who, '?ownerId=' + users.first.id)).json()).sites, []);
+      for (const action of ['update','dns','remove']) {
+        assert.equal((await siteSave(who, {...siteDraft, action, version:1})).status, 404);
+      }
+    }
+    const prep = await siteSave('second', {...siteDraft, url:'', name:'둘째의 준비 중인 웹사이트'});
+    assert.equal(prep.status, 200);
+    assert.equal((await siteSave('second', {action:'dns', id:itemId, version:1})).status, 400);
+    assert.deepEqual((await (await siteGet('first')).json()).sites, [site]);
+    const concurrent = await Promise.all([
+      siteSave('first', {...siteDraft, action:'update', version:1, name:'다음 버전'}),
+      siteSave('first', {...siteDraft, action:'update', version:1, name:'경합 버전'}),
+    ]);
+    assert.deepEqual(concurrent.map(r=>r.status).sort(), [200,409]);
+    assert.equal((await siteSave('second', {action:'remove', id:itemId, version:1})).status, 200);
+    const shared = {action:'share', note:'미리보기부터 테스트', version:0};
+    assert.equal((await siteSave('second', shared)).status, 403);
+    assert.equal((await siteSave('owner', shared)).status, 200);
+    assert.equal((await siteSave('owner', shared)).status, 409);
+    assert.equal((await (await siteGet('first')).json()).guide.note, shared.note);
+    assert.equal((await (await siteGet('second')).json()).canShare, false);
+    assert.equal((await (await siteGet('owner')).json()).canShare, true);
+
+    const incomeDraft = {action:'create', id:itemId, period:'2026-11', category:'블로그', name:'광고',
+      income:1_000_000_000_000, expense:4000, ownerId:users.second.id};
+    assert.equal((await revenueGet()).status, 401);
+    assert.equal((await revenueGet('viewer')).status, 403);
+    assert.equal((await revenueGet('first', '2026-13')).status, 400);
+    assert.equal((await revenueSave('first', incomeDraft, origin, users.second.id)).status, 409);
+    assert.equal((await revenueSave('first', incomeDraft, 'https://foreign.example.invalid')).status, 403);
+    assert.equal((await revenueSave('first', {...incomeDraft, income:-1})).status, 400);
+    const recorded = await revenueSave('first', incomeDraft);
+    assert.equal(recorded.status, 200);
+    assert.equal(recorded.headers.get('Cache-Control'), 'private, no-store');
+    const entry = (await recorded.json()).entry;
+    assert.equal(entry.ownerId, undefined);
+    assert.deepEqual((await (await revenueSave('first', incomeDraft)).json()).entry, entry);
+    assert.deepEqual((await (await revenueGet('first')).json()).entries, [entry]);
+    assert.deepEqual((await (await revenueGet('first','2026-10')).json()).entries, []);
+    for (const who of ['owner','second']) {
+      assert.deepEqual((await (await revenueGet(who)).json()).entries, []);
+      assert.equal((await revenueSave(who, {...incomeDraft, action:'update', version:1})).status, 404);
+      assert.equal((await revenueSave(who, {action:'remove', id:itemId, version:1})).status, 404);
+    }
+    assert.equal((await revenueSave('first', {...incomeDraft, action:'update', version:1, expense:5000})).status, 200);
+    assert.equal((await revenueSave('first', {action:'remove', id:itemId, version:1})).status, 409);
+    assert.equal((await revenueSave('first', {action:'remove', id:itemId, version:2})).status, 200);
+
     const businessWorkspace = await context('live');
     assert.deepEqual(businessWorkspace.list('personal-item'), []);
+    assert.deepEqual(businessWorkspace.list('personal-site'), []);
+    assert.deepEqual(businessWorkspace.list('personal-site-guide'), []);
+    assert.deepEqual(businessWorkspace.list('personal-revenue'), []);
     assert.equal(businessWorkspace.get('personal-item', users.first.id + ':' + itemId), null);
 
     await db.exec('SET ROLE nh_web');
@@ -221,6 +302,8 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     const revoked = await moderate('revoke', 'first');
     assert.equal(revoked.status, 200);
     assert.equal((await personalGet('first')).status, 403);
+    assert.equal((await siteGet('first')).status, 403);
+    assert.equal((await revenueGet('first')).status, 403);
     assert.equal((await personalSave('first', {action: 'remove', id: itemId, version: 2})).status, 403);
     assert.equal((await dashboard(req('/dashboard', 'first'))).headers.get('Location'), '/access-pending');
     assert.equal((await moderate('approve', 'first', {scope: 'business'})).status, 200);

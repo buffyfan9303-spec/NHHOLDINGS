@@ -224,12 +224,16 @@ function uploadUrl(value: string | null) {
   return url.href;
 }
 
-export async function listPersonalFiles(token: string, actor: string, pageToken: string | null) {
+export async function listPersonalFiles(token: string, actor: string, pageToken: string | null, prefix = '', sort = 'recent') {
   if (pageToken && (pageToken.length > 2048 || !/^[\w+=/.-]+$/.test(pageToken))) throw new MarketError('목록 위치를 확인하세요.');
+  if (prefix.length > 100 || /[\p{Cc}\p{Cf}]/u.test(prefix)) throw new MarketError('파일명 앞부분을 확인하세요.');
+  if (sort !== 'recent' && sort !== 'name') throw new MarketError('파일 정렬을 확인하세요.');
+  const safePrefix = prefix.trim().normalize('NFC').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const url = new URL('/drive/v3/files', api);
   url.search = new URLSearchParams({
-    q: "trashed = false and appProperties has { key='nuriOwner' and value='" + ownerStamp(actor) + "' }",
-    spaces: 'drive', pageSize: '25', orderBy: 'createdTime desc', fields: 'nextPageToken,files(' + fileFields + ')',
+    q: "trashed = false and appProperties has { key='nuriOwner' and value='" + ownerStamp(actor) + "' }" +
+      (safePrefix ? " and name contains '" + safePrefix + "'" : ''),
+    spaces: 'drive', pageSize: '25', orderBy: sort === 'name' ? 'name_natural' : 'createdTime desc', fields: 'nextPageToken,files(' + fileFields + ')',
     ...(pageToken ? {pageToken} : {}),
   }).toString();
   const result = await (await driveRequest(url, token)).json();

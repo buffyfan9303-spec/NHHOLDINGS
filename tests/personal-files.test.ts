@@ -96,7 +96,14 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
     }
     if (url.pathname === '/drive/v3/files') {
       assert.match(url.searchParams.get('q') ?? '', new RegExp(file.appProperties.nuriOwner));
-      assert.equal(url.searchParams.get('orderBy'), 'createdTime desc');
+      const query = url.searchParams.get('q') ?? '';
+      if (query.includes('name contains')) {
+        assert.ok(query.endsWith(" and name contains 'O" + String.fromCharCode(92) + "'Brien'"));
+        assert.equal(url.searchParams.get('orderBy'), 'name_natural');
+        assert.equal(url.searchParams.get('pageToken'), 'next=');
+      } else {
+        assert.equal(url.searchParams.get('orderBy'), 'createdTime desc');
+      }
       return Response.json({files: [file, other], nextPageToken: 'next='});
     }
     if (url.pathname === '/drive/v3/files/' + file.id) return Response.json(file);
@@ -160,6 +167,10 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
   assert.deepEqual(listed, {configured: true, clientId, redirectUri: origin + path + '/oauth', connected: true, connectionId: driveConnection, maxBytes: personalFileMaxBytes, files: [
     {id: file.id, name: file.name, bytes: 3815483, createdAt: file.createdTime},
   ], nextPage: 'next='});
+  const filtered = await POST(req('', {action:'list', prefix:"O'Brien", sort:'name', page:'next='}));
+  assert.equal(filtered.status, 200);
+  assert.deepEqual((await filtered.json()).files, listed.files);
+  assert.equal((await POST(req('', {action:'list', prefix:'', sort:'untrusted', page:null}))).status, 400);
   assert.equal(refreshes, 1, 'expired access is refreshed using the saved encrypted token');
   assert.equal((await (await GET(req('', undefined, 'owner'))).json()).connected, false);
   assert.equal((await GET(req('?download=' + file.id, undefined, 'guest', 'guest', {'X-Drive-Connection': 'stale'}))).status, 412);
