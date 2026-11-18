@@ -5,6 +5,7 @@ import {useEffect, useState, type FormEvent} from 'react';
 export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
   const [signup, setSignup] = useState(false);
   const [recovery, setRecovery] = useState(false);
+  const [marketAdminEntry, setMarketAdminEntry] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{text: string; error: boolean} | null>(null);
@@ -12,13 +13,15 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
   const identifierLogin = !market && !signup && !recovery;
 
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('error') === 'google_failed') {
+    const params = new URLSearchParams(location.search);
+    setMarketAdminEntry(!market && params.get('for') === 'market-admin');
+    if (params.get('error') === 'google_failed') {
       setMessage({text: 'Google 로그인에 실패했습니다. 다시 시도해주세요.', error: true});
     }
-    if (new URLSearchParams(location.search).get('error') === 'recovery_failed') setMessage({text: '복구 링크가 만료되었거나 확인되지 않았습니다. 비밀번호 찾기를 다시 요청해주세요.', error: true});
-    if (new URLSearchParams(location.search).get('error') === 'logout_provider_failed') setMessage({text: '이 기기에서는 로그아웃했습니다. 인증 서버 세션 종료 확인은 실패했으니 계정 보안을 확인해주세요.', error: true});
-    if (new URLSearchParams(location.search).get('password_reset') === 'success') setMessage({text: '비밀번호를 변경했습니다. 새 비밀번호로 로그인해주세요.', error: false});
-  }, []);
+    if (params.get('error') === 'recovery_failed') setMessage({text: '복구 링크가 만료되었거나 확인되지 않았습니다. 비밀번호 찾기를 다시 요청해주세요.', error: true});
+    if (params.get('error') === 'logout_provider_failed') setMessage({text: '이 기기에서는 로그아웃했습니다. 인증 서버 세션 종료 확인은 실패했으니 계정 보안을 확인해주세요.', error: true});
+    if (params.get('password_reset') === 'success') setMessage({text: '비밀번호를 변경했습니다. 새 비밀번호로 로그인해주세요.', error: false});
+  }, [market]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,6 +39,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
       if (!result.ok) throw new Error(data.error || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
       if (recovery) setMessage({text: data.message, error: false});
       else if (data.confirmation) setMessage({text: data.message, error: false});
+      else if (!signup && marketAdminEntry && data.owner === true && data.destination === '/dashboard') location.assign('/nurimarket/admin');
       else if (['/dashboard', '/nurimarket', '/access-pending'].includes(data.destination)) location.assign(data.destination);
       else throw new Error('이동할 화면을 확인하지 못했습니다. 다시 로그인해주세요.');
     } catch (error) {
@@ -51,11 +55,12 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
       <div className="nh-login-card">
         <a href={market ? '/nurimarket' : '/login'} className="nh-wordmark" aria-label={market ? 'NURI MARKET 홈' : 'NURI ONE 로그인'}><img src={`/brand/nuri-${market ? 'market' : 'one'}.svg`} alt={market ? 'NURI MARKET' : 'NURI ONE'} width={market ? 7906 : 8541} height={market ? 1120 : 1600}/></a>
         <header className="nh-login-heading">
-          <h1>{recovery ? '비밀번호 찾기' : signup ? market ? '회원가입' : '계정 신청' : '로그인'}</h1>
+          <h1>{recovery ? '비밀번호 찾기' : signup ? market ? '회원가입' : '계정 신청' : marketAdminEntry ? '쇼핑몰 관리자 로그인' : '로그인'}</h1>
+          {marketAdminEntry && !signup && !recovery && <p>누리원 운영자 계정으로 로그인하세요.</p>}
           {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '관리자 승인 후 이용할 수 있습니다.'}</p>}
         </header>
-        <a href={`/api/auth/google?portal=${portal}`} className="nh-google-button">Google로 계속하기</a>
-        {identifierLogin && process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED === 'true' && <a href="/login/passkey" className="nh-google-button">운영자 패스키로 계속하기</a>}
+        <a href={`/api/auth/google?portal=${portal}${marketAdminEntry?'&for=market-admin':''}`} className="nh-google-button">Google로 계속하기</a>
+        {identifierLogin && process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED === 'true' && <a href={marketAdminEntry?'/login/passkey?for=market-admin':'/login/passkey'} className="nh-google-button">운영자 패스키로 계속하기</a>}
         <div className="nh-login-divider">{identifierLogin ? '또는 아이디·이메일로' : '또는 이메일로'}</div>
         <form onSubmit={submit} aria-busy={busy}>
           <div className="nh-login-field">
@@ -78,6 +83,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
           <span>{recovery ? '로그인 화면으로 돌아가시겠어요?' : signup ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}</span>
           <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => {setRecovery(false); setSignup(recovery ? false : !signup); setShowPassword(false); setMessage(null);}}>{recovery || signup ? '로그인' : market ? '회원가입' : '계정 신청'}</button>
           {!signup && !recovery && <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => {setRecovery(true); setShowPassword(false); setMessage(null);}}>비밀번호 찾기</button>}
+          {market && !signup && !recovery && <a className="nh-login-toggle" href="/login?for=market-admin">쇼핑몰 관리자 로그인</a>}
         </div>
       </div>
     </main>

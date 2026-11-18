@@ -58,12 +58,12 @@ export const integrationCatalog: readonly Integration[] = [
   },
   {
     id: 'instagram', name: 'Instagram', category: 'publishing', status: 'requires-setup',
-    description: 'Instagram Login으로 전문 계정을 연결합니다. 현재 게시 코드는 이미지 1장과 본문용이며 실제 OAuth·게시 성공은 계정 연결 후 검증합니다.',
+    description: 'Instagram Login으로 전문 계정을 개별 연결합니다. 승인함에서 단일 이미지 또는 캐러셀과 게시 시각을 확인합니다.',
     requirements: ['Business 또는 Creator 계정', 'Instagram 앱 Client ID·Client Secret', 'instagram_business_basic·instagram_business_content_publish', '정확한 콜백 URI·앱 역할 또는 검수'],
     freeUsage: '무료 무제한 사용으로 보장하지 않습니다. Meta 정책·권한·게시 한도를 확인해야 하며 광고비는 별도입니다.',
     docsUrl: 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/',
     pricingUrl: 'https://developers.facebook.com/docs/graph-api/overview/rate-limiting/',
-    setupSteps: ['회사 Instagram 계정을 Business 또는 Creator로 전환합니다. Facebook 페이지는 필수가 아닙니다.', 'Meta 앱에서 Instagram Login·게시 권한과 콜백 https://nhholdings.xyz/api/social/instagram 을 등록합니다.', '앱 Client ID·Client Secret을 NURI 설정에 저장합니다.', '서비스와 계정 표시 이름을 선택하고 Instagram 공식 동의창에서 연결합니다.', '계정 재조회 후 이미지 1장 테스트 게시와 외부 게시 URL을 확인합니다.'],
+    setupSteps: ['누리홀덤과 누리마인드 Instagram을 각각 Business 또는 Creator 계정으로 설정합니다.', 'Meta 앱에서 Instagram Login·게시 권한과 콜백 https://nhholdings.xyz/api/social/instagram 을 등록합니다.', '앱 Client ID·Client Secret을 누리원 설정에 저장합니다.', '계정 표시 이름을 구분하고 공식 동의창에서 각 프로필을 연결합니다.', '두 계정의 사용자명을 대조한 뒤 실제 게시물은 승인함에서 건별로 확인합니다.'],
   },
   {
     id: 'threads', name: 'Threads', category: 'publishing', status: 'requires-setup',
