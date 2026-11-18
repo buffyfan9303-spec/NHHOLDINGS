@@ -101,6 +101,50 @@ window.NuriOperator = (() => {
   article.scrollIntoView({block:'nearest'});
  }
 
+ function pushPanel() {
+  if (!session?.pushPublicKey || !('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) return '';
+  return `<section class="panel panel-inner section-gap">
+   <h2>이 기기의 게시 알림</h2>
+   <p class="panel-desc">Instagram 승인함의 새 활동을 알림으로 받을 수 있습니다.</p>
+   <div class="toolbar"><button type="button" class="btn" data-device-push="connect">알림 받기</button><button type="button" class="btn" data-device-push="disconnect">알림 끄기</button></div>
+   <p class="caption" id="device-push-status" role="status"></p>
+  </section>`;
+ }
+
+ async function disconnectPush() {
+  if (!session?.pushPublicKey || !('serviceWorker' in navigator)) return;
+  const worker=await navigator.serviceWorker.getRegistration('/dashboard');
+  const subscription=await worker?.pushManager.getSubscription();
+  if (!subscription) return;
+  await subscription.unsubscribe();
+  await api('push/subscription',{enabled:false,subscription:{endpoint:subscription.endpoint}});
+ }
+
+ async function changePush(button) {
+  const status=document.getElementById('device-push-status');
+  button.disabled=true;
+  try {
+   if (button.dataset.devicePush==='disconnect') {
+    await disconnectPush();
+    status.textContent='이 기기의 알림을 껐습니다.';
+    return;
+   }
+   if (!navigator.onLine) throw Error('인터넷에 연결한 뒤 시도해주세요.');
+   if (await Notification.requestPermission()!=='granted') throw Error('브라우저에서 알림 권한을 허용해주세요.');
+   const worker=await navigator.serviceWorker.getRegistration('/dashboard');
+   if (!worker?.active) throw Error('페이지를 새로 열고 다시 시도해주세요.');
+   const encoded=session.pushPublicKey.replace(/-/g,'+').replace(/_/g,'/');
+   const applicationServerKey=Uint8Array.from(atob(encoded),char=>char.charCodeAt(0));
+   const saved=await worker.pushManager.getSubscription();
+   const subscription=saved||await worker.pushManager.subscribe({userVisibleOnly:true,applicationServerKey});
+   try {await api('push/subscription',{enabled:true,subscription:subscription.toJSON()});}
+   catch (error) {if(!saved)await subscription.unsubscribe().catch(()=>{});throw error;}
+   status.textContent='이 기기의 게시 알림을 켰습니다.';
+  } catch (error) {
+   status.textContent=error.message||'이 기기에서 알림을 설정하지 못했습니다.';
+  } finally {button.disabled=false;}
+ }
+
  function init() {
   const palette = document.getElementById('command-palette');
   const query = document.getElementById('command-query');
@@ -183,6 +227,10 @@ window.NuriOperator = (() => {
    }
   });
 
+  document.addEventListener('click',e=>{
+   const button=e.target.closest('[data-device-push]');
+   if(button&&!button.disabled)void changePush(button);
+  });
   const offline = document.getElementById('operator-offline');
   const connection = () => {
    offline.hidden = navigator.onLine;
@@ -194,5 +242,5 @@ window.NuriOperator = (() => {
   if ('serviceWorker' in navigator && !location.search) navigator.serviceWorker.register('/one/operator-sw.js', {scope:'/dashboard'}).catch(() => {});
  }
 
- return {render, summary, contentControl, reveal, init};
+ return {render, summary, contentControl, reveal, init, pushPanel, disconnectPush};
 })();

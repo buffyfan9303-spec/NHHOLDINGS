@@ -12,7 +12,7 @@
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3120",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts tests/oauth-security.test.ts tests/social-security.test.ts tests/adsense-security.test.ts tests/routing.test.ts && node tests/social.cjs && node tests/content-tools.cjs && node tests/x-text.cjs && node tests/studio-growth.cjs && node tests/naver.cjs && node tests/operator-workflow.cjs",
+    "test": "tsx --test tests/commerce.test.ts tests/access-security.test.ts tests/oauth-security.test.ts tests/social-security.test.ts tests/adsense-security.test.ts tests/routing.test.ts && node tests/social.cjs && node tests/content-tools.cjs && node tests/x-text.cjs && node tests/studio-growth.cjs && node tests/naver.cjs && node tests/operator-workflow.cjs && node tests/operator-push.cjs",
     "test:browser": "node --env-file=.env.local tests/cloud-integration.cjs",
     "db:migrate": "tsx scripts/migrate.ts"
   },
@@ -26,7 +26,8 @@
     "react-dom": "19.3.0",
     "sanitize-html": "2.18.2",
     "sharp": "^0.35.5",
-    "twitter-text": "^3.1.0"
+    "twitter-text": "^3.1.0",
+    "web-push": "4.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
