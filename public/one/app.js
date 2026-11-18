@@ -149,7 +149,16 @@ document.addEventListener('change',e=>{
   group.hidden=group.disabled=group.dataset.publicationFields!==e.target.value;
  }
 });
-$('refresh').addEventListener('click',async()=>{const b=$('refresh');b.disabled=true;b.querySelector('span:last-child').textContent='조회 중…';try{data=await api('refresh',{});render();toast('조회가 끝났습니다. 서비스별 마지막 성공 시각을 확인하세요.');}catch(e){toast(e.message);}finally{b.disabled=false;b.querySelector('span:last-child').textContent='데이터 새로고침';}});
+$('refresh').addEventListener('click',async()=>{
+ const button=$('refresh'),label=$('refresh-label'),shortLabel=$('refresh-short-label');
+ button.disabled=true;
+ button.setAttribute('aria-busy','true');
+ label.textContent='조회 중…';
+ shortLabel.textContent='조회';
+ try{data=await api('refresh',{});render();toast('조회가 끝났습니다. 서비스별 마지막 성공 시각을 확인하세요.');}
+ catch(e){toast(e.message);}
+ finally{label.textContent='데이터 새로고침';shortLabel.textContent='갱신';button.setAttribute('aria-busy','false');button.disabled=false;}
+});
 $('mobile-menu').addEventListener('click',openSidebar);
 $('sidebar-close').addEventListener('click',()=>closeSidebar(true));
 $('sidebar-scrim').addEventListener('click',()=>closeSidebar(true));

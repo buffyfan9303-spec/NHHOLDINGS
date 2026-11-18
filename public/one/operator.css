@@ -23,8 +23,6 @@
 .approval-history li span {display: grid; gap: 2px; overflow-wrap: anywhere}
 .approval-history time {flex-shrink: 0}
 .approval-history li span span, .approval-history time {color: var(--muted); font-size: 13px}
-.command-open {min-height: 44px}
-.command-open kbd {color: var(--muted); font-size: 11px}
 .command-palette {width: min(460px, calc(100% - 32px)); padding: 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink)}
 .command-palette::backdrop {background: rgb(4 10 13 / 78%)}
 .command-palette header {display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px}
@@ -37,7 +35,6 @@
 .operator-mobile {display: none}
 #operator-offline {margin-bottom: 14px}
 @media (max-width: 900px) {
- .command-open kbd {display: none}
  .operator-mobile {display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 2px; position: fixed; z-index: 20; bottom: 0; left: 0; right: 0; padding: 5px 8px calc(5px + env(safe-area-inset-bottom)); background: #13191d; border-top: 1px solid var(--line)}
  .operator-mobile button {display: grid; justify-items: center; align-content: center; gap: 3px; min-height: 49px; background: transparent; color: var(--muted); font-size: 12px}
  .operator-mobile button[aria-current] {color: var(--teal)}
@@ -48,9 +45,7 @@
 @media (max-width: 760px) {
  .approval-layout {grid-template-columns: minmax(0, 1fr); gap: 12px}
  .approval-section {padding: 14px}
- .command-open {font-size: 13px; padding-inline: 8px}
- .command-open .icon {width: 16px; height: 16px}
 
 }
-@media print {.operator-mobile, .command-open {display: none !important}}
+@media print {.operator-mobile {display: none !important}}
 .approval-media {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,132px),1fr));gap:10px}
