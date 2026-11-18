@@ -176,3 +176,13 @@ th,.publishing-board th{background:#1d242a;border-color:#303a43;color:#abbac4}td
  .site-tabs[role="tablist"] button{min-height:44px}
  .inspector-layout>*{min-width:0}
 }
+
+.publication-fields{margin:4px 0 0;padding:14px;min-width:0;border:1px solid var(--line);border-radius:8px}
+.publication-fields legend{padding:0 6px;color:var(--ink);font-weight:600;font-size:13px}
+.publication-fields[hidden]{display:none}
+
+@media(max-width:900px),(pointer:coarse){
+ .publication-fields .field:has(>select),.approval-form .field:has(>select){position:relative}
+ .publication-fields .field>select,.approval-form .field>select{appearance:none;min-height:46px;padding-left:28px}
+ .publication-fields .field:has(>select)::after,.approval-form .field:has(>select)::after{position:absolute;left:12px;bottom:21px;width:6px;height:6px;border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);pointer-events:none;content:""}
+}

@@ -2,12 +2,13 @@
 const crypto=require('node:crypto'),dns=require('node:dns').promises;
 const {isDeepStrictEqual}=require('node:util');
 const {context}=require('./context.cjs');
-const {providers,ensureFresh}=require('./social.cjs');
+const {providers,ensureFresh,identity:socialIdentity}=require('./social.cjs');
 const adsense=require('./adsense.cjs');
+const youtube=require('./youtube.cjs');
 const naver=require('./naver.cjs');
 const operatorPush=require('./operator-push.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
-const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'https://doto1.tistory.com',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'5개 SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
+const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'https://doto1.tistory.com',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={bluesky:['bsky.app']};
 const SOCIAL_URL_CHANNELS=['instagram','threads','x','bluesky'];
 const SOCIAL_PERMALINKS={instagram:[['instagram.com','www.instagram.com'],/^\/(?:(?!(?:accounts|explore|stories|direct)\/)[A-Za-z0-9._]{1,30}\/)?(p|reels?)\/([A-Za-z0-9_-]{5,64})\/?$/],threads:[['threads.net','www.threads.net','threads.com','www.threads.com'],/^\/@([A-Za-z0-9._]{1,30})\/post\/([A-Za-z0-9_-]{5,64})\/?$/],x:[['x.com','www.x.com','mobile.x.com','twitter.com','www.twitter.com','mobile.twitter.com'],/^\/(?:([A-Za-z0-9_]{1,15})|i\/web)\/status\/([1-9]\d{0,19})\/?$/],bluesky:[['bsky.app'],/^\/profile\/((?:did:plc:[a-z2-7]{24}|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+))\/post\/([a-z2-7]{13})\/?$/]};
@@ -15,6 +16,7 @@ function socialPermalink(channel,url){let u;try{u=url instanceof URL?url:new URL
 const snsRecord=p=>p?.service==='tistory'&&(p.business||'platform')==='platform';
 const platformExcluded=p=>p?.platformExclusion?.status==='excluded';
 const accountFits=(a,p)=>snsRecord(a)&&snsRecord(p)&&a.channel===p.channel;
+const requiresApproval=p=>['instagram','youtube'].includes(p.channel);
 const now=()=>new Date().toISOString(),hash=v=>crypto.createHash('sha256').update(v).digest('hex');
 function fail(message,status=400){throw Object.assign(new Error(message),{status});}
 function snsScope(service,business='platform'){if(service!=='tistory'||business!=='platform')fail('SNS 자동화는 다른 서비스·사업장과 연결하지 않고 독립 운영합니다.');}
@@ -61,18 +63,40 @@ function validatePublishingSettings(v,old){
  return {timezone:'Asia/Seoul',dailyCount:v.dailyCount,times:[...v.times],enabled:false,version:(old?.version??1)+1,updatedAt:now()};
 }
 // Bind approval to what will be published and to the external account, not its editable label.
-function instagramApprovalKey(post, account){
- return hash(JSON.stringify([post.id,post.title,post.body,post.media,post.slides||[],post.account,account.userId,post.scheduledAt]));
+function publicationApprovalKey(post, account){
+ const fields=[post.id,post.title,post.body,post.media,post.slides||[],post.account,account.userId,post.scheduledAt];
+ // Older Instagram image approvals keep their original signature.
+ if(post.channel==='instagram'&&(post.videoUrl||post.altText))fields.push(post.videoUrl||'',post.altText||'');
+ if(post.channel==='youtube')fields.push('youtube',post.youtubeVideoId,post.youtubeMadeForKids,post.youtubeSynthetic);
+ return hash(JSON.stringify(fields));
 }
-function instagramApproved(post, account){
- return !!account?.userId&&typeof post.approval?.at==='string'&&post.approval.key===instagramApprovalKey(post,account);
+function publicationApproved(post, account){
+ return requiresApproval(post)&&!!account?.userId&&typeof post.approval?.at==='string'&&post.approval.key===publicationApprovalKey(post,account);
+}
+function videoFields(p={}){
+ return {videoUrl:p.videoUrl||'',altText:p.altText||'',youtubeVideoId:p.youtubeVideoId||'',
+  youtubeMadeForKids:p.youtubeMadeForKids??null,youtubeSynthetic:p.youtubeSynthetic??null};
+}
+function optionalChoice(value,label){
+ if(value==null||value==='')return null;
+ if(value===true||value==='true')return true;
+ if(value===false||value==='false')return false;
+ fail(label+' 여부를 선택하세요.');
 }
 function preflight(p){
  snsScope(p.service,p.business||'platform');
  if(!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');
  if(Object.hasOwn(MANUAL_HOSTS,p.channel))fail('이 채널은 자동 게시 API가 연결되지 않았습니다. 직접 게시 후 발행 URL을 등록하세요.');
  if(manualBlog(p))fail('티스토리는 공식 글쓰기 API 종료로 발행 링크를 직접 등록하세요.');
- if(p.channel==='instagram'&&!p.media)fail('인스타그램에는 공개 이미지 HTTPS 주소가 필요합니다.');
+ if(p.channel==='instagram'){
+  if(!p.media&&!p.videoUrl)fail('Instagram 공개 이미지 또는 릴스 영상의 HTTPS 주소를 입력하세요.');
+  if(p.videoUrl&&(p.media||p.slides?.length||p.altText)||p.altText&&p.slides?.length)fail('릴스와 사진을 구분하고 대체 텍스트는 단일 이미지에만 사용하세요.');
+ }
+ if(p.channel==='youtube'){
+  if(!p.youtubeVideoId||youtube.videoId(p.youtubeVideoId)!==p.youtubeVideoId)fail('비공개로 올린 YouTube 영상 주소를 입력하세요.');
+  if(typeof p.youtubeMadeForKids!=='boolean'||typeof p.youtubeSynthetic!=='boolean')fail('아동용 및 변경·합성 콘텐츠 여부를 확인하세요.');
+  if(Array.from(p.title).length>100||Buffer.byteLength(p.body,'utf8')>5000||/[<>]/.test(p.title+p.body))fail('YouTube 제목은 100자, 설명은 UTF-8 5,000바이트 이하로 입력하고 꺾쇠 문자를 제외하세요.');
+ }
  if(p.channel==='x'&&weight(p.body,'x')>280)fail('X 본문을 가중 280자 이하로 줄이세요.');
  if(p.channel==='threads'&&Array.from(p.body).length>500)fail('Threads 본문을 500자 이하로 줄이세요.');
  if(p.channel==='instagram'&&Array.from(p.body).length>2200)fail('인스타그램 캡션을 2200자 이하로 줄이세요.');
@@ -86,6 +110,10 @@ async function inspectPublication(p,c,request=fetch){
   return {checkStatus:parseSitemap(await r.text()).some(x=>x.url===p.link)?'visible':'not-listed'};
  }
  if(!c?.token||!p.externalId||!/^\w[\w-]*$/.test(String(p.externalId)))return {checkStatus:'unavailable'};
+ if(p.channel==='youtube'){
+  const video=await youtube.readVideo(p.externalId,c.token,request);
+  return video?.status?.privacyStatus==='public'?{checkStatus:'visible',link:youtube.watchUrl(p.externalId)}:{checkStatus:video?'not-listed':'missing'};
+ }
  const headers={Authorization:'Bearer '+c.token};let url;
  if(p.channel==='x')url='https://api.x.com/2/tweets/'+p.externalId+'?tweet.fields=created_at';
  else if(p.channel==='threads')url='https://graph.threads.net/v1.0/'+p.externalId+'?fields=id,permalink,media_type,timestamp';
@@ -100,7 +128,7 @@ async function inspectPublication(p,c,request=fetch){
  return {checkStatus:record.status&&record.status!=='publish'?'missing':'visible',...(typeof link==='string'&&/^https:\/\//.test(link)?{link}:{} )};
 }
 
-function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,...Object.fromEntries(['bluesky'].map(channel=>[channel,`[샘플 초안] ${topic}\n${name}의 공개 서비스 안내를 확인하세요. 직접 게시용 초안입니다.`])),blog:`[샘플 초안]\n${name}의 ${topic}를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.`,instagram:`[샘플] ${topic}\n${name}의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내`,threads:`[샘플] ${topic}\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. ${name}에서 시작해 보세요.`,x:`[샘플] ${topic} — ${name}의 서비스 소식을 확인하세요.`})};}
+function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,youtube:'[샘플] 영상의 핵심 안내입니다. Studio의 설명과 함께 확인한 뒤 승인하세요.',...Object.fromEntries(['bluesky'].map(channel=>[channel,`[샘플 초안] ${topic}\n${name}의 공개 서비스 안내를 확인하세요. 직접 게시용 초안입니다.`])),blog:`[샘플 초안]\n${name}의 ${topic}를 소개합니다.\n\n1. 필요한 정보를 한곳에서 확인합니다.\n2. 실제 이용 방법을 단계별로 안내합니다.\n3. 문의 전에 공개된 서비스 안내를 확인하세요.\n\n이 글은 샘플 모드의 생성 예시입니다. 실제 AI 연결에서는 주제와 공개 자료를 바탕으로 작성합니다.`,instagram:`[샘플] ${topic}\n${name}의 새로운 이야기를 확인해 보세요.\n#누리 #서비스안내`,threads:`[샘플] ${topic}\n복잡한 일은 한곳에 모으고, 필요한 흐름은 명확하게. ${name}에서 시작해 보세요.`,x:`[샘플] ${topic} — ${name}의 서비스 소식을 확인하세요.`})};}
 
 async function cloudGenerate(prompt,c,decrypt){if(!c?.enabled||!c.secret||!c.model)fail('설정에서 AI API 계정과 모델을 연결해주세요.',503);const {token}=decrypt(c.secret),anthropic=c.provider==='anthropic';const r=await fetch(anthropic?'https://api.anthropic.com/v1/messages':'https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',...(anthropic?{'x-api-key':token,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+token})},body:JSON.stringify(anthropic?{model:c.model,max_tokens:6000,messages:[{role:'user',content:prompt}]}:{model:c.model,max_completion_tokens:6000,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}}),signal:AbortSignal.timeout(120000)});if(!r.ok)fail('AI API 응답 '+r.status+'. 키·모델·이용 한도를 확인해주세요.',502);const v=await r.json();return anthropic?v.content?.filter(x=>x.type==='text').map(x=>x.text).join(''):v.choices?.[0]?.message?.content;}
 async function controller(options){
@@ -145,14 +173,14 @@ async function controller(options){
  }
  async function saveContent(id,old,record,email,reason='saved',restoredFrom=null){
   const at=now();await transaction(async()=>{
-   if(old)await put('content-revision',crypto.randomUUID(),{contentId:id,version:old.version??1,title:old.title,body:old.body,seo:old.seo||validateSEO(),media:old.media||'',slides:old.slides||[],createdAt:at,reason,...(restoredFrom?{restoredFrom}:{})});
+   if(old)await put('content-revision',crypto.randomUUID(),{contentId:id,version:old.version??1,title:old.title,body:old.body,seo:old.seo||validateSEO(),media:old.media||'',slides:old.slides||[],...videoFields(old),createdAt:at,reason,...(restoredFrom?{restoredFrom}:{})});
    await writeContent(id,{...record,version:old?(old.version??1)+1:1,updatedAt:at,createdAt:old?.createdAt||at});await audit(email,'content.'+reason,id+(restoredFrom?':'+restoredFrom:''));
   });
  }
  async function createDrafts(source,records,email,action){
   snsScope(source.service,source.business||'platform');
   if(records.some(p=>!CHANNELS.includes(p.channel)))fail('운영에서 제외된 채널입니다.');
-  const ids=[];await transaction(async()=>{for(const record of records){const id=crypto.randomUUID(),at=now();ids.push(id);await writeContent(id,{service:source.service,business:source.business||'platform',campaignId:source.campaignId||id,growthCampaign:source.growthCampaign||'',channel:record.channel,...(record.channel==='blog'?{blogTarget:source.blogTarget||(source.service==='tistory'?'tistory':'wordpress')}:{}),title:record.title,body:record.body,seo:validateSEO(source.seo),media:record.media||'',slides:record.slides||[],ruleBased:record.ruleBased===true,ai:false,status:'draft',sourceContent:source.id,createdAt:at,updatedAt:at,version:1});}await audit(email,action,source.id+':'+ids.join(','));});return {ids};
+  const ids=[];await transaction(async()=>{for(const record of records){const id=crypto.randomUUID(),at=now();ids.push(id);await writeContent(id,{service:source.service,business:source.business||'platform',campaignId:source.campaignId||id,growthCampaign:source.growthCampaign||'',channel:record.channel,...(record.channel==='blog'?{blogTarget:source.blogTarget||(source.service==='tistory'?'tistory':'wordpress')}:{}),title:record.title,body:record.body,seo:validateSEO(source.seo),media:record.media||'',slides:record.slides||[],...videoFields(record),ruleBased:record.ruleBased===true,ai:false,status:'draft',sourceContent:source.id,createdAt:at,updatedAt:at,version:1});}await audit(email,action,source.id+':'+ids.join(','));});return {ids};
  }
   let refreshPromise,workerBusy=false,aiBusy=false;
  async function refresh(){
@@ -167,7 +195,7 @@ async function controller(options){
  }
  function view(){return {
   services:allServices().map(s=>({...s,snapshot:get('source',s.id),installed:!!get('source',s.id)?.data,stale:!get('source',s.id)?.data||!!get('source',s.id)?.error||(!options.demo&&Date.now()-Date.parse(get('source',s.id).data.observedAt)>15*60000)})),
-  businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content').map(({approval,...post})=>approval?{...post,approval:instagramApproved({...post,approval},get('channel',post.account))?{at:approval.at}:null}:post),contentRevisions:list('content-revision').slice(0,100),growthCampaigns:list('growth-campaign'),growthResults:list('growth-result'),postObservations:list('post-observation'),postPublications:list('post-publication'),postObservationRevisions:list('post-observation-revision'),postForecasts:list('post-forecast'),growthEvaluations:growthEvaluations(),growthCheckpoints:growthCheckpoints(),contentReviews:list('content-review'),reviewComparisons:reviewComparisons(),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
+  businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content').map(({approval,...post})=>approval?{...post,approval:publicationApproved({...post,approval},get('channel',post.account))?{at:approval.at}:null}:post),contentRevisions:list('content-revision').slice(0,100),growthCampaigns:list('growth-campaign'),growthResults:list('growth-result'),postObservations:list('post-observation'),postPublications:list('post-publication'),postObservationRevisions:list('post-observation-revision'),postForecasts:list('post-forecast'),growthEvaluations:growthEvaluations(),growthCheckpoints:growthCheckpoints(),contentReviews:list('content-review'),reviewComparisons:reviewComparisons(),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
   accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics').map(r=>options.demo||r.gaHostName==='doto1.tistory.com'?r:{...r,ga:null})},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
   publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),adsense:adsense.view(ctx),
@@ -198,6 +226,7 @@ async function controller(options){
   if(Object.hasOwn(MANUAL_HOSTS,account.channel))fail('이 채널은 API 계정 연결을 지원하지 않습니다. 직접 게시 후 발행 URL을 등록하세요.');
   if(options.demo)return {userId:'sample-user',username:account.label+' · 샘플 확인'};
   account=await ensureFresh(ctx,account);const c=decrypt(account.secret),auth={Authorization:'Bearer '+c.token};let r;
+  if(account.channel==='youtube')return socialIdentity('youtube',c);
   if(account.channel==='blog'){const u=await publicURL(c.url);r=await remote(u.origin+u.pathname.replace(/\/$/,'')+'/wp-json/wp/v2/users/me',{headers:{Authorization:'Basic '+Buffer.from(c.username+':'+c.token).toString('base64')}});}
   else if(account.channel==='x')r=await remote('https://api.x.com/2/users/me',{headers:auth});
   else if(account.channel==='threads')r=await remote('https://graph.threads.net/v1.0/me?fields=id,username',{headers:auth});
@@ -218,25 +247,26 @@ async function controller(options){
  async function publish(id,email){
   const post=get('content',id);if(!post||!['scheduled','approved'].includes(post.status))fail('승인된 초안만 게시할 수 있습니다.');snsScope(post.service,post.business||'platform');
   let a=get('channel',post.account);
-  if(post.channel==='instagram'&&(!instagramApproved({...post,id},a)||post.status!=='scheduled'||!(Date.parse(post.scheduledAt)<=Date.now())))fail('검토한 계정과 시각으로 게시를 승인한 뒤 예약 시간이 되어야 게시할 수 있습니다.',409);
+  if(requiresApproval(post)&&(!publicationApproved({...post,id},a)||post.status!=='scheduled'||!(Date.parse(post.scheduledAt)<=Date.now())))fail('검토한 계정과 시각으로 게시를 승인한 뒤 예약 시간이 되어야 게시할 수 있습니다.',409);
   try{preflight(post);}catch(e){await writeContent(id,{...post,status:'draft',approval:null,error:e.message});throw e;}
   if(!a||!a.verifiedAt||!accountFits(a,post))fail('해당 브랜드 또는 SNS 공용 게시 계정을 연결·확인하세요.');
   if(options.demo){await writeContent(id,{...post,status:'published',externalId:'sample-'+id,publishedAt:now(),error:null});await audit(email,'content.sample_published',id);return;}
   a=await ensureFresh(ctx,{...a,id:post.account});const c=decrypt(a.secret),headers={Authorization:'Bearer '+c.token};
-  if(post.channel==='instagram'&&!instagramApproved({...post,id},a))fail('게시 계정이 변경됐습니다. 승인함에서 다시 확인하세요.',409);
+  if(requiresApproval(post)&&!publicationApproved({...post,id},a))fail('게시 계정이 변경됐습니다. 승인함에서 다시 확인하세요.',409);
   if(JSON.stringify(get('content',id))!==JSON.stringify(post))fail('게시 상태가 변경됐습니다. 새로고침 후 확인하세요.',409);
-  if(post.channel==='instagram'){
+  if(requiresApproval(post)){
    await transaction(async()=>{
     await ctx.lockRow('channel',post.account);
     await ctx.reload();
     const current=get('channel',post.account);
-    if(!current?.verifiedAt||!accountFits(current,post)||current.secret!==a.secret||!instagramApproved({...post,id},current)||!isDeepStrictEqual(get('content',id),post))fail('계정 또는 게시 상태가 변경됐습니다. 다시 확인하세요.',409);
+    if(!current?.verifiedAt||!accountFits(current,post)||current.secret!==a.secret||!publicationApproved({...post,id},current)||!isDeepStrictEqual(get('content',id),post))fail('계정 또는 게시 상태가 변경됐습니다. 다시 확인하세요.',409);
     await writeContent(id,{...post,status:'publishing',startedAt:now()});
    });
   }else await writeContent(id,{...post,status:'publishing',startedAt:now()});
   try{
    let r,externalId,link,base;
    if(post.channel==='blog'){const u=await publicURL(c.url);r=await remote(u.origin+u.pathname.replace(/\/$/,'')+'/wp-json/wp/v2/posts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Basic '+Buffer.from(c.username+':'+c.token).toString('base64')},body:JSON.stringify({title:post.title,content:renderMarkdown(post.body),status:'publish'})});externalId=String(r.id||'');link=r.link;}
+   else if(post.channel==='youtube'){({externalId,link}=await youtube.publish(post,a,c));}
    else if(post.channel==='x'){r=await remote('https://api.x.com/2/tweets',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({text:post.body})});externalId=r.data?.id;link=externalId?'https://x.com/i/status/'+externalId:'';}
    else{
     base=post.channel==='threads'?'https://graph.threads.net/v1.0':'https://graph.instagram.com/'+c.version;
@@ -249,24 +279,25 @@ async function controller(options){
       return result.id;
      };
      if(post.channel==='threads')container=await createMedia({media_type:'TEXT',text:post.body});
+     else if(post.videoUrl)container=await createMedia({media_type:'REELS',video_url:post.videoUrl,caption:post.body,share_to_feed:'true'});
      else if(post.slides?.length){
       const children=await Promise.all([post.media,...post.slides].map(image_url=>createMedia({image_url,is_carousel_item:'true'})));
       container=await createMedia({media_type:'CAROUSEL',children:children.join(','),caption:post.body});
-     }else container=await createMedia({image_url:post.media,caption:post.body});
+     }else container=await createMedia({image_url:post.media,caption:post.body,...(post.altText?{alt_text:post.altText}:{})});
      await writeContent(id,{...get('content',id),container});
     }
     if(post.channel==='instagram'){
      r=await remote(base+'/'+container+'?fields=status_code',{headers});
      const containerChecks=(post.containerChecks||0)+1;
      if(r.status_code==='IN_PROGRESS'&&containerChecks<3){
-      await writeContent(id,{...get('content',id),status:'scheduled',containerChecks,error:'이미지를 처리 중입니다. 다음 예약 실행에서 상태를 확인합니다.'});
+      await writeContent(id,{...get('content',id),status:'scheduled',containerChecks,error:'미디어를 처리 중입니다. 다음 예약 실행에서 상태를 확인합니다.'});
       return;
      }
      if(r.status_code!=='FINISHED')fail('Instagram 미디어 처리 상태를 확인한 뒤 다시 승인하세요.',409);
     }
     r=await remote(base+'/'+a.userId+(post.channel==='threads'?'/threads_publish':'/media_publish'),{method:'POST',headers,body:new URLSearchParams({creation_id:container})});externalId=r.id;
    }
-   if(!externalId||post.channel!=='blog'&&(typeof externalId!=='string'||!/^\d+$/.test(externalId)))fail('게시 결과 ID를 확인하지 못했습니다. 채널에서 직접 확인하세요.',502);
+   if(!externalId||!['blog','youtube'].includes(post.channel)&&(typeof externalId!=='string'||!/^\d+$/.test(externalId)))fail('게시 결과 ID를 확인하지 못했습니다. 채널에서 직접 확인하세요.',502);
    if(base){const info=await remote(base+'/'+externalId+'?fields=permalink',{headers}).catch(()=>({}));link=info.permalink;}
    await writeContent(id,{...get('content',id),status:'published',externalId,link:link||'',publishedAt:now(),error:null});await audit(email,'content.published',id);
   }catch(e){
@@ -282,9 +313,9 @@ async function controller(options){
    for(const g of list('generation').filter(g=>snsRecord(g)&&g.status==='running'&&Date.parse(g.startedAt)<Date.now()-600000))await put('generation',g.id,{...g,status:'failed',completedAt:now(),error:'생성 응답이 중단되었습니다. 작성 내역을 확인한 뒤 다시 실행해주세요.'});
     for(const p of list('content').filter(p=>snsRecord(p)&&p.status==='scheduled'&&Date.parse(p.scheduledAt)<=Date.now()))await publish(p.id,'예약 실행').catch(()=>{});
     for(const candidate of list('plan').filter(p=>snsRecord(p)&&p.enabled&&Date.parse(p.nextAt)<=Date.now())){
-    const p={...get('plan',candidate.id),id:candidate.id};p.channels=(Array.isArray(p.channels)?p.channels:[]).filter(c=>CHANNELS.includes(c));if(!p.channels.length)continue;if(aiBusy||!snsRecord(p)||!p.enabled||!(Date.parse(p.nextAt)<=Date.now()))continue;
+    const p={...get('plan',candidate.id),id:candidate.id};p.channels=(Array.isArray(p.channels)?p.channels:[]).filter(c=>CHANNELS.includes(c)&&(c!=='youtube'||p.youtubeDrafts===true));if(!p.channels.length)continue;if(aiBusy||!snsRecord(p)||!p.enabled||!(Date.parse(p.nextAt)<=Date.now()))continue;
     const nextAt=new Date(Date.now()+p.days*86400000).toISOString();await put('plan',p.id,{...p,nextAt,lastRun:now()});const revision=get('plan',p.id);
-    try{const r=await generate(p,'자동 기획');await ctx.reload();const current=get('plan',p.id),auto=current?.enabled&&current.autoPublish&&isDeepStrictEqual(current,revision);await transaction(async()=>{for(const id of r.ids){const post=get('content',id);if(auto){const account=list('channel').find(a=>accountFits(a,post)&&a.verifiedAt);if(account&&post.channel!=='instagram'){try{preflight(post);await writeContent(id,{...post,status:'scheduled',scheduledAt:now(),account:account.id});}catch(e){await writeContent(id,{...post,error:e.message});}}}}await put('plan',p.id,{...current,lastResult:'초안 '+r.ids.length+'개 생성 · 게시 상태는 콘텐츠 목록에서 확인'});});}
+    try{const r=await generate(p,'자동 기획');await ctx.reload();const current=get('plan',p.id),auto=current?.enabled&&current.autoPublish&&isDeepStrictEqual(current,revision);await transaction(async()=>{for(const id of r.ids){const post=get('content',id);if(auto){const account=list('channel').find(a=>accountFits(a,post)&&a.verifiedAt);if(account&&!requiresApproval(post)){try{preflight(post);await writeContent(id,{...post,status:'scheduled',scheduledAt:now(),account:account.id});}catch(e){await writeContent(id,{...post,error:e.message});}}}}await put('plan',p.id,{...current,lastResult:'초안 '+r.ids.length+'개 생성 · 게시 상태는 콘텐츠 목록에서 확인'});});}
     catch(e){await put('plan',p.id,{...get('plan',p.id),lastResult:e.message});}
    }
   }finally{workerBusy=false;}
@@ -300,7 +331,7 @@ async function controller(options){
     return reply({ok:true});
    }
     if(['/api/content','/api/prompt','/api/plan','/api/channel'].includes(route)){snsScope(v.service,v.business||'platform');if(v.id){const old=get(route==='/api/plan'?'plan':route==='/api/channel'?'channel':'content',v.id);if(old)snsScope(old.service,old.business||'platform');}}
-    if(/^\/api\/(?:content\/(?:schedule|pause|manual|cancel|publish|check)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p){snsScope(p.service,p.business||'platform');if(route!=='/api/content/cancel'&&!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');}}
+    if(/^\/api\/(?:content\/(?:schedule|pause|manual|cancel|publish|check|reconcile)|studio\/(?:duplicate|repurpose|restore|manual))$/.test(route)){const p=get('content',v.id);if(p){snsScope(p.service,p.business||'platform');if(route!=='/api/content/cancel'&&!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');}}
     if(route==='/api/channel/verify'){const a=get('channel',v.id);if(a){snsScope(a.service,a.business||'platform');if(!CHANNELS.includes(a.channel))fail('운영에서 제외된 채널입니다.');}}
    if(route==='/api/naver/config'){
     if(options.demo)fail('네이버 연결은 운영 설정에서 등록하세요.',403);
@@ -334,6 +365,7 @@ async function controller(options){
     if(!['todo','doing','done','hold'].includes(v.status))fail('업무 상태를 확인하세요.');await put('task',id,{service:v.service,business:v.business||'platform',title:text(v.title,'업무 제목',200),note:text(v.note||'','업무 내용',2000,true),assignee:text(v.assignee||'','담당자',80,true),due:v.due?date(v.due):'',status:v.status,priority:['normal','high'].includes(v.priority)?v.priority:'normal',createdAt:old?.createdAt||now()});await audit(email,'task.saved',id);
    }else if(route==='/api/service'){const id='site-'+crypto.randomUUID();const name=text(v.name,'서비스 이름',60);if(allServices().some(s=>s.name.toLowerCase()===name.toLowerCase()))fail('이미 등록된 서비스입니다.',409);const url=v.url?String(await publicURL(v.url)):'';await put('service',id,{name,url,root:'',ref:null,note:'등록됨 · 수집 경로 연결 필요'});await audit(email,'service.registered',id);}
    else if(route==='/api/channel'){
+    if(v.channel==='youtube')fail('YouTube는 공식 Google OAuth로 연결하세요.');
     if(Object.hasOwn(MANUAL_HOSTS,v.channel))fail('이 채널은 API 계정 연결을 지원하지 않습니다. 직접 게시 후 발행 URL을 등록하세요.');
     if(!CHANNELS.includes(v.channel)||!allServices().some(s=>s.id===v.service))fail('서비스/채널을 확인하세요.');const id=v.id||crypto.randomUUID(),old=get('channel',id);
     if(v.id&&!old)fail('계정이 없습니다.',404);if(old&&(old.service!==v.service||old.channel!==v.channel))fail('기존 계정의 서비스·채널은 변경할 수 없습니다. 새 계정으로 등록하세요.');
@@ -358,12 +390,12 @@ async function controller(options){
    else if(route==='/api/studio/preview')return reply(preview(v));
    else if(route==='/api/studio/duplicate'||route==='/api/studio/repurpose'){
     const id=text(v.id,'콘텐츠',80),p=get('content',id);if(!p)fail('콘텐츠가 없습니다.',404);if(platformExcluded(p))fail('플랫폼 삭제로 제외된 콘텐츠는 집계 복원 후 복제할 수 있습니다.',409);scope(p.service,p.business||'platform');
-    const records=route.endsWith('/repurpose')?repurpose(p,v.channels):[{channel:p.channel,title:p.title,body:p.body,media:p.media,slides:p.slides}];
+    const records=route.endsWith('/repurpose')?repurpose(p,v.channels):[{channel:p.channel,title:p.title,body:p.body,media:p.media,slides:p.slides,videoUrl:p.videoUrl,altText:p.altText}];
     return reply(await createDrafts({...p,id},records,email,route.endsWith('/repurpose')?'content.repurposed':'content.duplicated'));
    }else if(route==='/api/studio/restore'){
     const id=text(v.id,'콘텐츠',80),p=get('content',id),revisionId=text(v.revisionId,'이전 버전',80),r=get('content-revision',revisionId);
     if(!p||!r||r.contentId!==id)fail('복원할 콘텐츠와 이전 버전을 확인하세요.',404);if(p.externalId||['published','publishing'].includes(p.status))fail('게시된 콘텐츠는 새 초안으로 작성하세요.');scope(p.service,p.business||'platform');checkVersion(v.version,p,true);
-    const uncertain=!!p.uncertain||p.status==='review';await saveContent(id,p,{...p,title:text(r.title,'제목',300),body:text(r.body,'본문',Object.hasOwn(MANUAL_HOSTS,p.channel)?CHANNEL_LIMITS[p.channel]:20000),seo:validateSEO(r.seo),media:r.media||'',slides:r.slides||[],status:uncertain?'review':'draft',uncertain,account:null,container:null,scheduledAt:null,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,restoredFrom:revisionId},email,'restored',revisionId);
+    const uncertain=!!p.uncertain||p.status==='review';await saveContent(id,p,{...p,title:text(r.title,'제목',300),body:text(r.body,'본문',Object.hasOwn(MANUAL_HOSTS,p.channel)?CHANNEL_LIMITS[p.channel]:20000),seo:validateSEO(r.seo),media:r.media||'',slides:r.slides||[],...videoFields(r),status:uncertain?'review':'draft',uncertain,account:null,container:null,scheduledAt:null,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,restoredFrom:revisionId},email,'restored',revisionId);
    }else if(route==='/api/studio/manual'||route==='/api/content/manual'){
     const id=text(v.id,'콘텐츠',80),blog=route==='/api/content/manual',initial=get('content',id);if(!initial||(blog?!manualBlog(initial):!Object.hasOwn(MANUAL_HOSTS,initial.channel)&&!SOCIAL_URL_CHANNELS.includes(initial.channel)))fail('직접 게시할 초안을 확인하세요.');
     const link=new URL(httpsURL(v.url,'발행 URL',false));if(link.port||/^https:\/\/[^/]+:\d+(?:\/|$)/i.test(v.url.trim())||v.url.includes('\\')||link.pathname==='/')fail('해당 채널의 발행 글 URL을 입력하세요.');
@@ -476,38 +508,80 @@ async function controller(options){
     if(rawSlides.length&&!media)fail('첫 번째 이미지 주소를 입력하세요.');
     const slides=await Promise.all(rawSlides.map(async url=>String(await publicURL(url))));
     if(new Set([media,...slides]).size!==slides.length+1)fail('각 슬라이드에 서로 다른 이미지 주소를 입력하세요.');
-    const uncertain=!!old?.uncertain||old?.status==='review';await saveContent(id,old,{...old,service:v.service,business:v.business||'platform',channel:v.channel,...(v.channel==='blog'?{blogTarget:['tistory','wordpress'].includes(v.blogTarget)?v.blogTarget:old?.blogTarget||(v.service==='tistory'?'tistory':'wordpress')}:{}),campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),growthCampaign:growthCampaign(v.growthCampaign??old?.growthCampaign,v.service),title:text(v.title,'제목',300),body:text(v.body,'본문',Object.hasOwn(MANUAL_HOSTS,v.channel)?CHANNEL_LIMITS[v.channel]:20000),seo:validateSEO(v.seo??old?.seo),media,slides,status:uncertain?'review':'draft',uncertain,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,account:null,container:null,scheduledAt:null},email);
+    const prior=old?.channel===v.channel?videoFields(old):videoFields(),extras=videoFields();
+    if(v.channel==='instagram'){
+     const videoUrl=text(v.videoUrl??prior.videoUrl,'릴스 영상 주소',2000,true);
+     extras.videoUrl=videoUrl?String(await publicURL(videoUrl)):'';
+     extras.altText=text(v.altText??prior.altText,'이미지 대체 텍스트',1000,true);
+     if(extras.videoUrl&&(media||slides.length||extras.altText)||extras.altText&&(!media||slides.length))fail('릴스와 사진을 구분하고 대체 텍스트는 단일 이미지에만 사용하세요.');
+    }else if(v.channel==='youtube'){
+     const reference=text(v.youtubeVideoId??prior.youtubeVideoId,'YouTube 영상 주소',2000,true);
+     extras.youtubeVideoId=youtube.videoId(reference);
+     if(reference&&!extras.youtubeVideoId)fail('YouTube Studio·동영상·Shorts 공식 주소 또는 영상 ID를 입력하세요.');
+     extras.youtubeMadeForKids=optionalChoice(v.youtubeMadeForKids??prior.youtubeMadeForKids,'아동용');
+     extras.youtubeSynthetic=optionalChoice(v.youtubeSynthetic??prior.youtubeSynthetic,'변경·합성 콘텐츠');
+    }
+    const uncertain=!!old?.uncertain||old?.status==='review';await saveContent(id,old,{...old,service:v.service,business:v.business||'platform',channel:v.channel,...(v.channel==='blog'?{blogTarget:['tistory','wordpress'].includes(v.blogTarget)?v.blogTarget:old?.blogTarget||(v.service==='tistory'?'tistory':'wordpress')}:{}),campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),growthCampaign:growthCampaign(v.growthCampaign??old?.growthCampaign,v.service),title:text(v.title,'제목',300),body:text(v.body,'본문',Object.hasOwn(MANUAL_HOSTS,v.channel)?CHANNEL_LIMITS[v.channel]:20000),seo:validateSEO(v.seo??old?.seo),media,slides,...extras,status:uncertain?'review':'draft',uncertain,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,account:null,container:null,scheduledAt:null},email);
    }else if(route==='/api/content/schedule'){
-    const p=get('content',v.id),a=get('channel',v.account);
+    const p=get('content',v.id);let a=get('channel',v.account);
     if(!p||!['draft','review','approved','scheduled','paused'].includes(p.status)||p.externalId)fail('예약할 초안을 확인하세요.');
-    const instagram=p.channel==='instagram';
-    checkVersion(v.version,p,instagram);
-    if(instagram&&v.approved!==true)fail('콘텐츠와 게시 계정, 예약 시각을 확인한 뒤 승인하세요.');
+    const gated=requiresApproval(p);
+    checkVersion(v.version,p,gated);
+    if(gated&&v.approved!==true)fail('콘텐츠와 게시 계정, 예약 시각을 확인한 뒤 승인하세요.');
     if((p.status==='review'||p.uncertain)&&v.checked!==true)fail('채널에서 게시되지 않았음을 먼저 확인하세요.');
-    if(!a||!a.verifiedAt||!accountFits(a,p)||instagram&&!a.userId)fail('해당 브랜드 또는 SNS 공용의 확인된 계정을 선택하세요.');
+    if(!a||!a.verifiedAt||!accountFits(a,p)||gated&&!a.userId)fail('해당 브랜드 또는 SNS 공용의 확인된 계정을 선택하세요.');
     preflight(p);
     const timestamp=v.at?Date.parse(v.at):Date.now();
-    if(!Number.isFinite(timestamp)||instagram&&(!v.at||timestamp<=Date.now()))fail('게시할 미래 시각을 선택하세요.');
-    const scheduled={...p,status:'scheduled',uncertain:false,scheduledAt:new Date(timestamp).toISOString(),account:v.account,error:null,...(instagram?{container:null,containerChecks:0}:{})};
+    if(!Number.isFinite(timestamp)||gated&&(!v.at||timestamp<=Date.now()))fail('게시할 미래 시각을 선택하세요.');
+    if(p.channel==='youtube'&&!options.demo){
+     a=await ensureFresh(ctx,{...a,id:v.account});
+     await youtube.checkReady(p,a,decrypt(a.secret));
+     a=get('channel',v.account);
+    }
+    const scheduled={...p,status:'scheduled',uncertain:false,scheduledAt:new Date(timestamp).toISOString(),account:v.account,error:null,...(p.channel==='instagram'?{container:null,containerChecks:0}:{})};
     await transaction(async()=>{
+     if(p.channel==='youtube')await ctx.lock('youtube-video:'+p.youtubeVideoId);
      await ctx.lockRow('channel',v.account);
      await ctx.reload();
      if(!isDeepStrictEqual(get('channel',v.account),a)||!isDeepStrictEqual(get('content',v.id),p))fail('계정 또는 초안이 변경됐습니다. 다시 확인하세요.',409);
-     if(instagram)scheduled.approval={at:now(),key:instagramApprovalKey({...scheduled,id:v.id},a)};
+     if(p.channel==='youtube'&&list('content').some(row=>row.id!==v.id&&row.channel==='youtube'&&row.youtubeVideoId===p.youtubeVideoId&&['scheduled','paused','publishing','published','review'].includes(row.status)))fail('같은 YouTube 영상의 기존 예약 또는 확인 건을 먼저 처리하세요.',409);
+     if(gated)scheduled.approval={at:now(),key:publicationApprovalKey({...scheduled,id:v.id},a)};
      await writeContent(v.id,scheduled);
-     await audit(email,instagram?'content.instagram_approved':'content.scheduled',v.id);
+     await audit(email,gated?'content.'+p.channel+'_approved':'content.scheduled',v.id);
     });
    }else if(route==='/api/content/pause'||route==='/api/content/cancel'){
     const p=get('content',v.id),pause=route==='/api/content/pause';
-    if(!p||!(pause?p.channel==='instagram'&&p.status==='scheduled':['scheduled','draft','approved','paused','review'].includes(p.status)))fail('제어할 수 있는 게시 예약을 확인하세요.');
-    checkVersion(v.version,p,pause||p.channel==='instagram');
+    if(!p||!(pause?requiresApproval(p)&&p.status==='scheduled':['scheduled','draft','approved','paused','review'].includes(p.status)))fail('제어할 수 있는 게시 예약을 확인하세요.');
+    checkVersion(v.version,p,pause||requiresApproval(p));
     const status=pause?'paused':p.uncertain||p.status==='review'?'review':'draft';
     await transaction(async()=>{
      await writeContent(v.id,{...p,status,scheduledAt:pause?p.scheduledAt:null,approval:null});
-     await audit(email,pause?'content.instagram_paused':'content.cancelled',v.id);
+     await audit(email,pause?'content.'+p.channel+'_paused':'content.cancelled',v.id);
     });
    }
    else if(route==='/api/content/publish'){await publish(text(v.id,'콘텐츠',80),email);}
+   else if(route==='/api/content/reconcile'){
+    if(options.demo)fail('샘플에서 YouTube 공개 결과를 조회할 수 없습니다.',404);
+    const id=text(v.id,'콘텐츠',80),p=get('content',id);
+    if(p?.channel!=='youtube'||p.status!=='review'||!p.uncertain)fail('확인이 필요한 YouTube 예약을 선택하세요.');
+    checkVersion(v.version,p,true);
+    const record=get('channel',p.account);
+    if(!publicationApproved({...p,id},record)||!record.verifiedAt||!accountFits(record,p))fail('승인했던 YouTube 채널을 확인하세요.',409);
+    const account=await ensureFresh(ctx,{...record,id:p.account}),config=decrypt(account.secret);
+    const video=await youtube.readVideo(p.youtubeVideoId,config.token);
+    if(video?.snippet?.channelId!==account.userId)fail('연결 채널의 영상이 아닙니다.',409);
+    if(video.status?.privacyStatus!=='public')fail('아직 공개되지 않았습니다. Studio 상태를 확인한 뒤 다시 승인하세요.',409);
+    const publishedAt=Date.parse(video.snippet.publishedAt);
+    if(!Number.isFinite(publishedAt)||publishedAt>Date.now())fail('YouTube의 공개 시각을 아직 확인할 수 없습니다.',409);
+    await transaction(async()=>{
+     await ctx.lockRow('channel',p.account);
+     await ctx.lockRow('content',id);
+     await ctx.reload();
+     if(!isDeepStrictEqual(get('content',id),p)||get('channel',p.account)?.secret!==account.secret)fail('계정 또는 예약이 변경됐습니다.',409);
+     await writeContent(id,{...p,status:'published',externalId:video.id,link:youtube.watchUrl(video.id),publishedAt:new Date(publishedAt).toISOString(),checkedAt:now(),checkStatus:'visible',uncertain:false,error:null});
+     await audit(email,'content.youtube_reconciled',id);
+    });
+   }
    else if(route==='/api/content/check'){
     const p=get('content',text(v.id,'콘텐츠',80));if(!p||p.status!=='published')fail('게시 완료된 콘텐츠를 선택하세요.');
     const registrationOnly=Object.hasOwn(MANUAL_HOSTS,p.channel)||p.manual===true&&!manualBlog(p);let a=get('channel',p.account);let result;
@@ -517,7 +591,7 @@ async function controller(options){
    }
    else if(route==='/api/plan'){
     scope(v.service,v.business||'platform');if(!Array.isArray(v.channels)||!v.channels.length||v.channels.some(x=>!CHANNELS.includes(x)))fail('채널을 선택하세요.');if(!Number.isInteger(v.days)||v.days<1||v.days>365)fail('생성 주기는 1~365일입니다.');
-    const id=v.id||crypto.randomUUID(),p=get('plan',id);if(v.id&&!p)fail('기획이 없습니다.',404);await put('plan',id,{...p,service:v.service,business:v.business||'platform',topic:text(v.topic,'주제',1200),context:text(v.context||'','공개 참고자료',5000,true),tone:text(v.tone||'','어조',200,true),instructions:text(v.instructions||'','추가 지시',5000,true),channels:[...new Set(v.channels)],days:v.days,enabled:v.enabled===true,autoPublish:v.autoPublish===true,nextAt:v.at?new Date(v.at).toISOString():new Date(Date.now()+86400000).toISOString()});await audit(email,'content.plan',id);
+    const id=v.id||crypto.randomUUID(),p=get('plan',id);if(v.id&&!p)fail('기획이 없습니다.',404);await put('plan',id,{...p,service:v.service,business:v.business||'platform',topic:text(v.topic,'주제',1200),context:text(v.context||'','공개 참고자료',5000,true),tone:text(v.tone||'','어조',200,true),instructions:text(v.instructions||'','추가 지시',5000,true),channels:[...new Set(v.channels)],youtubeDrafts:v.channels.includes('youtube'),days:v.days,enabled:v.enabled===true,autoPublish:v.autoPublish===true,nextAt:v.at?new Date(v.at).toISOString():new Date(Date.now()+86400000).toISOString()});await audit(email,'content.plan',id);
    }else if(route==='/api/member')fail('계정은 공통 로그인 화면에서 가입합니다. 운영 권한은 서버에서만 지정합니다.',403);
    else fail('요청을 찾을 수 없습니다.',404);
    await ctx.reload();return reply(view());

@@ -3,21 +3,26 @@
 window.NuriOperator = (() => {
  const auditLabels = {
   'content.instagram_approved': 'Instagram 게시를 승인했습니다',
+  'content.youtube_approved': 'YouTube 영상 공개를 승인했습니다',
+  'content.youtube_reconciled': 'YouTube 공개 결과를 확인했습니다',
+  'content.youtube_paused': 'YouTube 공개 예약을 일시정지했습니다',
   'content.instagram_paused': 'Instagram 예약을 일시정지했습니다',
   'content.cancelled': '게시 예약을 취소했습니다',
   'content.published': '채널에 게시를 완료했습니다',
   'content.publish_review': '채널에서 게시 결과를 확인해야 합니다',
   'content.sample_published': '샘플 게시를 완료했습니다',
  };
- const instagram = p => snsPost(p) && p.channel === 'instagram';
+ const supported = p => snsPost(p) && requiresApproval(p);
+ const channelName = p => p.channel==='youtube'?'YouTube':'Instagram';
+ const mediaReady = p => p.channel==='youtube'?!!p.youtubeVideoId&&typeof p.youtubeMadeForKids==='boolean'&&typeof p.youtubeSynthetic==='boolean':!!webLink(p.videoUrl||p.media);
  const waiting = p => ['draft', 'approved', 'review'].includes(p.status) ||
   p.status === 'scheduled' && !p.approval;
  const dateField = at => at && Date.parse(at) > Date.now()
   ? new Date(Date.parse(at) + 9 * 3600000).toISOString().slice(0, 16)
   : '';
- const accountName = account => account?.username ? account.label + ' · @' + account.username : account?.label;
+ const accountName = account => account?.username ? account.label + ' · ' + (account.channel==='youtube'?'':'@') + account.username : account?.label;
  const pagesToOpen = [
-  ['approval', '게시 승인함', '승인 예약 일시정지 인스타그램 게시'],
+  ['approval', '게시 승인함', '승인 예약 일시정지 인스타그램 유튜브 게시'],
   ['studio', '콘텐츠 작업실', '새 카드뉴스 생성 작성 초안 만들기'],
   ['calendar', '게시 캘린더', '일정 달력 스케줄'],
   ['overview', '전체 현황', '대시보드 홈 요약'],
@@ -27,42 +32,51 @@ window.NuriOperator = (() => {
 
  function scheduleForm(post) {
   const accounts = data.accounts.filter(a => accountFits(a, post) && a.verifiedAt);
-  const media = webLink(post.media);
+  const ready = mediaReady(post);
+  const channel = channelName(post);
   const accountOptions = accounts.map(account => [account.id, accountName(account)]);
   return `<form class="schedule-form approval-form form-grid" data-id="${esc(post.id)}">
    <input type="hidden" name="version" value="${post.version ?? 1}">
    ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account)}
    ${formField('게시 시각 · 한국 시간', 'at', dateField(post.scheduledAt), 'datetime-local', 'required')}
-   ${post.uncertain || post.status === 'review' ? `<div class="full">${checkbox('Instagram에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
-   <label class="check-label full"><input type="checkbox" name="approved" required>위 원고와 이미지, 선택한 계정과 시각을 확인했습니다.</label>
-   <div class="full"><button class="btn primary" type="submit" ${!accounts.length || !media ? 'disabled' : ''}>${post.status === 'paused' ? '다시 승인하고 예약' : '승인하고 예약'}</button></div>
-   ${!accounts.length ? '<p class="caption full">설정에서 Instagram 계정을 연결하고 확인하세요.</p>' : ''}
-   ${!media ? '<p class="caption full">원고에 공개 이미지 주소를 추가해야 승인할 수 있습니다.</p>' : ''}
+   ${post.uncertain || post.status === 'review' ? `<div class="full">${checkbox(channel+'에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
+   <label class="check-label full"><input type="checkbox" name="approved" required>위 원고와 미디어, 선택한 계정과 시각을 확인했습니다.</label>
+   <div class="full"><button class="btn primary" type="submit" ${!accounts.length || !ready ? 'disabled' : ''}>${post.status === 'paused' ? '다시 승인하고 예약' : '승인하고 예약'}</button></div>
+   ${!accounts.length ? '<p class="caption full">설정에서 '+channel+' 계정을 연결하고 확인하세요.</p>' : ''}
+   ${!ready ? '<p class="caption full">'+(post.channel==='youtube'?'원고에 비공개 영상과 공개 설정을 등록하세요.':'원고에 공개 사진 또는 릴스 주소를 추가하세요.')+'</p>' : ''}
   </form>`;
  }
 
  function contentControl(post) {
-  return `<button class="btn" data-page="approval" data-approval-id="${esc(post.id)}">${post.status === 'scheduled' && post.approval ? '예약 관리' : '승인함에서 검토'}</button>`;
+  return `<button type="button" class="btn" data-page="approval" data-approval-id="${esc(post.id)}">${post.status === 'scheduled' && post.approval ? '예약 관리' : '승인함에서 검토'}</button>`;
  }
 
  function card(post) {
   const account = data.accounts.find(a => a.id === post.account);
   const media = [post.media, ...(post.slides || [])].map(webLink).filter(Boolean);
+  const isYouTube=post.channel==='youtube',channel=channelName(post);
+  const video=isYouTube&&/^[A-Za-z0-9_-]{11}$/.test(post.youtubeVideoId||'')
+   ? 'https://studio.youtube.com/video/'+post.youtubeVideoId+'/edit' : webLink(post.videoUrl);
+  const yesNo=value=>value===true?'예':value===false?'아니요':'미입력';
   const status = post.status === 'scheduled' && !post.approval ? '재승인 필요' : statusLabels[post.status];
   const actions = session.readOnly ? '' : (post.status === 'scheduled' && post.approval ? button('일시정지', 'pause', post.id) : '')
    + (['paused', 'scheduled'].includes(post.status) ? button('예약 취소', 'cancel', post.id) : '')
+   + (isYouTube && post.status==='review' && post.uncertain ? button('YouTube 공개 여부 확인', 'youtube-reconcile', post.id) : '')
    + (post.status !== 'publishing' ? button('원고 수정', 'content-edit', post.id) : '');
   const showForm = !session.readOnly && (waiting(post) || post.status === 'paused');
   return `<article class="approval-card" id="approval-${esc(post.id)}">
    <div class="approval-card-head">
-    <div><span class="caption">Instagram${account ? ' · ' + esc(accountName(account)) : ''}</span><h3>${esc(post.title)}</h3></div>
+    <div><span class="caption">${channel}${account ? ' · ' + esc(accountName(account)) : ''}</span><h3>${esc(post.title)}</h3></div>
     <span class="approval-state ${waiting(post) ? 'needs-review' : ''}">${esc(status)}</span>
    </div>
-   <p class="caption">${post.status === 'publishing' ? 'Instagram 응답을 기다리는 중입니다.' : post.scheduledAt ? dt(post.scheduledAt) + ' KST' : '게시 계정과 일정을 선택해 주세요.'}${post.approval ? ' · 승인 ' + dt(post.approval.at) : ''}</p>
+   <p class="caption">${post.status === 'publishing' ? channel+' 응답을 기다리는 중입니다.' : post.scheduledAt ? dt(post.scheduledAt) + ' KST' : '게시 계정과 일정을 선택해 주세요.'}${post.approval ? ' · 승인 ' + dt(post.approval.at) : ''}</p>
    ${post.error ? `<p class="warning">${esc(post.error)}</p>` : ''}
    <details class="approval-preview">
-    <summary>원고와 이미지 보기</summary>
+    <summary>원고와 미디어 보기</summary>
     <p class="approval-caption">${esc(post.body)}</p>
+    ${video?`<p><a class="btn" href="${esc(video)}" target="_blank" rel="noopener noreferrer">${isYouTube?'YouTube Studio에서 영상 확인':'릴스 영상 확인'}</a></p>`:''}
+    ${isYouTube?`<p class="caption">아동용 ${yesNo(post.youtubeMadeForKids)} · 변경·합성 ${yesNo(post.youtubeSynthetic)}</p>`:''}
+    ${post.altText?`<p class="caption">이미지 대체 텍스트 · ${esc(post.altText)}</p>`:''}
     ${media.length ? `<div class="approval-media">${media.map((url, i) => `<a class="approval-image" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" loading="lazy" referrerpolicy="no-referrer" alt="게시 이미지 ${i + 1}">${i + 1}번 이미지 ↗</a>`).join('')}</div>` : ''}
     ${showForm ? scheduleForm(post) : ''}
    </details>
@@ -71,11 +85,11 @@ window.NuriOperator = (() => {
  }
 
  function pendingCount() {
-  return data.contents.filter(p => instagram(p) && waiting(p)).length;
+  return data.contents.filter(p => supported(p) && waiting(p)).length;
  }
 
  function render() {
-  const posts = data.contents.filter(instagram);
+  const posts = data.contents.filter(supported);
   const titles = new Map(posts.map(p => [p.id, p.title]));
   const ongoing = posts.filter(p => ['scheduled', 'paused', 'publishing'].includes(p.status) && !waiting(p));
   const audit = data.audit.filter(event => titles.has(event.target) && auditLabels[event.action]).slice(0, 8);

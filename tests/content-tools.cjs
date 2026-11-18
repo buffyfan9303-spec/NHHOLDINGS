@@ -56,7 +56,7 @@ async function manualRegistrations(){
    await call(c,'/api/content/check',{id});const saved=await row(id);assert.equal(saved.status,'published');assert.equal(saved.checkStatus,'registered');assert.equal(saved.checkedAt,null);assert.equal(saved.externalId,'manual:https://example.invalid/post');assert.equal((await query('SELECT action FROM nh_audit WHERE target=$1 ORDER BY id DESC LIMIT 1',[id])).rows[0].action,'content.url_registration_checked');
   }
    {
-    const removed=['youtube','tiktok','facebook','linkedin','pinterest'],sourceId='legacy-source';await seed(sourceId,'blog');const original={title:'보존해야 할 레거시 제목',body:'보존할 본문',link:'https://legacy.example/post',externalId:'legacy-ext',status:'scheduled',scheduledAt:new Date(Date.now()-60000).toISOString()};
+    const removed=['tiktok','facebook','linkedin','pinterest'],sourceId='legacy-source';await seed(sourceId,'blog');const original={title:'보존해야 할 레거시 제목',body:'보존할 본문',link:'https://legacy.example/post',externalId:'legacy-ext',status:'scheduled',scheduledAt:new Date(Date.now()-60000).toISOString()};
     for(const channel of removed){
      await call(await controller({demo:false}),'/api/content',{service:'tistory',business:'platform',channel,title:'새 초안'},400);
      await call(await controller({demo:false}),'/api/studio/repurpose',{id:sourceId,channels:[channel]},400);
@@ -220,16 +220,16 @@ async function run(){
  assert.equal(preview({...input,seo:{...input.seo,affiliate:true}}).analysis.checks.find(c=>c.id==='disclosure').pass,false);
  assert.equal(preview({...input,body:'[광고] 이 글에는 제휴 수수료가 있습니다.\n'+input.body,seo:{...input.seo,affiliate:true}}).analysis.checks.find(c=>c.id==='disclosure').pass,true);
  assert.equal(preview({...input,body:'안'.repeat(301)+'\n제휴 수수료가 있습니다.',seo:{...input.seo,affiliate:true}}).analysis.checks.find(c=>c.id==='disclosure').pass,false);
-  const appLabels=/const labels=(\{[^;]+\});/.exec(fs.readFileSync('public/one/app.js','utf8'));assert(appLabels,'public channel labels are present');const appChannels=Object.keys(vm.runInNewContext('('+appLabels[1]+')')).sort();assert.deepEqual(appChannels,[...CHANNELS].sort(),'browser labels and server channel allowlist must match');for(const removed of ['youtube','tiktok','facebook','linkedin','pinterest'])assert(!appChannels.includes(removed),'removed channel remains visible: '+removed);
+  const appLabels=/const labels=(\{[^;]+\});/.exec(fs.readFileSync('public/one/app.js','utf8'));assert(appLabels,'public channel labels are present');const appChannels=Object.keys(vm.runInNewContext('('+appLabels[1]+')')).sort();assert.deepEqual(appChannels,[...CHANNELS].sort(),'browser labels and server channel allowlist must match');for(const removed of ['tiktok','facebook','linkedin','pinterest'])assert(!appChannels.includes(removed),'removed channel remains visible: '+removed);
   const channels=CHANNELS,limits=CHANNEL_LIMITS;
  for(const draft of repurpose({...input,body:'매우 긴 공개 서비스 안내입니다. '.repeat(500)},channels)){
   assert.match(draft.body,/규칙 기반 홍보 초안/);assert.match(draft.body,/https:\/\/example.com\/article/);assert(weight(draft.body,draft.channel)<=limits[draft.channel]);assert.equal(draft.ai,false);
-   if(draft.channel==='bluesky')assert.throws(()=>preflight({...draft,service:'tistory',media:'https://example.com/image.jpg'}),/자동 게시 API/);else preflight({...draft,service:'tistory',blogTarget:'wordpress',media:'https://example.com/image.jpg'});
+   if(draft.channel==='bluesky')assert.throws(()=>preflight({...draft,service:'tistory',media:'https://example.com/image.jpg'}),/자동 게시 API/);else if(draft.channel==='youtube')assert.throws(()=>preflight({...draft,service:'tistory'}),/YouTube 영상 주소/);else preflight({...draft,service:'tistory',blogTarget:'wordpress',media:'https://example.com/image.jpg'});
  }
-  const removedChannels=['youtube','tiktok','facebook','linkedin','pinterest'];for(const channel of removedChannels){assert.throws(()=>repurpose(input,[channel]),{status:400});assert.throws(()=>preflight({service:'tistory',channel,body:'과거 기록'}),/자동 게시 API|운영에서 제외/);assert.deepEqual(await inspectPublication({service:'tistory',channel,externalId:'legacy-id'},null,()=>assert.fail('removed channel verification must not call an external API')),{checkStatus:'unavailable'});}
+  const removedChannels=['tiktok','facebook','linkedin','pinterest'];for(const channel of removedChannels){assert.throws(()=>repurpose(input,[channel]),{status:400});assert.throws(()=>preflight({service:'tistory',channel,body:'과거 기록'}),/자동 게시 API|운영에서 제외/);assert.deepEqual(await inspectPublication({service:'tistory',channel,externalId:'legacy-id'},null,()=>assert.fail('removed channel verification must not call an external API')),{checkStatus:'unavailable'});}
   assert.throws(()=>preflight({service:'crm',channel:'x',body:'과거 기록'}),/독립 운영/);assert.equal(repurpose(input,['x','x']).length,1);assert.throws(()=>repurpose(input,['unknown']),{status:400});
  assert(repurpose({...input,body:'😀'.repeat(9999)},['blog'])[0].body.length<=20000);
  await manualRegistrations();
-  console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, five-channel repurposing, Bluesky manual URL/CAS/duplicates/retries/rollback/locks, removed-channel policy, daily audience growth validation and finance isolation');
+  console.log('PASS safe Markdown, SEO metadata/JSON-LD, disclosure checks, channel repurposing, Bluesky manual URL/CAS/duplicates/retries/rollback/locks, removed-channel policy, daily audience growth validation and finance isolation');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
