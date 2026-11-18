@@ -8,6 +8,7 @@ import {disconnectMail, mailAccessToken, mailConnection, saveMailApp, setMailPau
 
 test('personal Gmail uses send-only one-time OAuth and finishes only for the active selected connection', async t => {
   const origin = 'https://personal.example.invalid';
+  const alternate = 'https://personal-alternate.example.invalid';
   const scope = 'https://www.googleapis.com/auth/gmail.send';
   const clientId = 'synthetic.apps.googleusercontent.com';
   const clientSecret = 'synthetic-client-secret';
@@ -33,7 +34,7 @@ test('personal Gmail uses send-only one-time OAuth and finishes only for the act
   delete process.env.PERSONAL_MAIL_CLIENT_ID;
   delete process.env.PERSONAL_MAIL_CLIENT_SECRET;
   delete process.env.ALLOWED_ORIGINS;
-  delete process.env.VERCEL_URL;
+  process.env.VERCEL_URL = new URL(alternate).host;
   await db.exec("CREATE TABLE nh_documents(workspace text,kind text,id text,data jsonb,updated timestamptz DEFAULT now(),PRIMARY KEY(workspace,kind,id))");
   await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','access',$1,$2)", [guest.id,
     JSON.stringify({email: guest.email, status: 'approved', scope: 'personal'})]);
@@ -43,7 +44,7 @@ test('personal Gmail uses send-only one-time OAuth and finishes only for the act
   }};
   const jwt = (actor: string, session = '6d41a99a-a317-45d5-8c41-b031ca1eef6a') =>
     'e30.' + Buffer.from(JSON.stringify({sub: actor, session_id: session})).toString('base64url') + '.stub';
-  const post = (startOrigin = origin) => new NextRequest(origin + '/api/personal/mail', {method: 'POST',
+  const post = (startOrigin = origin, host = origin) => new NextRequest(host + '/api/personal/mail', {method: 'POST',
     headers: {Origin: startOrigin, Cookie: 'nh_access=' + jwt(owner.id)}});
   let pendingConsent: URL | undefined;
   let exchanged = 0, refreshed = 0;
@@ -67,15 +68,27 @@ test('personal Gmail uses send-only one-time OAuth and finishes only for the act
     assert.equal(form.get('refresh_token'), 'synthetic-refresh');
     return Response.json({access_token: 'synthetic-renewed', expires_in: 3600, token_type: 'Bearer'});
   });
-  assert.equal((await mailConnection(owner.id)).configured, false);
+  const disconnected = await mailConnection(owner.id);
+  assert.equal(disconnected.configured, false);
+  assert.equal(disconnected.redirectUri, origin + '/api/personal/mail/oauth');
+  process.env.PERSONAL_MAIL_CLIENT_ID = 'default-test.apps.googleusercontent.com';
+  process.env.PERSONAL_MAIL_CLIENT_SECRET = 'synthetic-default-credential';
+  const defaultConnection = await mailConnection(guest.id);
+  assert.equal(defaultConnection.configured, true);
+  assert.equal(defaultConnection.clientId, '');
+  delete process.env.PERSONAL_MAIL_CLIENT_ID;
+  delete process.env.PERSONAL_MAIL_CLIENT_SECRET;
   assert.equal((await saveMailApp(owner.id, {clientId, clientSecret})).configured, true);
   assert.equal((await mailConnection(guest.id)).configured, false);
+  assert.equal((await mailConnection(owner.id)).clientId, clientId);
   assert.equal(JSON.stringify(await mailConnection(owner.id)).includes(clientSecret), false);
   await assert.rejects(startMailAuth(post('https://other.example.invalid'), owner.id), {status: 403});
+  await assert.rejects(startMailAuth(post(alternate, alternate), owner.id), /등록된 사이트 주소/);
   async function connect() {
     const start = await startMailAuth(post(), owner.id);
     pendingConsent = new URL((await start.json()).url);
     assert.equal(pendingConsent.origin, 'https://accounts.google.com');
+    assert.equal(pendingConsent.searchParams.get('redirect_uri'), disconnected.redirectUri);
     assert.equal(pendingConsent.searchParams.get('scope'), scope);
     assert.equal(pendingConsent.searchParams.get('code_challenge_method'), 'S256');
     const cookie = start.cookies.get('nh_personal_mail')!.value;

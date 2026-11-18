@@ -11,6 +11,7 @@ import {createPersonalCard} from '../src/lib/personal-cards';
 import {getPersonalCardMedia} from '../src/lib/personal-card-media';
 
 const origin = 'https://personal-social.example.invalid';
+const alternate = 'https://personal-social-alt.example.invalid';
 const accounts = {
   owner: {
     id: 'd3bf51db-3bc0-4c0a-a66c-18881b2abb81', email: 'owner@example.invalid',
@@ -30,11 +31,13 @@ const env = {
   DATABASE_URL: 'postgres://test-only', MARKET_ORIGIN: origin, MARKET_MODE: 'test',
   SUPABASE_URL: 'https://social-auth.example.invalid', SUPABASE_PUBLISHABLE_KEY: 'fixture-only',
   SESSION_SECRET: 'fixture-personal-social-test-secret-only', OPERATOR_EMAIL: accounts.owner.email, OPERATOR_USER_ID: accounts.owner.id,
+  VERCEL_URL: new URL(alternate).host,
+  PERSONAL_SOCIAL_X_CLIENT_ID: 'default-x-app-id', PERSONAL_SOCIAL_X_CLIENT_SECRET: 'synthetic-default-x-credential',
 };
 
-function req(who?: Person, input?: Record<string, unknown>, options: {id?: string; cookie?: string; path?: string; from?: string} = {}) {
+function req(who?: Person, input?: Record<string, unknown>, options: {id?: string; cookie?: string; path?: string; from?: string; host?: string} = {}) {
   const account = who ? accounts[who] : undefined;
-  return new NextRequest(origin + (options.path ?? '/api/personal/social'), {
+  return new NextRequest((options.host ?? origin) + (options.path ?? '/api/personal/social'), {
     method: input ? 'POST' : 'GET',
     headers: {
       'Content-Type': 'application/json', Origin: options.from ?? origin,
@@ -203,7 +206,14 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     assert.deepEqual((await state('friend')).accounts,[]);
     await api('owner',{action:'configure',provider:'threads',clientId:'2731',clientSecret:'owner-app-key'});
     await api('friend',{action:'configure',provider:'threads',clientId:'2732',clientSecret:'friend-app-key'});
-    assert.deepEqual((await state('friend')).providers.find((p: {id:string})=>p.id==='threads'),{id:'threads',name:'Threads',configured:true,appSource:'personal'});
+    const friendState = await responseJSON(await list(req('friend',undefined,{host:alternate})));
+    assert.deepEqual(friendState.providers.find((p: {id:string})=>p.id==='threads'),{id:'threads',name:'Threads',configured:true,
+      appSource:'personal',clientId:'2732',redirectUri:origin+'/api/personal/social/threads'});
+    assert.deepEqual(friendState.providers.find((p: {id:string})=>p.id==='x'),{id:'x',name:'X',configured:true,
+      appSource:'default',redirectUri:origin+'/api/personal/social/x'});
+    assert.equal(JSON.stringify(friendState).includes('friend-app-key'),false);
+    const wrongHost = await change(req('friend',{action:'connect',provider:'threads',label:'wrong host'},{host:alternate,from:alternate}));
+    assert.match((await responseJSON(wrongHost,403)).error,/등록된 사이트 주소/);
 
     async function begin(who: Person,provider = 'threads') {
       const response = await change(req(who,{action:'connect',provider,label:who+' saved label'}));
@@ -303,6 +313,8 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
       return (await state(who)).accounts.find((item: {provider:string})=>item.provider===provider);
     }
     const instagram = await connectProvider('owner','instagram','4001');
+    const instagramApp = (await state('owner')).providers.find((p:{id:string})=>p.id==='instagram');
+    assert.deepEqual({clientId:instagramApp.clientId,version:instagramApp.version},{clientId:'4001',version:'v25.0'});
     const card = await createPersonalCard(accounts.owner.id,{title:'내 카드뉴스',slides:[
       {headline:'표지',body:'첫 페이지'},
       {headline:'작업 가이드',body:'두 번째 페이지',label:'알아보기'},

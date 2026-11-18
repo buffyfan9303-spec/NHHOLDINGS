@@ -28,3 +28,63 @@ test('Google PKCE binds the browser, checks identity and preserves marketplace r
   current={...owner,email_confirmed_at:''};const unconfirmed=await callback(req('/api/auth/callback?code=test-code','nh_oauth='+cookie));assert(unconfirmed.headers.get('location')!.endsWith('/nurimarket/login?error=google_failed'));assert(!unconfirmed.cookies.get('nh_access'));
  }finally{globalThis.fetch=previousFetch;g.nhPool=previousPool;for(const key of Object.keys(process.env))if(!(key in previousEnv))delete process.env[key];Object.assign(process.env,previousEnv);}
 });
+
+test('signup confirmation resend uses the canonical callback and keeps upstream account state private',async()=>{
+ const {POST}=await import('../src/app/api/auth/resend/route');
+ const origin='https://resend.example.invalid',auth='https://auth-resend.example.invalid';
+ const env={MARKET_ORIGIN:origin,SUPABASE_URL:auth,SUPABASE_PUBLISHABLE_KEY:'test-publishable'};
+ const previous=Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key]]));
+ const oldFetch=globalThis.fetch;
+ let calls=0,result=200;
+ const send=(email:unknown,from=origin,source='192.0.2.61')=>POST(new NextRequest(origin+'/api/auth/resend',{
+  method:'POST',headers:{Origin:from,'Content-Type':'application/json','x-real-ip':source},
+  body:JSON.stringify({email,redirect_to:'https://other.example.invalid',type:'email_change',password:'ignored'}),
+ }));
+ try{
+  Object.assign(process.env,env);
+  globalThis.fetch=async(input,init)=>{
+   calls++;
+   const url=new URL(String(input));
+   assert.equal(url.origin,auth);
+   assert.equal(url.pathname,'/auth/v1/resend');
+   assert.equal(url.searchParams.get('redirect_to'),origin+'/login');
+   assert.equal(init?.method,'POST');
+   const body=JSON.parse(String(init?.body));
+   assert.deepEqual(Object.keys(body).sort(),['email','type']);
+   assert.equal(body.type,'signup');
+   assert.match(body.email,/^[a-z0-9]+@example\.invalid$/);
+   if(result===0)throw new TypeError('private error text');
+   return Response.json({private:'unverified only'},{status:result});
+  };
+  assert.equal((await send('bad@example.invalid','https://other.example.invalid')).status,403);
+  assert.equal((await send('not-an-email')).status,400);
+  assert.equal(calls,0);
+  const first=await send(' FIRST@EXAMPLE.INVALID ');
+  assert.equal(first.status,200);
+  assert.equal(first.headers.get('cache-control'),'no-store');
+  assert.equal(first.headers.get('set-cookie'),null);
+  const generic=await first.json();
+  assert.deepEqual(Object.keys(generic).sort(),['message','ok']);
+  const repeated=await send('first@example.invalid',origin,'192.0.2.62');
+  assert.equal(repeated.status,429);
+  assert.equal(repeated.headers.get('retry-after'),'60');
+  assert.equal(calls,1);
+  for(const status of [400,422,429,500]){
+   result=status;
+   const response=await send('a'+status+'@example.invalid');
+   assert.equal(response.status,200);
+   assert.deepEqual(await response.json(),generic);
+  }
+  assert.equal((await send('sixth@example.invalid')).status,429);
+  assert.equal(calls,5);
+  result=0;
+  const offline=await send('offline@example.invalid',origin,'192.0.2.63');
+  assert.equal(offline.status,503);
+  assert.doesNotMatch(await offline.text(),/private error text/);
+ }finally{
+  globalThis.fetch=oldFetch;
+  for(const [key,value] of Object.entries(previous)){
+   if(value===undefined)delete process.env[key];else process.env[key]=value;
+  }
+ }
+});

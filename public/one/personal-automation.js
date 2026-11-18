@@ -136,6 +136,27 @@
     }).join('')}</ul>`;
   }
 
+  function configuredCallback(view,provider) {
+    const mail=view.kind==='mail';
+    const app=mail?view.data?.connection:view.data?.providers?.find(item=>item.id===provider);
+    try {
+      const url=new URL(app?.redirectUri);
+      const local=url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+      if((url.protocol==='https:'||local)&&!url.username&&!url.password&&!url.search&&!url.hash&&
+         url.pathname==='/api/personal/'+(mail?'mail/oauth':'social/'+provider))return url;
+    }catch{}
+    return null;
+  }
+
+  function connectionAction(view,provider,label,action,id=provider) {
+    const callback=configuredCallback(view,provider);
+    if(callback&&callback.origin!==location.origin) {
+      const href=new URL('/personal#'+view.kind,callback);
+      return `<a class="personal-link" href="${escape(href.href)}">운영 사이트에서 연결</a>`;
+    }
+    return actionButton(label,action,id);
+  }
+
   function accountsPanel(view) {
     if(view.kind==='mail') {
       const {configured,connection={}}=view.data;
@@ -143,7 +164,7 @@
       return `<div class="auto-account">
        <strong>Gmail</strong><p>${state}</p>
        <div class="auto-actions">
-        ${configured?actionButton(connection.connected?'다시 연결':'Google로 연결','connect','mail'):''}
+        ${configured?connectionAction(view,'mail',connection.connected?'다시 연결':'Google로 연결','connect'):''}
         ${connection.connected?actionButton(connection.paused?'발송 재개':'발송 일시정지','pause','mail')+actionButton('연결 해제','disconnect','mail'):''}
         ${actionButton(configured?'Google 앱 설정':'Google 앱 설정 추가','configure','mail')}
        </div></div>`;
@@ -157,12 +178,12 @@
         ${accounts.length?`<ul class="auto-account-list">${accounts.map(account=>`<li>
           <div><b>${escape(account.label)}</b><small>${escape(account.username||'')}${account.ready?account.paused?' · 게시 일시정지':'':' · 다시 연결 필요'}</small></div>
           <div class="auto-actions">
-            ${provider.configured?actionButton('다시 연결','reconnect',account.id):''}
+            ${provider.configured?connectionAction(view,provider.id,'다시 연결','reconnect',account.id):''}
             ${account.ready?actionButton(account.paused?'게시 재개':'게시 일시정지','pause',account.id):''}
             ${actionButton('연결 해제','disconnect',account.id)}
           </div></li>`).join('')}</ul>`:''}
         <div class="auto-actions">
-          ${provider.configured?actionButton('계정 연결','connect',provider.id):''}
+          ${provider.configured?connectionAction(view,provider.id,'계정 연결','connect'):''}
           ${actionButton(provider.appSource==='personal'?'앱 설정':'내 앱 설정','configure',provider.id)}
         </div>
       </section>`;
@@ -189,7 +210,6 @@
       providers:(result.providers||[]).filter(p=>Object.hasOwn(providerNames,p.id)&&p.id!=='mail'),
       accounts:result.accounts||[],items:result.posts||[],
     }:{configured:result.configured===true,connection:result.connection||{},items:result.items||[]};
-    view.needsRefresh=false;
     paint(view);
   }
 
@@ -198,6 +218,7 @@
     view.read?.abort();
     const ticket=new AbortController();
     view.read=ticket;
+    view.needsRefresh=false;
     view.loading=true;
     setControls(view);
     try {
@@ -218,7 +239,11 @@
       if(view.read===ticket) {
         view.loading=false;
         view.read=null;
-        if(current(view)){setControls(view);openSelectedCard(view);}
+        if(current(view)){
+          setControls(view);
+          if(view.needsRefresh&&!view.busy&&location.hash==='#'+view.kind)void load(view);
+          else openSelectedCard(view);
+        }
       }
     }
   }
@@ -269,7 +294,7 @@
      </div>`,item?'게시 초안 편집':'새 게시 초안','초안 저장');
     view.editor.cards=new Map();
     view.editor.existingCard=item?.cardId?item:null;
-    view.editor.preselectedCard=cardChoice?.id||null;
+    view.editor.preselectedCard=cardChoice;
     setDraftFields(view);
     if(view.form.elements.imageSource.value==='card')void loadDraftCards(view);
   }
@@ -299,7 +324,8 @@
       if(!response.ok)throw Error('내 카드뉴스를 불러오지 못했습니다. 다시 선택해 주세요.');
       const result=await response.json();
       if(!current(view)||view.editor!==editor||view.cardRead!==ticket||ticket.signal.aborted)return;
-      const selected=editor.preselectedCard||view.form.elements.cardId.value||editor.existingCard?.cardId;
+      const preselected=editor.preselectedCard;
+      const selected=preselected?.id||view.form.elements.cardId.value||editor.existingCard?.cardId;
       for(const card of result.cards||[]){
         if(cardIdPattern.test(card.id)&&Array.isArray(card.slides))editor.cards.set(card.id,card);
       }
@@ -314,10 +340,14 @@
       view.form.elements.cardId.innerHTML=option('','최근 카드뉴스 선택',selected)+[...editor.cards.values()].map(card=>
         option(card.id,card.title,selected)).join('');
       editor.cardsLoaded=true;
-      const sameExisting=!!selected&&selected===editor.existingCard?.cardId;
-      cardPage(view,sameExisting?editor.existingCard.cardSlide:0);
+      const existingPage=selected&&selected===editor.existingCard?.cardId?editor.existingCard.cardSlide:0;
+      const slide=preselected?.slide??existingPage;
+      const invalidPage=preselected&&editor.cards.has(selected)&&!editor.cards.get(selected).slides[slide];
+      if(invalidPage)view.form.elements.cardId.value='';
+      cardPage(view,slide);
       if(!editor.cards.size)status.textContent='저장한 카드뉴스가 없습니다. AI 비서에서 먼저 만들어 주세요.';
-      else if(editor.preselectedCard&&!editor.cards.has(editor.preselectedCard))status.textContent='선택한 카드뉴스를 확인할 수 없습니다.';
+      else if(preselected&&!editor.cards.has(selected))status.textContent='선택한 카드뉴스를 확인할 수 없습니다.';
+      else if(invalidPage)status.textContent='선택한 카드 페이지를 확인할 수 없습니다. 다시 선택해 주세요.';
       editor.preselectedCard=null;
     }catch(error){
       if(current(view)&&view.editor===editor&&!ticket.signal.aborted){
@@ -370,17 +400,34 @@
     if(!Object.hasOwn(oauthPaths,providerId))return;
     const provider=view.data.providers?.find(p=>p.id===providerId);
     const mail=view.kind==='mail';
-    const callback=location.origin+'/api/personal/'+(mail?'mail/oauth':'social/'+providerId);
+    const callback=configuredCallback(view,providerId);
     modal(view,'configure',providerId,`
       <p class="auto-caption">${mail?'Google':'채널'} 앱에 등록할 콜백 주소</p>
-      <code class="auto-callback">${escape(callback)}</code>
+      ${callback?`<code class="auto-callback" tabindex="0">${escape(callback.href)}</code>
+        <div class="auto-actions">${actionButton('주소 복사','copy-callback')}</div>`:
+        '<p class="auto-caption">등록 주소를 불러오지 못했습니다. 목록을 다시 조회해 주세요.</p>'}
+      ${callback&&callback.origin!==location.origin?'<p class="auto-caption">계정 동의는 운영 사이트에서 시작해 주세요.</p>':''}
       <label>Client ID<input name="clientId" maxlength="500" autocomplete="off" required
        value="${escape(mail?view.data.connection.clientId:provider?.clientId)}"></label>
       <label>Client Secret<input name="clientSecret" type="password" maxlength="500" autocomplete="new-password" required></label>
-      ${providerId==='instagram'?'<label>Instagram API 버전<input name="version" maxlength="8" placeholder="v25.0"></label>':''}
+      ${providerId==='instagram'?`<label>Instagram API 버전<input name="version" maxlength="8" placeholder="v25.0" value="${escape(provider?.version)}"></label>`:''}
       ${providerId==='x'?'<p class="auto-caption">X 개발자 앱에 쓰기 권한과 게시 API 접근이 필요합니다.</p>':''}
       ${account?'<p class="auto-caption">앱을 변경한 뒤 새로 연결해 주세요.</p>':''}`,
     providerNames[providerId]+' 앱 설정','설정 저장');
+  }
+
+  async function copyCallback(view) {
+    const code=view.fields.querySelector('.auto-callback');
+    if(!code)return;
+    try {
+      await navigator.clipboard.writeText(code.textContent);
+      if(current(view)&&code.isConnected)note(view,'등록 주소를 복사했습니다.',false,true);
+    }catch{
+      if(!current(view)||!code.isConnected)return;
+      code.focus();
+      window.getSelection()?.selectAllChildren(code);
+      note(view,'선택된 등록 주소를 복사해 주세요.',false,true);
+    }
   }
 
   function confirmEditor(view,action,id) {
@@ -491,6 +538,7 @@
     if(!current(view)||view.busy||view.loading)return;
     if(action==='close')return view.dialog.close();
     if(action==='refresh')return void load(view);
+    if(action==='copy-callback')return void copyCallback(view);
     if(action==='new'||action==='edit'&&item&&editAllowed(view,item))return draftEditor(view,item);
     if(action==='schedule'&&item&&approvalAvailable(view,item))return scheduleEditor(view,item);
     if(action==='configure')return setupEditor(view,id,view.kind==='mail'?view.data.connection.connected:view.data.accounts.some(p=>p.provider===id));
@@ -529,8 +577,8 @@
   }
 
   function openSelectedCard(view) {
-    if(view.kind!=='social'||!current(view)||!view.data||view.loading||view.busy||!socialCard||socialCard.owner!==view.owner||
-       location.hash!=='#social')return;
+    if(view.kind!=='social'||!current(view)||!view.data||view.loading||view.busy||view.dialog.open||
+       document.visibilityState==='hidden'||!socialCard||socialCard.owner!==view.owner||location.hash!=='#social')return;
     const pending=socialCard;
     socialCard=null;
     const account=view.data.accounts.find(a=>imageProviders.includes(a.provider)&&a.ready&&!a.paused);
@@ -538,13 +586,13 @@
       note(view,'카드뉴스를 올리려면 Instagram 또는 Threads 계정을 연결해 주세요.',true);
       return;
     }
-    draftEditor(view,null,{id:pending.id,accountId:account.id});
+    draftEditor(view,null,{id:pending.id,slide:pending.slide,accountId:account.id});
   }
 
-  function selectSocialCard(id) {
+  function selectSocialCard(id,slide=0) {
     const owner=window.NuriPersonalAccount;
-    if(!owner||typeof id!=='string'||!cardIdPattern.test(id))return;
-    socialCard={id,owner};
+    if(!owner||typeof id!=='string'||!cardIdPattern.test(id)||!Number.isInteger(slide)||slide<0)return;
+    socialCard={id,slide,owner};
     if(location.hash!=='#social')location.hash='social';
     else mount('social');
   }
@@ -561,7 +609,7 @@
     }
     const prior=views.get(kind);
     if(prior?.root===root&&prior.owner===owner){
-      if(prior.needsRefresh&&!prior.busy){
+      if(prior.needsRefresh&&!prior.busy&&!prior.loading){
         if(prior.openDraft){
           prior.dialog.showModal();prior.openDraft=false;
           if(prior.form.elements.imageSource?.value==='card')void loadDraftCards(prior);
@@ -594,6 +642,7 @@
       view.cardRead?.abort();
       const secret=view.form.elements.clientSecret;
       if(secret)secret.value='';
+      openSelectedCard(view);
     });
     root.onclick=event=>click(view,event);
     void load(view,oauthNotice(kind));
@@ -602,6 +651,12 @@
   function suspend() {
     for(const view of views.values())suspendView(view);
   }
+  window.addEventListener('personal-automation-changed',event=>{
+    const view=views.get(event.detail?.kind);
+    if(!view||!current(view))return;
+    view.needsRefresh=true;
+    if(!view.busy&&!view.loading&&location.hash==='#'+view.kind)void load(view);
+  });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')suspend();});
   window.addEventListener('pagehide',suspend);
   window.NuriPersonalAutomation={mount,suspend,selectSocialCard};

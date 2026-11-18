@@ -2,15 +2,23 @@
 
 import {useEffect, useState, type FormEvent} from 'react';
 
+type LoginView = 'login' | 'signup' | 'recovery' | 'verify';
+
 export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
-  const [signup, setSignup] = useState(false);
-  const [recovery, setRecovery] = useState(false);
+  const [view, setView] = useState<LoginView>('login');
   const [marketAdminEntry, setMarketAdminEntry] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{text: string; error: boolean} | null>(null);
   const market = portal === 'market';
-  const identifierLogin = !market && !signup && !recovery;
+  const signup = view === 'signup', recovery = view === 'recovery', verify = view === 'verify';
+  const identifierLogin = !market && view === 'login';
+
+  function changeView(next: LoginView) {
+    setView(next);
+    setShowPassword(false);
+    setMessage(null);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -28,17 +36,26 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
     if (busy) return;
     setBusy(true);
     setMessage(null);
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const form = new FormData(element);
     try {
-      const result = await fetch(recovery ? '/api/auth/recover' : '/api/auth', {
+      const email = form.get('email');
+      const endpoint = recovery ? '/api/auth/recover' : verify ? '/api/auth/resend' : '/api/auth';
+      const payload = recovery ? {action: 'request', email} : verify ? {email} : {action: view, email, password: form.get('password'), portal};
+      const result = await fetch(endpoint, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(recovery ? {action: 'request', email: form.get('email')} : {action: signup ? 'signup' : 'login', email: form.get('email'), password: form.get('password'), portal}),
+        body: JSON.stringify(payload),
       });
       const data = await result.json();
       if (!result.ok) throw new Error(data.error || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
-      if (recovery) setMessage({text: data.message, error: false});
-      else if (data.confirmation) setMessage({text: data.message, error: false});
+      if (recovery || verify) setMessage({text: data.message, error: false});
+      else if (data.confirmation) {
+        const password = element.elements.namedItem('password');
+        if (password instanceof HTMLInputElement) password.value = '';
+        setShowPassword(false);
+        setMessage({text: market ? data.message : '메일함에서 인증 링크를 열고 이 화면으로 돌아와 로그인하세요. 첫 로그인 시 관리자에게 승인 요청이 접수됩니다.', error: false});
+      }
       else if (!signup && marketAdminEntry && data.owner === true && data.destination === '/dashboard') location.assign('/nurimarket/admin');
       else if (['/dashboard', '/personal', '/nurimarket', '/access-pending'].includes(data.destination)) location.assign(data.destination);
       else throw new Error('이동할 화면을 확인하지 못했습니다. 다시 로그인해주세요.');
@@ -55,35 +72,36 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
       <div className="nh-login-card">
         <a href={market ? '/nurimarket' : '/login'} className="nh-wordmark" aria-label={market ? 'NURI MARKET 홈' : 'NURI ONE 로그인'}><img src={`/brand/nuri-${market ? 'market' : 'one'}.svg`} alt={market ? 'NURI MARKET' : 'NURI ONE'} width={market ? 7906 : 8541} height={market ? 1120 : 1600}/></a>
         <header className="nh-login-heading">
-          <h1>{recovery ? '비밀번호 찾기' : signup ? market ? '회원가입' : '계정 신청' : marketAdminEntry ? '쇼핑몰 관리자 로그인' : '로그인'}</h1>
-          {marketAdminEntry && !signup && !recovery && <p>누리원 운영자 계정으로 로그인하세요.</p>}
-          {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '관리자 승인 후 이용할 수 있습니다.'}</p>}
+          <h1>{verify ? '인증메일 다시 요청' : recovery ? '비밀번호 찾기' : signup ? market ? '회원가입' : '계정 신청' : marketAdminEntry ? '쇼핑몰 관리자 로그인' : '로그인'}</h1>
+          {marketAdminEntry && view === 'login' && <p>누리원 운영자 계정으로 로그인하세요.</p>}
+          {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '이메일 인증을 마치고 로그인하면 승인 요청이 접수됩니다. 관리자 승인 후 개인 업무 공간을 이용할 수 있습니다.'}</p>}
         </header>
-        <a href={`/api/auth/google?portal=${portal}${marketAdminEntry?'&for=market-admin':''}`} className="nh-google-button">Google로 계속하기</a>
+        {!verify && <a href={`/api/auth/google?portal=${portal}${marketAdminEntry?'&for=market-admin':''}`} className="nh-google-button">Google로 계속하기</a>}
         {identifierLogin && process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED === 'true' && <a href={marketAdminEntry?'/login/passkey?for=market-admin':'/login/passkey'} className="nh-google-button">운영자 패스키로 계속하기</a>}
-        <div className="nh-login-divider">{identifierLogin ? '또는 아이디·이메일로' : '또는 이메일로'}</div>
+        {!verify && <div className="nh-login-divider">{identifierLogin ? '또는 아이디·이메일로' : '또는 이메일로'}</div>}
         <form onSubmit={submit} aria-busy={busy}>
           <div className="nh-login-field">
             <label htmlFor="login-email">{identifierLogin ? '아이디 또는 이메일' : '이메일'}</label>
             <input id="login-email" name="email" type={identifierLogin ? 'text' : 'email'} autoComplete="username" inputMode={identifierLogin ? 'text' : 'email'} autoCapitalize="none" spellCheck={false} placeholder={identifierLogin ? '아이디 또는 name@company.com' : 'name@company.com'} required maxLength={254}/>
           </div>
-          {!recovery && <div className="nh-login-field">
+          {!recovery && !verify && <div className="nh-login-field">
             <label htmlFor="login-password">비밀번호</label>
             <div className="nh-login-password">
-              <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={signup ? 'new-password' : 'current-password'} placeholder={signup ? '12자 이상 입력' : '비밀번호'} minLength={signup ? 12 : undefined} maxLength={200} required/>
+              <input key={signup ? 'signup' : 'login'} id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={signup ? 'new-password' : 'current-password'} placeholder={signup ? '12자 이상 입력' : '비밀번호'} minLength={signup ? 12 : undefined} maxLength={200} required/>
               <button type="button" className="nh-login-reveal" aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'} aria-pressed={showPassword} aria-controls="login-password" onClick={() => setShowPassword(!showPassword)}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /> <circle cx="12" cy="12" r="3" />{showPassword && <path d="m4 4 16 16"/>}</svg>
               </button>
             </div>
           </div>}
-          <button type="submit" disabled={busy} className="nh-login-submit">{busy ? '확인 중…' : recovery ? '복구 메일 요청' : signup ? market ? '회원가입' : '계정 신청하기' : '로그인'}</button>
+          <button type="submit" disabled={busy} className="nh-login-submit">{busy ? '확인 중…' : verify ? '인증메일 보내기' : recovery ? '복구 메일 요청' : signup ? market ? '회원가입' : '계정 신청하기' : '로그인'}</button>
           {message && <p role={message.error ? 'alert' : 'status'} className={`nh-login-message${message.error ? ' is-error' : ''}`}>{message.text}</p>}
         </form>
         <div className="nh-login-footer">
-          <span>{recovery ? '로그인 화면으로 돌아가시겠어요?' : signup ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}</span>
-          <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => {setRecovery(false); setSignup(recovery ? false : !signup); setShowPassword(false); setMessage(null);}}>{recovery || signup ? '로그인' : market ? '회원가입' : '계정 신청'}</button>
-          {!signup && !recovery && <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => {setRecovery(true); setShowPassword(false); setMessage(null);}}>비밀번호 찾기</button>}
-          {market && !signup && !recovery && <a className="nh-login-toggle" href="/login?for=market-admin">쇼핑몰 관리자 로그인</a>}
+          <span>{recovery || verify ? '로그인 화면으로 돌아가시겠어요?' : signup ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}</span>
+          <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => changeView(view === 'login' ? 'signup' : 'login')}>{view !== 'login' ? '로그인' : market ? '회원가입' : '계정 신청'}</button>
+          {view === 'login' && <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => changeView('recovery')}>비밀번호 찾기</button>}
+          {!market && !marketAdminEntry && (view === 'login' || (signup && message && !message.error)) && <button type="button" disabled={busy} className="nh-login-toggle" onClick={() => changeView('verify')}>인증메일 다시 요청</button>}
+          {market && view === 'login' && <a className="nh-login-toggle" href="/login?for=market-admin">쇼핑몰 관리자 로그인</a>}
         </div>
       </div>
     </main>

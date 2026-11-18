@@ -6,6 +6,7 @@ const {chromium,webkit}=require('@playwright/test');
 const {weight}=require('../src/server/content-tools.cjs');
 
 const source='https://personal-automation.test';
+const canonical='https://personal-production.test';
 const shell=fs.readFileSync('src/server/personal.html','utf8')
  .replace(/<link [^>]+>/g,'').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');
 const css=['public/one/personal.css','public/one/personal-automation.css'].map(path=>fs.readFileSync(path,'utf8'));
@@ -33,8 +34,13 @@ const initialPosts=[
 
 async function scenario(page) {
  let posts=structuredClone(initialPosts),accounts=structuredClone(initialAccounts),mail=[],connection={connected:false,paused:false,configured:false};
- let sequence=0,delayRead=null;
- const mailState=()=>({configured:connection.configured,connection,items:mail});
+ let sequence=0,delayRead=null,redirectOrigin=source;
+ const mailState=()=>({configured:connection.configured,connection:{...connection,redirectUri:redirectOrigin+'/api/personal/mail/oauth'},items:mail});
+ const socialState=owner=>({
+  providers:providers.map(provider=>({...provider,redirectUri:redirectOrigin+'/api/personal/social/'+provider.id,
+   ...(owner===actor&&provider.id==='instagram'?{appSource:'personal',clientId:'123456',version:'v24.0'}:{})})),
+  accounts:owner===actor?accounts:[],posts:owner===actor?posts:[],
+ });
  const requests=[];
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),kind=url.pathname.split('/').at(-1);
@@ -55,8 +61,7 @@ async function scenario(page) {
     const wait=delayRead;delayRead=null;
     await wait;
    }
-   return reply(owner===nextActor?{providers,accounts:[],posts:[]}:
-    kind==='social'?{providers,accounts,posts}:mailState());
+   return reply(kind==='social'?socialState(owner):mailState());
   }
   const rows=kind==='social'?posts:mail;
   if(body.action==='configure'){
@@ -108,6 +113,7 @@ async function scenario(page) {
  await page.addScriptTag({path:'public/one/personal-automation.js'});
  const view=kind=>page.evaluate(({kind,actor})=>{
   window.NuriPersonalAccount=actor;
+  history.replaceState(history.state,'','#'+kind);
   for(const section of document.querySelectorAll('[data-personal-view]'))section.hidden=!section.querySelector('#personal-'+kind+'-root');
   window.NuriPersonalAutomation.mount(kind);
  },{kind,actor});
@@ -129,6 +135,13 @@ async function scenario(page) {
  await view('social');
  const social=root('social');
  await expectText(social,'재승인할 게시물');
+ const instagram=social.getByRole('region',{name:'Instagram'});
+ await button(instagram,'앱 설정').click();
+ assert.equal(await dialog.getByLabel('Client ID').inputValue(),'123456');
+ assert.equal(await dialog.getByLabel('Instagram API 버전').inputValue(),'v24.0');
+ assert.equal(await dialog.getByLabel('Client Secret').inputValue(),'');
+ assert.equal(await dialog.locator('code').innerText(),source+'/api/personal/social/instagram');
+ await button(dialog,'닫기').click();
  assert.equal(await social.locator('.auto-row').filter({hasText:'재승인할 게시물'}).getByRole('button',{name:'원고 승인 및 예약'}).count(),1);
  assert.equal(await social.locator('.auto-row').filter({hasText:'확인 필요한 게시물'}).getByRole('button').count(),0);
  await button(social,'새 초안').click();
@@ -195,12 +208,16 @@ async function scenario(page) {
  await dialog.locator('[name="cardId"] option').filter({hasText:card.title}).waitFor({state:'attached'});
  await dialog.locator('[name="cardId"]').selectOption(card.id);
  await expectText(dialog,'이미지 대체 텍스트 · 첫째 장. 첫째의 내용');
+ const unsavedCardTitle=dialog.getByLabel('제목');
+ await unsavedCardTitle.fill('편집 중인 게시 초안');
+ await page.evaluate(id=>window.NuriPersonalAutomation.selectSocialCard(id,1),card.id);
+ assert.equal(await unsavedCardTitle.inputValue(),'편집 중인 게시 초안');
+ assert.equal(await dialog.locator('[name="cardSlide"]').inputValue(),'0');
  await button(dialog,'닫기').click();
- await page.evaluate(id=>window.NuriPersonalAutomation.selectSocialCard(id),card.id);
  await dialog.locator('[name="cardId"] option:checked').filter({hasText:card.title}).waitFor({state:'attached'});
  assert.equal(await dialog.locator('[name="accountId"]').inputValue(),'threads-a');
- await dialog.locator('[name="cardSlide"]').selectOption('1');
  await expectText(dialog,'이미지 대체 텍스트 · 안내. 둘째 장. 둘째의 내용');
+ assert.equal(await dialog.locator('[name="cardSlide"]').inputValue(),'1','opens the page selected in the AI dock');
  await dialog.getByLabel('제목').fill('내 카드 게시 원고');
  await dialog.getByLabel('본문').fill('카드뉴스를 올릴 모의 문구');
  await submit('초안 저장');
@@ -254,7 +271,49 @@ async function scenario(page) {
  await expectText(mailRow,'예약됨');
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
 
+ await button(gmail,'새 초안').click();
+ const unsavedMailBody=dialog.getByLabel('본문');
+ await unsavedMailBody.fill('편집 중인 메일 내용을 유지');
+ mail.unshift({id:'assistant-mail',to:'reader@example.invalid',subject:'AI가 저장한 메일 초안',body:'공유할 모의 원고',status:'draft',version:1});
+ const changed=kind=>page.evaluate(kind=>window.dispatchEvent(new CustomEvent('personal-automation-changed',{detail:{kind}})),kind);
+ await changed('mail');
+ await expectText(gmail,'AI가 저장한 메일 초안');
+ assert.equal(await unsavedMailBody.inputValue(),'편집 중인 메일 내용을 유지');
+ assert.equal(await unsavedMailBody.evaluate(el=>document.activeElement===el),true);
+ await button(dialog,'닫기').click();
+
+ posts.unshift({id:'assistant-social',accountId:'threads-a',provider:'threads',title:'AI가 저장한 SNS 초안',body:'공유할 모의 SNS 원고',status:'draft',version:1});
+ await changed('social');
  await view('social');
+ await expectText(social,'AI가 저장한 SNS 초안');
+ await view('mail');
+
+ redirectOrigin=canonical;
+ await button(gmail,'다시 조회').click();
+ const mailLink=gmail.getByRole('link',{name:'운영 사이트에서 연결'});
+ await mailLink.waitFor();
+ assert.equal(await mailLink.getAttribute('href'),canonical+'/personal#mail');
+ assert.equal(await button(gmail,'다시 연결').count(),0);
+ await button(gmail,'Google 앱 설정').click();
+ assert.equal(await dialog.locator('code').innerText(),canonical+'/api/personal/mail/oauth');
+ await expectText(dialog,'계정 동의는 운영 사이트에서 시작해 주세요.');
+ await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.copiedCallback=value;}}}));
+ await button(dialog,'주소 복사').click();
+ await expectText(dialog,'등록 주소를 복사했습니다.');
+ assert.equal(await page.evaluate(()=>window.copiedCallback),canonical+'/api/personal/mail/oauth');
+ await button(dialog,'닫기').click();
+
+ await view('social');
+ await button(social,'다시 조회').click();
+ const instagramLink=instagram.getByRole('link',{name:'운영 사이트에서 연결'}).first();
+ await instagramLink.waitFor();
+ assert.equal(await instagramLink.getAttribute('href'),canonical+'/personal#social');
+ assert.equal(await button(instagram,'계정 연결').count(),0);
+ await button(instagram,'앱 설정').click();
+ assert.equal(await dialog.locator('code').innerText(),canonical+'/api/personal/social/instagram');
+ await button(dialog,'닫기').click();
+ redirectOrigin=source;
+
  let release;
  delayRead=new Promise(resolve=>{release=resolve;});
  const started=page.waitForRequest(request=>request.url()===source+'/api/personal/social'&&request.method()==='GET');

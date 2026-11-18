@@ -60,6 +60,7 @@ test('private AI config and official model requests stay actor-scoped and saniti
   const g = globalThis as typeof globalThis & {nhPool?:unknown};
   const previous = {pool:g.nhPool,fetch:g.fetch,env:Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key]]))};
   const calls: Array<{provider:PersonalAIProvider; auth:string; model:string; stream:boolean}> = [];
+  const metadataReads: Array<{provider:PersonalAIProvider; auth:string; model:string}> = [];
   let issue = '';
   let observedAbort: AbortSignal | undefined;
   let stalledRequest: (() => void) | null = null;
@@ -94,11 +95,22 @@ test('private AI config and official model requests stay actor-scoped and saniti
       assert.ok(provider,'only approved API hosts may be called');
       assert.equal(init?.redirect,'error');
       assert.equal(init?.cache,'no-store');
-      const payload = JSON.parse(String(init?.body));
       const auth = provider==='openai' ? headers.get('Authorization')?.slice(7) : headers.get(provider==='anthropic'?'x-api-key':'x-goog-api-key');
       assert.ok(auth);
       assert.ok(!String(init?.body).includes(auth));
       assert.ok(!url.href.includes(auth));
+      if(init?.method==='GET') {
+        const requested=url.pathname.split('/').at(-1)!;
+        assert.equal(url.pathname,(provider==='gemini'?'/v1beta':'/v1')+'/models/'+requested);
+        assert.equal(url.search,'');
+        assert.equal(init.body,undefined);
+        metadataReads.push({provider,auth,model:requested});
+        if(issue==='model-forbidden') return Response.json({error:'sensitive-upstream-key '+auth},{status:403});
+        if(provider==='gemini') return Response.json({name:'models/'+requested,
+          supportedGenerationMethods:[issue==='model-not-for-chat'?'embedContent':'generateContent']});
+        return Response.json({object:'model',id:requested,private:'sensitive-upstream-key '+auth});
+      }
+      const payload = JSON.parse(String(init?.body));
       const streaming = headers.get('Accept') === 'text/event-stream';
       calls.push({provider,auth,model:payload.model ?? model.gemini,stream:streaming});
       if (issue==='quota') return Response.json({error:{message:'sensitive-upstream-key '+auth}},{status:429});
@@ -150,11 +162,31 @@ test('private AI config and official model requests stay actor-scoped and saniti
     }
     await inspected(await save('friend','openai','gpt-friend-fixture',friendKey));
     assert.equal(calls.length,0,'storing credentials triggers no billable provider call');
+    assert.equal(metadataReads.length,0);
     const rows = await database.query("SELECT data FROM nh_documents WHERE kind='personal-ai-provider'");
     assert.equal(rows.rows.length,4);
     assert.doesNotMatch(JSON.stringify(rows.rows),/(?:owner|friend)-fixture-/);
     assert.deepEqual((await context('live')).list('personal-ai-provider'),[]);
     assert.equal((await inspected(await providers(request('friend')))).providers.filter((p:{configured:boolean})=>p.configured).length,1);
+
+    const verify={action:'verify',provider:'openai'};
+    await inspected(await configure(request(undefined,verify)),401);
+    await inspected(await configure(request('viewer',verify)),403);
+    await inspected(await configure(request('owner',verify,users.friend.id)),409);
+    assert.equal(metadataReads.length,0);
+    for(const provider of Object.keys(model) as PersonalAIProvider[]) {
+      const checked=await inspected(await configure(request('owner',{action:'verify',provider,model:'ignored',apiKey:'ignored'})));
+      assert.deepEqual(checked,{verified:true,model:model[provider]});
+      assert.deepEqual(metadataReads.at(-1),{provider,auth:keys[provider],model:model[provider]});
+    }
+    assert.deepEqual(await inspected(await configure(request('friend',verify))),{verified:true,model:'gpt-friend-fixture'});
+    assert.equal(metadataReads.at(-1)?.auth,friendKey);
+    issue='model-forbidden';
+    await inspected(await configure(request('owner',verify)),422);
+    issue='model-not-for-chat';
+    await inspected(await configure(request('owner',{action:'verify',provider:'gemini'})),422);
+    issue='';
+    assert.equal(calls.length,0,'model verification reads only metadata');
 
     for (const [provider,expected] of Object.entries({openai:'OpenAI 한글',anthropic:'Claude 한글',gemini:'Gemini 한글'})) {
       const id = provider as PersonalAIProvider;
