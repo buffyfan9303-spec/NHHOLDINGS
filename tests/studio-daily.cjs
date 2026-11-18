@@ -175,6 +175,15 @@ async function studioBrand(){
  await click('new');
  render('studio');
  assert.equal(fields.at(-1).brand,'mind');
+ const oldEditor={dataset:{studioDraft:'new:holdem'}};
+ const getElementById=context.document.getElementById;
+ context.document.getElementById=id=>id==='studio-content-form'?oldEditor:null;
+ const oldInput={name:'title',closest:selector=>selector==='#studio-content-form'?oldEditor:null};
+ const draftsBefore=new Map(stored);
+ handlers.input({target:oldInput});
+ handlers.change({target:oldInput});
+ assert.deepEqual(stored,draftsBefore);
+ context.document.getElementById=getElementById;
  await click('draft-restore');
  render('studio');
  assert.equal(fields.at(-1).title,'마인드 임시 초안');
