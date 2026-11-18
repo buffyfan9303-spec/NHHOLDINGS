@@ -70,12 +70,8 @@ window.NuriOperator = (() => {
   </article>`;
  }
 
- function summary() {
-  const pending = data.contents.filter(p => instagram(p) && waiting(p)).length;
-  return `<section class="panel approval-summary" aria-label="게시 승인함">
-   <div><p class="caption">Instagram 게시 승인</p><h2>검토할 원고 ${pending.toLocaleString('ko-KR')}건</h2></div>
-   <button class="btn" data-page="approval">승인함 열기 ${icon('arrow')}</button>
-  </section>`;
+ function pendingCount() {
+  return data.contents.filter(p => instagram(p) && waiting(p)).length;
  }
 
  function render() {
@@ -221,7 +217,7 @@ window.NuriOperator = (() => {
   document.getElementById('command-open').addEventListener('click', open);
   document.getElementById('command-close').addEventListener('click', () => palette.close());
   document.addEventListener('keydown', e => {
-   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.getElementById('post-inspector').open) {
+   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.getElementById('post-inspector').open && !document.getElementById('sidebar').classList.contains('open')) {
     e.preventDefault();
     open();
    }
@@ -242,5 +238,5 @@ window.NuriOperator = (() => {
   if ('serviceWorker' in navigator && !location.search) navigator.serviceWorker.register('/one/operator-sw.js', {scope:'/dashboard'}).catch(() => {});
  }
 
- return {render, summary, contentControl, reveal, init, pushPanel, disconnectPush};
+ return {render, pendingCount, contentControl, reveal, init, pushPanel, disconnectPush};
 })();

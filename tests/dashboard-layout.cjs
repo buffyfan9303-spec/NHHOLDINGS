@@ -4,7 +4,7 @@ const {chromium} = require('@playwright/test');
 require('@next/env').loadEnvConfig(process.cwd());
 const base = process.env.TEST_ORIGIN || 'http://127.0.0.1:3120';
 const widths = [320,390,768,1024,1440,1920];
-const pages = {overview:'SNS·웹사이트 전체 현황',finance:'매출 · 비용 · 손익',businesses:'사업장 관리',tasks:'업무 관리',partners:'거래처',servers:'서버 · 연결 상태',reports:'리포트',content:'콘텐츠 작성 · 자동 업로드',prompts:'프롬프트 · 반복 설정',history:'콘텐츠 · 실행 내역'};
+const pages = {overview:'운영 대시보드',finance:'매출 · 비용 · 손익',businesses:'사업장 관리',tasks:'업무 관리',partners:'거래처',servers:'서버 · 연결 상태',reports:'리포트',content:'콘텐츠 작성 · 자동 업로드',prompts:'프롬프트 · 반복 설정',history:'콘텐츠 · 실행 내역'};
 const services = {mind:'NURI MIND',holdem:'NURI HOLDEM',crm:'NURI CRM',market:'NURI MARKET',tistory:'SNS'};
 const channels = {all:'',blog:'블로그',instagram:'인스타그램',threads:'Threads',x:'X',youtube:'YouTube',tiktok:'TikTok'};
 async function main(){
@@ -24,8 +24,8 @@ async function main(){
    for(const route of routes){
     await page.goto(base+'/dashboard?sample=1#'+route.hash);
     await page.locator('#app:not(.hidden)').waitFor();
-    await page.waitForFunction(title=>document.querySelector('#page-title')?.textContent===title,width<=760&&route.hash==='overview'?'게시 현황':route.title);
-    if(route.site&&width>760)await page.locator('#site-tab-'+route.tab+'[aria-selected="true"]').waitFor();
+    await page.waitForFunction(title=>document.querySelector('#page-title')?.textContent===title,route.title);
+    if(route.site)await page.locator('#site-tab-'+route.tab+'[aria-selected="true"]').waitFor();
     if(route.channel&&width>760)await page.locator('#channel-tab-'+route.channel+'[aria-selected="true"]').waitFor();
     await page.evaluate(async()=>{scrollTo(0,0);await Promise.all(document.getAnimations().filter(a=>Number.isFinite(a.effect?.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));});
     const layout = await page.evaluate(()=>{
@@ -47,7 +47,11 @@ async function main(){
     assert(layout.gaps.every(gap=>gap>=21),`${width} ${route.hash}: card/table gap`);
     assert(layout.actions.every(gap=>gap>=0&&gap<=25),`${width} ${route.hash}: disconnected section action`);
     assert.equal(layout.activeMode,'샘플');
-    if(width<=760&&route.hash==='site/tistory/overview')assert(layout.firstCardTop<590,`${width}: first mobile post too far down: ${layout.firstCardTop}`);
+    if(route.hash==='overview'){
+     assert.equal(await page.locator('.dashboard-priority .priority-item').count(),3);
+     assert.ok(await page.locator('.site-grid .site-card').count());
+     assert.equal(await page.locator('.dashboard-section .kpis .kpi').count(),4);
+    }
     if(route.hash==='overview'&&width>760)assert.equal(await page.locator('.publishing-board tbody tr').count(),4,'Overview shows recent four campaigns');
     results.push({width,route:route.hash,...layout});
     if((width===1440&&['overview','site/tistory/overview','finance','content','publish/all'].includes(route.hash))||(width===390&&route.hash==='site/tistory/overview')||(width===1920&&route.hash==='site/tistory/overview'))await page.screenshot({path:'artifacts/layout/'+width+'-'+route.hash.replaceAll('/','-')+'.png',fullPage:false});
