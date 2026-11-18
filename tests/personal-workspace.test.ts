@@ -131,7 +131,7 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     assert.equal((await signedIn.json()).destination, '/personal');
     const marketplace = await authStatus(req('/api/auth?portal=market', 'first'));
     assert.equal((await marketplace.json()).destination, '/nurimarket');
-    assert.deepEqual(await state('owner'), {account: {id: users.owner.id, email: users.owner.email, owner: true}, items: []});
+    assert.deepEqual(await state('owner'), {account: {id: users.owner.id, email: users.owner.email, owner: true}, items: [], agenda: []});
 
     const create = {action: 'create', id: itemId, kind: 'task', title: '개인 작업', detail: '개인 메모', dueOn: '2026-11-20', ownerId: users.owner.id, actorId: users.second.id};
     assert.equal((await personalSave('first', create, origin, '')).status, 409, 'writes require a loaded account');
