@@ -42,7 +42,10 @@ export default function OperatorPasskey() {
    if (register && verified.ok) {
     setComplete(true);
     setNotice('패스키를 등록했습니다.');
-   } else if (verified.destination === '/dashboard') location.assign(verified.destination);
+   } else if (verified.destination === '/dashboard') {
+    const admin = new URLSearchParams(location.search).get('for') === 'market-admin';
+    location.assign(admin ? '/nurimarket/admin' : verified.destination);
+   }
    else throw new Error('이동할 화면을 확인하지 못했습니다.');
   } catch (error) {
    setNotice(error instanceof DOMException ? '기기 인증을 완료하지 못했습니다. 다시 시도해주세요.' :

@@ -13,6 +13,8 @@ import * as apiFallback from '../src/app/api/[[...rest]]/route';
 import {MARKET_SECTIONS,isMarketSection} from '../src/lib/routes';
 import {requireOrigin,MarketError} from '../src/lib/security';
 import {createDatabase} from '../src/lib/db';
+import {summarizeCronStatus} from '../src/lib/cron-health';
+import {collectMarketDashboard} from '../src/lib/dashboard';
 
 const env={...process.env};
 const restore=()=>{for(const k of Object.keys(process.env))if(!(k in env))delete process.env[k];Object.assign(process.env,env);};
@@ -87,4 +89,50 @@ test('origin gate: only the configured origins pass, missing/foreign/www are 403
   requireOrigin(req('https://shop.example.test'));requireOrigin(req('https://extra.example.test'));
   for(const origin of ['https://www.shop.example.test','https://evil.example','http://shop.example.test',undefined])assert.throws(()=>requireOrigin(req(origin)),(e:unknown)=>e instanceof MarketError&&e.status===403,String(origin));
  }finally{restore();}
+});
+
+
+test('cron logs distinguish a missing, delayed, malformed or failed execution from a healthy run',()=>{
+ const now=Date.parse('2026-11-18T07:30:00Z');
+ const latest='2026-11-18T07:29:30.000Z';
+ const success='2026-11-18T07:24:30.000Z';
+ assert.equal(summarizeCronStatus(null,now).status,'unobserved');
+ assert.deepEqual(summarizeCronStatus({ok:true,finishedAt:latest},now),{
+  status:'healthy',schedule:'*/5 * * * *',intervalMinutes:5,finishedAt:latest,lastSuccessAt:latest,
+ });
+ assert.equal(summarizeCronStatus({ok:true,finishedAt:'2026-11-18T07:16:59Z'},now).status,'stale');
+ assert.equal(summarizeCronStatus({ok:true,finishedAt:'2026-11-18T07:17:00Z'},now).status,'healthy');
+ assert.equal(summarizeCronStatus({ok:true,finishedAt:'2026-11-18T07:31:00Z'},now).status,'unknown');
+ const failure=summarizeCronStatus({ok:false,finishedAt:latest,lastSuccessAt:success},now);
+ assert.equal(failure.status,'failed');
+ assert.equal(failure.lastSuccessAt,success);
+});
+
+
+test('market rollup uses Korean month boundaries, excludes demo orders from monthly history and summarizes readiness without personal details',async()=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),'nh-market-rollup-'));
+ const db=await createDatabase(dir);
+ try{
+  for(const [index,createdAt,isDemo] of [[0,'2026-10-31T14:59:00Z',false],[1,'2026-10-31T15:00:00Z',false],[2,'2026-10-31T15:00:00Z',true]] as const){
+   const id='fixture-rollup-'+index;
+   await db.query(`INSERT INTO mkt_orders(id,number,request_id,request_hash,access_hash,
+    customer,method,subtotal,discount,shipping,total,payment_status,is_demo,consent,created_at)
+    VALUES($1,$1,$1,$1,$1,'{"name":"private-customer-fixture"}','CARD',100,0,0,100,'PAID',$2,'{}',$3)`,[id,isDemo,createdAt]);
+  }
+  await db.query("INSERT INTO mkt_inquiries(id,subject,content,reply) VALUES('fixture-inquiry','private-topic','private-inquiry-fixture','')");
+  const result=await collectMarketDashboard(db);
+  assert.equal(result.orders,3);
+  assert.equal(result.realOrders,2);
+  assert.equal(result.excludedOrders,1);
+  assert.deepEqual(result.monthly,[
+   {month:'2026-10',metric:'market_order_count',records:1},
+   {month:'2026-11',metric:'market_order_count',records:1},
+  ]);
+  assert.equal(result.operations.pendingShipments,3);
+  assert.equal(result.operations.unanswered,1);
+  assert.ok(result.inventory.length>0);
+  assert.ok(result.inventory.every(item=>Number.isInteger(item.stock)&&item.stock>=0));
+  assert.ok(result.readiness.some(item=>item.id==='launch'&&typeof item.ready==='boolean'));
+  assert.doesNotMatch(JSON.stringify(result),/private-customer-fixture|private-inquiry-fixture|pgClientKey|escrowUrl/);
+ }finally{await db.close();await rm(dir,{recursive:true,force:true});}
 });
