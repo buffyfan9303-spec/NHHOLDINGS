@@ -1,0 +1,117 @@
+.studio-work-library {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.studio-library-heading,
+.studio-library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.studio-library-heading {
+  justify-content: space-between;
+}
+
+.studio-work-library .btn {
+  min-height: 36px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.studio-library-detail,
+.studio-library-add {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.studio-library-detail summary,
+.studio-library-add summary {
+  width: fit-content;
+  min-height: 36px;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.studio-library-detail > .studio-library-actions,
+.studio-library-add > form {
+  margin-top: 8px;
+}
+
+.studio-library-records {
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.studio-library-records li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.studio-library-records li > div:first-child {
+  flex: 1 1 230px;
+  min-width: 0;
+}
+
+.studio-library-records li small {
+  display: block;
+  color: var(--muted);
+}
+
+.studio-library-records li strong {
+  display: block;
+}
+
+.studio-library-status:empty,
+#studio-library-conflict:empty {
+  display: none;
+}
+
+.studio-library-status {
+  margin: 8px 0;
+}
+
+.studio-library-conflict {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.studio-library-conflict .studio-library-actions {
+  margin-top: 8px;
+}
+
+.studio-library-logo {
+  display: block;
+  width: 112px;
+  max-width: 100%;
+  height: 30px;
+  padding: 6px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  background: #14231e;
+  object-fit: contain;
+}
+
+.studio-library-logo.on-light {
+  background: #f2f5f3;
+}
+
+@media (max-width: 640px) {
+  .studio-work-library .btn,
+  .studio-library-detail summary,
+  .studio-library-add summary {
+    min-height: 44px;
+  }
+}

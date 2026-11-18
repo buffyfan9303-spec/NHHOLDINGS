@@ -10,6 +10,8 @@ const followup=require('./social-followup.cjs');
 const desk=require('./operator-desk.cjs');
 const naver=require('./naver.cjs');
 const operatorPush=require('./operator-push.cjs');
+const socialDaily=require('./social-daily.cjs');
+const studioLibrary=require('./studio-library.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
 const SOURCES=[{id:'mind',name:'NURI MIND',url:'https://www.nurimind.co.kr',ref:'xdcglyavndiwbbaryocx',note:'회원·콘텐츠·운영 현황'},{id:'holdem',name:'NURI HOLDEM',url:'https://nuriholdem.com',ref:'idsxiqspecrucvfvtgbw',note:'직영 지정 사업장만 누리 매출에 포함'},{id:'crm',name:'NURI CRM',url:'https://www.nuricrm.co.kr',ref:'vnyjzdzaapyzqjsunhae',note:'사업장·관리비·거래처 현황'},{id:'market',name:'NURI MARKET',url:'/nurimarket',localAPI:true,note:'주문·배송·문의 요약 · 상세는 쇼핑몰 관리'},{id:'tistory',name:'SNS',url:'https://doto1.tistory.com',sitemap:'https://doto1.tistory.com/sitemap.xml',measurementId:'G-174JZ8W7VK',searchConsoleRegistered:true,note:'SNS 채널의 콘텐츠 · 게시 · 예약 · 수익화 관리'}];
 const MANUAL_HOSTS={bluesky:['bsky.app']};
@@ -94,18 +96,10 @@ function preflight(p){
  if(!CHANNELS.includes(p.channel))fail('운영에서 제외된 채널입니다.');
  if(Object.hasOwn(MANUAL_HOSTS,p.channel))fail('이 채널은 자동 게시 API가 연결되지 않았습니다. 직접 게시 후 발행 URL을 등록하세요.');
  if(manualBlog(p))fail('티스토리는 공식 글쓰기 API 종료로 발행 링크를 직접 등록하세요.');
- if(p.channel==='instagram'){
-  if(!p.media&&!p.videoUrl)fail('Instagram 공개 이미지 또는 릴스 영상의 HTTPS 주소를 입력하세요.');
-  if(p.videoUrl&&(p.media||p.slides?.length||p.altText)||p.altText&&p.slides?.length)fail('릴스와 사진을 구분하고 대체 텍스트는 단일 이미지에만 사용하세요.');
- }
- if(p.channel==='youtube'){
-  if(!p.youtubeVideoId||youtube.videoId(p.youtubeVideoId)!==p.youtubeVideoId)fail('비공개로 올린 YouTube 영상 주소를 입력하세요.');
-  if(typeof p.youtubeMadeForKids!=='boolean'||typeof p.youtubeSynthetic!=='boolean')fail('아동용 및 변경·합성 콘텐츠 여부를 확인하세요.');
-  if(!youtube.validMetadata(p.title,p.body))fail('YouTube 제목은 100자, 설명은 UTF-8 5,000바이트 이하로 입력하고 꺾쇠 문자를 제외하세요.');
- }
+ const missing=socialDaily.preflightIssues(p)[0];
+ if(missing)fail(missing.reason);
  if(p.channel==='x'&&weight(p.body,'x')>280)fail('X 본문을 가중 280자 이하로 줄이세요.');
  if(p.channel==='threads'&&Array.from(p.body).length>500)fail('Threads 본문을 500자 이하로 줄이세요.');
- if(p.channel==='instagram'&&Array.from(p.body).length>2200)fail('인스타그램 캡션을 2200자 이하로 줄이세요.');
 }
 async function inspectPublication(p,c,request=fetch){
  if(!CHANNELS.includes(p.channel))return {checkStatus:'unavailable'};
@@ -138,7 +132,14 @@ function sampleGenerate(topic,name){return {result:JSON.stringify({title:topic,y
 
 async function cloudGenerate(prompt,c,decrypt){if(!c?.enabled||!c.secret||!c.model)fail('설정에서 AI API 계정과 모델을 연결해주세요.',503);const {token}=decrypt(c.secret),anthropic=c.provider==='anthropic';const r=await fetch(anthropic?'https://api.anthropic.com/v1/messages':'https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',...(anthropic?{'x-api-key':token,'anthropic-version':'2023-06-01'}:{Authorization:'Bearer '+token})},body:JSON.stringify(anthropic?{model:c.model,max_tokens:6000,messages:[{role:'user',content:prompt}]}:{model:c.model,max_completion_tokens:6000,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}}),signal:AbortSignal.timeout(120000)});if(!r.ok)fail('AI API 응답 '+r.status+'. 키·모델·이용 한도를 확인해주세요.',502);const v=await r.json();return anthropic?v.content?.filter(x=>x.type==='text').map(x=>x.text).join(''):v.choices?.[0]?.message?.content;}
 async function controller(options){
- const ctx=await context(options.demo?'sample':'live');const {get,list,put,audit,transaction,encrypt,decrypt}=ctx;
+ const omittedFromState=['studio-work-draft','studio-brand-asset','studio-asset-recent','social-event','comment-sync','inbox-comment','comment-seen','inbox-work'];
+ const ctx=await context(options.demo?'sample':'live',{omitKinds:options.stateOnly?omittedFromState:[]});const {get,list,put,audit,transaction,encrypt,decrypt}=ctx;
+ const dailySocial=socialDaily.create(ctx,{demo:options.demo,accountFits,publicationApproved});
+ async function logSocial(id,type,actor,details={}){
+  const post=get('content',id);
+  if(!followup.sns(post))return;
+  await dailySocial.log(id,{type,actor,provider:post.channel,accountId:post.account,scheduledAt:post.scheduledAt,version:post.version,...details});
+ }
  const invalidate=async(s,b,day)=>{const id=s+':'+b+':'+day.slice(0,7),old=get('coverage',id);if(old)await put('coverage',id,{...old,complete:false,at:now()});};
  async function writeContent(id,record){const old=get('content',id);await put('content',id,{...record,version:old?(old.version??1)+1:1,updatedAt:now()});}
  async function recordConnection(id, account, error, identity={}){
@@ -184,14 +185,15 @@ async function controller(options){
  }
  async function saveContent(id,old,record,email,reason='saved',restoredFrom=null){
   const at=now();await transaction(async()=>{
-   if(old)await put('content-revision',crypto.randomUUID(),{contentId:id,version:old.version??1,title:old.title,body:old.body,seo:old.seo||validateSEO(),media:old.media||'',slides:old.slides||[],...videoFields(old),createdAt:at,reason,...(restoredFrom?{restoredFrom}:{})});
-   await writeContent(id,{...record,version:old?(old.version??1)+1:1,updatedAt:at,createdAt:old?.createdAt||at});await audit(email,'content.'+reason,id+(restoredFrom?':'+restoredFrom:''));
+   const revisionId=old?crypto.randomUUID():null;
+   if(revisionId)await put('content-revision',revisionId,{contentId:id,version:old.version??1,title:old.title,body:old.body,seo:old.seo||validateSEO(),media:old.media||'',slides:old.slides||[],...videoFields(old),createdAt:at,reason,...(restoredFrom?{restoredFrom}:{})});
+   await writeContent(id,{...record,version:old?(old.version??1)+1:1,updatedAt:at,createdAt:old?.createdAt||at});await logSocial(id,restoredFrom?'restored':old?'edited':'created',email,{at,revisionId});await audit(email,'content.'+reason,id+(restoredFrom?':'+restoredFrom:''));
   });
  }
  async function createDrafts(source,records,email,action){
   snsScope(source.service,source.business||'platform');
   if(records.some(p=>!CHANNELS.includes(p.channel)))fail('운영에서 제외된 채널입니다.');
-  const ids=[];await transaction(async()=>{for(const record of records){const id=crypto.randomUUID(),at=now();ids.push(id);await writeContent(id,{service:source.service,business:source.business||'platform',campaignId:source.campaignId||id,brand:desk.brands.has(source.brand)?source.brand:'',growthCampaign:source.growthCampaign||'',channel:record.channel,...(record.channel==='blog'?{blogTarget:source.blogTarget||(source.service==='tistory'?'tistory':'wordpress')}:{}),title:record.title,body:record.body,seo:validateSEO(source.seo),media:record.media||'',slides:record.slides||[],...videoFields(record),ruleBased:record.ruleBased===true,ai:false,status:'draft',sourceContent:source.id,createdAt:at,updatedAt:at,version:1});}await audit(email,action,source.id+':'+ids.join(','));});return {ids};
+  const ids=[];await transaction(async()=>{for(const record of records){const id=crypto.randomUUID(),at=now();ids.push(id);await writeContent(id,{service:source.service,business:source.business||'platform',campaignId:source.campaignId||id,brand:desk.brands.has(source.brand)?source.brand:'',growthCampaign:source.growthCampaign||'',channel:record.channel,...(record.channel==='blog'?{blogTarget:source.blogTarget||(source.service==='tistory'?'tistory':'wordpress')}:{}),title:record.title,body:record.body,seo:validateSEO(source.seo),media:record.media||'',slides:record.slides||[],...videoFields(record),ruleBased:record.ruleBased===true,ai:false,status:'draft',sourceContent:source.id,createdAt:at,updatedAt:at,version:1});await logSocial(id,'created',email,{at});}await audit(email,action,source.id+':'+ids.join(','));});return {ids};
  }
   let refreshPromise,workerBusy=false,aiBusy=false;
  async function refresh(){
@@ -245,7 +247,7 @@ async function controller(options){
    const raw=typeof result==='string'?result:result.result;let generated;
    try{generated=JSON.parse(raw.replace(/^\s*```(?:json)?\s*/,'').replace(/\s*```\s*$/,''));}catch{fail('AI 응답 형식을 확인할 수 없습니다. 다시 생성하세요.',502);}
     const campaignId=generationId,records=[...new Set(channels)].map(channel=>({id:crypto.randomUUID(),service:s.id,business:input.business||'platform',channel,...(channel==='blog'?{blogTarget:s.id==='tistory'?'tistory':'wordpress'}:{}),campaignId,generationId,title:text(generated.title,'제목',300),body:text(generated[channel],'본문',Object.hasOwn(MANUAL_HOSTS,channel)?CHANNEL_LIMITS[channel]:20000),media:'',status:'draft',createdAt:now(),updatedAt:now(),version:1,seo:validateSEO(),ai:true,topic,brand:input.brand||''})),ids=records.map(p=>p.id);
-    await transaction(async()=>{for(const {id,...record} of records)await writeContent(id,record);await put('generation',generationId,{...generation,status:'completed',completedAt:now(),ids});await audit(email,'content.generated',ids.join(','));});return {ids};
+    await transaction(async()=>{for(const {id,...record} of records){await writeContent(id,record);await logSocial(id,'created',email,{at:record.createdAt});}await put('generation',generationId,{...generation,status:'completed',completedAt:now(),ids});await audit(email,'content.generated',ids.join(','));});return {ids};
 
   }catch(e){if(generationId){await put('generation',generationId,{...generation,status:'failed',completedAt:now(),error:e.status?e.message:'AI API 연결·모델·이용 한도를 확인해주세요.'});await audit(email,'content.generation_failed',generationId);}if(!e.status)fail('AI API 연결·모델·이용 한도를 확인해주세요.',502);throw e;}finally{aiBusy=false;}
  }
@@ -300,6 +302,7 @@ async function controller(options){
     await ctx.reload();
     if(get('channel-hold',post.account)?.active||!isDeepStrictEqual(get('content',id),post))fail('게시 예약을 다시 확인하세요.',409);
     await writeContent(id,{...post,status:'published',attempt:attempt('published'),externalId:'sample-'+id,publishedAt:now(),error:null});
+    await logSocial(id,'response',email,{outcome:'published'});
     await audit(email,'content.sample_published',id);
    });
    return;
@@ -319,6 +322,7 @@ async function controller(options){
     fail('계정 또는 게시 상태가 변경됐습니다. 다시 확인하세요.',409);
    }
    await writeContent(id,{...post,status:'publishing',attempt:attempt('sending'),startedAt:now()});
+   await logSocial(id,'attempt',email,{outcome:'sending'});
   });
   let sent=!gated;
   try{
@@ -360,6 +364,7 @@ async function controller(options){
    if(base){const info=await remote(base+'/'+externalId+'?fields=permalink',{headers}).catch(()=>({}));link=socialPermalink(post.channel,info.permalink)?.href;}
    await transaction(async()=>{
     await writeContent(id,{...get('content',id),status:'published',attempt:attempt('published'),externalId,publishedChannelId:a.userId,link:link||'',publishedAt:now(),error:null});
+    await logSocial(id,'response',email,{outcome:'published',externalId});
     await audit(email,'content.published',id);
    });
   }catch(e){
@@ -367,8 +372,11 @@ async function controller(options){
    const code=sent?'uncertain':e.connectionIssue?'connection':'preflight';
    if(e.connectionIssue)await recordConnection(post.account,a,'게시 권한 확인 실패 · 계정을 다시 연결하세요.').catch(err=>{if(err.status!==409)throw err;});
    const message=e.connectionIssue&&!sent?'게시 권한을 확인한 뒤 다시 예약하세요.':e.status?e.message:'채널 응답이 중단되었습니다. 게시 상태를 확인하세요.';
-   await writeContent(id,{...get('content',id),status:'review',attempt:attempt(code),uncertain:sent,error:message});
-   await audit(email,sent?'content.publish_review':'content.preflight_review',id);
+   await transaction(async()=>{
+    await writeContent(id,{...get('content',id),status:'review',attempt:attempt(code),uncertain:sent,error:message});
+    await logSocial(id,'response',email,{outcome:code});
+    await audit(email,sent?'content.publish_review':'content.preflight_review',id);
+   });
    throw e.status?e:Object.assign(new Error(message),{status:502});
   }
  }
@@ -417,6 +425,7 @@ async function controller(options){
    await ctx.reload();
    if(!isDeepStrictEqual(get('content',id),p)||get('channel',p.account)?.secret!==account.secret)fail('계정 또는 예약이 변경됐습니다.',409);
    await writeContent(id,{...p,status:'published',attempt:{code:'published',at:now()},externalId:video.id,publishedChannelId:account.userId,link:youtube.watchUrl(video.id),publishedAt:new Date(publishedAt).toISOString(),checkedAt:now(),checkStatus:'visible',uncertain:false,error:null});
+   await logSocial(id,'confirmed',email,{outcome:'visible',externalId:video.id});
    await audit(email,'content.youtube_reconciled',id);
   });
  }
@@ -430,6 +439,7 @@ async function controller(options){
    await put('sns-followup',id,{...current,[key]:value});
    if(key==='publication'&&post.status==='published'&&value.state==='visible'){
     await writeContent(id,{...post,checkedAt:value.checkedAt,checkStatus:'visible',link:value.link||post.link});
+    await logSocial(id,'confirmed','예약 실행',{at:value.checkedAt,outcome:'visible',externalId:post.externalId});
    }
    if(action)await audit('예약 실행',action,id);
   });
@@ -524,16 +534,20 @@ async function controller(options){
    if(key)alerts++;
   }
   if(operatorPush.config()){await ctx.reload();await operatorPush.dispatch(ctx);}
-  return {checked,alerts};
+  return {checked,alerts,comments:await dailySocial.sweep()};
  }
 
  async function deskInbox(req){
-  const page=Number(new URL(req.url).searchParams.get('page')||1);
-  if(!Number.isSafeInteger(page)||page<1||page>10000)fail('문의 목록 페이지를 확인하세요.');
+  const params=new URL(req.url).searchParams;
+  const page=Number(params.get('page')||1),commentPage=Number(params.get('commentPage')||1);
+  const filter=params.get('commentFilter')||'all';
+  if(![page,commentPage].every(n=>Number.isSafeInteger(n)&&n>=1&&n<=10000)||!['all','new','open'].includes(filter))fail('문의 목록 페이지를 확인하세요.');
   const market=options.inquiries&&!options.demo?await options.inquiries(page):{rows:[],page:1,total:0,pageSize:20};
-  const inbox=list('inbox-comment').slice(0,100);
-  const rows=[...market.rows,...inbox].map(row=>({...row,work:get('inbox-work',row.id)||null}));
-  return {items:rows.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)),page:market.page,marketTotal:market.total,pageSize:market.pageSize};
+  const comments=dailySocial.inboxComments({page:commentPage,filter});
+  const rows=[...market.rows,...comments.rows].map(row=>({...row,work:get('inbox-work',row.id)||null}));
+  return {items:rows.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)),page:market.page,marketTotal:market.total,pageSize:market.pageSize,
+   commentSync:dailySocial.commentState().slice(0,100),commentTotal:comments.total,commentPage:comments.page,commentPageSize:comments.pageSize};
+
  }
  async function operatorDesk(action,v,email){
   if(action==='hold'){
@@ -612,29 +626,8 @@ async function controller(options){
    await audit(email,'desk.traffic_read',id);
    return result;
   }
-  if(action==='comments'){
-   if(options.demo)fail('샘플에서는 외부 댓글을 조회하지 않습니다.',404);
-   const id=text(v.id,'게시물',80),p=get('content',id);
-   if(!followup.sns(p)||p.status!=='published'||p.manual||!p.externalId||platformExcluded(p))fail('연결된 채널로 게시한 항목을 선택하세요.');
-   const a=get('channel',p.account);
-   if(!accountFits(a,p)||!a.verifiedAt||(!p.publishedChannelId&&!publicationApproved({...p,id},a))||
-      p.publishedChannelId&&p.publishedChannelId!==a.userId)fail('게시한 채널의 연결을 확인하세요.',409);
-   const last=get('comment-sync',id);
-   if(last&&Date.now()-Date.parse(last.at)<60000)return {received:last.received};
-   const account=await ensureFresh(ctx,{...a,id:p.account}),rows=await desk.socialComments(p,decrypt(account.secret));
-   await transaction(async()=>{
-    await ctx.lockRow('content',id);
-    await ctx.reload();
-    if(get('content',id)?.externalId!==p.externalId||get('channel',p.account)?.secret!==account.secret)fail('게시물 또는 채널 정보가 변경됐습니다.',409);
-    for(const {id:commentId,...item} of rows){
-     const old=get('inbox-comment',commentId);
-     if(!old||old.body!==item.body)await put('inbox-comment',commentId,{...item,subject:p.title,contentId:id,sourceLink:p.link});
-    }
-    await put('comment-sync',id,{at:now(),received:rows.length});
-    await audit(email,'desk.comments_read',id);
-   });
-   return {received:rows.length};
-  }
+  if(action==='comments')return dailySocial.readComments(v.id,email);
+  if(action==='comment-seen')return dailySocial.markSeen(v.id,email);
   if(action==='inbox'){
    const id=text(v.id,'처리 항목',120);
    if(!desk.states.has(v.status)||!(/^(market|youtube|instagram)-[0-9a-z-]{1,80}$/.test(id)))fail('처리 상태를 확인하세요.');
@@ -654,8 +647,16 @@ async function controller(options){
    if(route==='/api/session'&&req.method==='GET')return reply({authenticated:true,email,setup:false,demo:options.demo});
    if(route==='/api/state'&&req.method==='GET')return reply(view());
    if(route==='/api/desk/inbox'&&req.method==='GET')return reply(await deskInbox(req));
+   const libraryResponse=await studioLibrary.handle(ctx,req.method,route,v,options.actorId,email,req.url);
+   if(libraryResponse)return reply(libraryResponse.body,libraryResponse.status);
    if(req.method!=='POST')fail('지원하지 않는 요청입니다.',405);
+   if(route==='/api/content/readiness')return reply(dailySocial.readiness(v));
+   if(route==='/api/content/timeline')return reply(await dailySocial.timeline(v));
    if(route.startsWith('/api/desk/'))return reply(await operatorDesk(route.slice(10),v,email));
+   if(route==='/api/push/preferences'){
+    if(options.demo)fail('샘플에서는 알림을 연결할 수 없습니다.',404);
+    return reply(operatorPush.preferences(ctx,v.endpoint,email));
+   }
    if(route==='/api/push/subscription'){
     if(options.demo)fail('샘플에서는 알림을 연결할 수 없습니다.',404);
     await operatorPush.update(ctx,v,email);
@@ -901,6 +902,8 @@ async function controller(options){
       await put('approval-snapshot',v.id,desk.approvedSnapshot(scheduled,a,at));
      }
      await writeContent(v.id,scheduled);
+     if(gated)await logSocial(v.id,'approved',email,{at:scheduled.approval.at});
+     await logSocial(v.id,'scheduled',email);
      await audit(email,gated?'content.'+p.channel+'_approved':'content.scheduled',v.id);
     });
    }else if(route==='/api/content/pause'||route==='/api/content/cancel'){
@@ -910,6 +913,7 @@ async function controller(options){
     const status=pause?'paused':p.uncertain||p.status==='review'?'review':'draft';
     await transaction(async()=>{
      await writeContent(v.id,{...p,status,attempt:status==='review'?p.attempt??null:null,error:status==='review'?p.error??null:null,scheduledAt:pause?p.scheduledAt:null,approval:null});
+     await logSocial(v.id,pause?'paused':'cancelled',email,{scheduledAt:p.scheduledAt});
      await audit(email,pause?'content.'+p.channel+'_paused':'content.cancelled',v.id);
     });
    }
@@ -934,7 +938,11 @@ async function controller(options){
     const registrationOnly=Object.hasOwn(MANUAL_HOSTS,p.channel)||p.manual===true&&!manualBlog(p);let a=get('channel',p.account);let result;
     try{if(!options.demo&&accountFits(a,p)&&!registrationOnly)a=await ensureFresh(ctx,{...a,id:p.account});result=registrationOnly?{checkStatus:'registered'}:options.demo?{checkStatus:'visible'}:await (options.inspect||inspectPublication)(p,accountFits(a,p)&&a.secret?decrypt(a.secret):null);}catch{result={checkStatus:'unavailable'};}
     const current=get('content',v.id);if(current?.externalId!==p.externalId||current?.status!=='published')fail('게시 기록이 변경되었습니다. 다시 확인하세요.',409);
-    await writeContent(v.id,{...current,...result,checkedAt:registrationOnly?null:now()});await audit(email,registrationOnly?'content.url_registration_checked':'content.checked',v.id);
+    await transaction(async()=>{
+     await writeContent(v.id,{...current,...result,checkedAt:registrationOnly?null:now()});
+     await logSocial(v.id,'confirmed',email,{outcome:result.checkStatus});
+     await audit(email,registrationOnly?'content.url_registration_checked':'content.checked',v.id);
+    });
    }
    else if(route==='/api/plan'){
     scope(v.service,v.business||'platform');if(!Array.isArray(v.channels)||!v.channels.length||v.channels.some(x=>!CHANNELS.includes(x)))fail('채널을 선택하세요.');if(!Number.isInteger(v.days)||v.days<1||v.days>365)fail('생성 주기는 1~365일입니다.');

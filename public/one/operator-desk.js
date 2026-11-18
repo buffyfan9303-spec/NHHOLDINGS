@@ -5,7 +5,7 @@ window.NuriDesk=(()=>{
  const brands=[['mind','누리마인드'],['holdem','누리홀덤']];
  const stateLabels={open:'대기',working:'처리 중',done:'정리 완료'};
  const websiteLabels={up:'공개 접속 정상',http:'공개 HTTP 오류',timeout:'공개 응답 지연',network:'공개 접속 실패'};
- const ui={tab:'schedule',inbox:null,inboxPage:1,loadingInbox:false,inboxError:''};
+ const ui={tab:'schedule',inbox:null,inboxPage:1,commentPage:1,commentFilter:'all',openItem:'',inboxRequested:null,loadingInbox:false,inboxError:''};
  const props=()=>data.desk||{holds:[],brands:[],links:[],traffic:[],approved:[]};
  const accountTitle=a=>(labels[a.channel]||a.channel)+' · '+a.label;
  const nameOf=id=>brands.find(b=>b[0]===id)?.[1]||id;
@@ -170,36 +170,65 @@ window.NuriDesk=(()=>{
    ${p.state!=='up'&&p.lastSuccessAt?`<small>마지막 정상 접속 ${esc(dt(p.lastSuccessAt))} KST</small>`:''}</p>`;
  }
 
- async function loadInbox(page=ui.inboxPage){
-  if(ui.loadingInbox)return;
+ async function loadInbox(page=ui.inboxPage,commentPage=ui.commentPage,focus=''){
+  const request={};
+  ui.inboxRequested=request;
   ui.loadingInbox=true;ui.inboxError='';
-  if(state.page==='desk')render();
-  try{ui.inbox=await api('desk/inbox?page='+page);ui.inboxPage=ui.inbox.page;}
-  catch(error){ui.inboxError=error.message;}
-  finally{ui.loadingInbox=false;if(state.page==='desk')render();}
+  if(state.page==='desk'&&ui.tab==='inbox')render();
+  try{
+   const result=await api('desk/inbox?'+new URLSearchParams({page,commentPage,commentFilter:ui.commentFilter}));
+   if(ui.inboxRequested!==request)return;
+   ui.inbox=result;
+   ui.inboxPage=result.page;
+   ui.commentPage=result.commentPage??1;
+  }catch(error){if(ui.inboxRequested===request)ui.inboxError=error.message;}
+  finally{
+   if(ui.inboxRequested===request){
+    ui.loadingInbox=false;
+    if(state.page==='desk'&&ui.tab==='inbox'){
+     render();
+     if(focus)document.getElementById(focus)?.focus();
+    }
+   }
+  }
  }
 
  function inbox(){
-  const posts=data.contents.filter(p=>snsRecord(p)&&['instagram','youtube'].includes(p.channel)&&p.status==='published'&&p.account&&p.externalId&&!p.manual&&!p.platformExclusion?.excludedAt);
+  const posts=data.contents.filter(p=>snsRecord(p)&&['instagram','youtube'].includes(p.channel)&&p.status==='published'&&p.account&&p.externalId&&!p.manual&&!platformExcluded(p));
   const result=ui.inbox;
+  const checks=result?.commentSync||[];
+  const latest=checks.find(r=>r.mode==='automatic'&&r.at&&!r.error);
+  const issues=checks.filter(r=>r.error&&posts.some(p=>p.id===r.id));
+  const commentItems=result?.items.filter(item=>item.kind!=='market')||[];
+  const marketItems=result?.items.filter(item=>item.kind==='market')||[];
   return `<section class="panel panel-inner"><h2>댓글·문의 처리함</h2>
-   <p class="caption">채널의 최근 댓글을 가져오고, 쇼핑몰 문의와 함께 담당·답변 초안을 정리합니다.</p>
+   <p class="caption">최근 30일 안에 연결 채널에 게시한 글을 정기 조회합니다. 한 게시물에서 최근 댓글 25개까지 가져옵니다.</p>
    ${posts.length?`<form data-desk-form="comments" class="form-grid">${selectField('댓글을 가져올 게시물','id',posts.map(p=>[p.id,labels[p.channel]+' · '+p.title]))}<div class="full"><button type="submit" class="btn primary">댓글 조회</button></div></form>`:''}
+   ${latest?`<p class="caption">최근 자동 조회 <time datetime="${esc(latest.at)}">${esc(dt(latest.at))} KST</time></p>`:''}
+   ${issues.length?`<details class="desk-item"><summary>댓글 조회 확인 필요 ${issues.length}건</summary><ul class="desk-comment-errors">${issues.map(row=>`<li><strong>${esc(posts.find(p=>p.id===row.id)?.title)}</strong> <span>${esc(row.error)}</span></li>`).join('')}</ul></details>`:''}
    ${ui.loadingInbox?message('목록을 조회하고 있습니다.'):ui.inboxError?message(ui.inboxError):''}
-   ${result?`<div class="toolbar section-gap">${buttonFor('목록 새로고침','reload-inbox')}<span class="caption">쇼핑몰 문의 ${money(result.marketTotal)}건 · ${result.page}페이지</span></div>
-    ${result.items.map(item=>{
-     const work=item.work||{},link=webLink(item.sourceLink)||item.sourceLink==='/nurimarket/admin'&&item.sourceLink;
-     return `<details class="desk-item"><summary>${esc(labels[item.kind]||'누리마켓')} · ${esc(item.subject)} · ${esc(stateLabels[work.status||'open'])}</summary>
-      <p class="desk-inbox-text">${esc(item.body)}</p><p class="caption">${esc(dt(item.createdAt))} KST${item.answered?' · 쇼핑몰 답변 등록됨':''}</p>
-      ${link?`<a class="link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">원본 열기 ↗</a>`:''}
-      <form class="form-grid section-gap" data-desk-form="inbox"><input type="hidden" name="id" value="${esc(item.id)}"><input type="hidden" name="version" value="${work.version||1}">
-      ${formField('담당자','assignee',work.assignee||'','text','maxlength="80"')}${selectField('처리 상태','status',Object.entries(stateLabels),work.status||'open')}
-      ${formField('답변 초안','draft',work.draft||'','textarea','maxlength="2000"')}
-      <div class="full"><button type="submit" class="btn">처리·초안 저장</button></div></form></details>`;
-    }).join('')||empty('가져온 댓글과 쇼핑몰 문의가 없습니다.')}
-    <div class="toolbar">${result.page>1?buttonFor('이전 문의 페이지','inbox-page',String(result.page-1)):''}
-     ${result.page*result.pageSize<result.marketTotal?buttonFor('다음 문의 페이지','inbox-page',String(result.page+1)):''}</div>`:buttonFor('댓글·문의 목록 열기','reload-inbox')}
+   ${result?`<div class="desk-inbox-group section-gap"><h3>채널 댓글 <span class="caption">${money(result.commentTotal??commentItems.length)}건</span></h3>
+    <div class="desk-inbox-filters">${[['all','전체'],['new','새 댓글'],['open','미처리']].map(([id,label])=>`<button type="button" class="btn" id="comments-filter-${id}" data-desk-action="comment-filter" data-id="${id}" aria-pressed="${ui.commentFilter===id}">${label}</button>`).join('')}
+    <button type="button" class="btn" id="comments-reload" data-desk-action="reload-inbox">목록 새로고침</button></div>
+    ${commentItems.map(inboxItem).join('')||empty(ui.commentFilter==='new'?'새 댓글이 없습니다.':ui.commentFilter==='open'?'미처리 댓글이 없습니다.':'가져온 댓글이 없습니다.')}
+    <div class="toolbar">${ui.commentPage>1?buttonFor('이전 댓글 페이지','comment-page',String(ui.commentPage-1)):''}
+     ${ui.commentPage*(result.commentPageSize??25)<(result.commentTotal??0)?buttonFor('다음 댓글 페이지','comment-page',String(ui.commentPage+1)):''}</div></div>
+    <div class="desk-inbox-group section-gap"><h3>쇼핑몰 문의 <span class="caption">${money(result.marketTotal)}건</span></h3>
+     ${marketItems.map(inboxItem).join('')||empty('쇼핑몰 문의가 없습니다.')}
+     <div class="toolbar">${result.page>1?buttonFor('이전 문의 페이지','inbox-page',String(result.page-1)):''}
+      ${result.page*result.pageSize<result.marketTotal?buttonFor('다음 문의 페이지','inbox-page',String(result.page+1)):''}</div></div>`:ui.loadingInbox?'':buttonFor('댓글·문의 목록 열기','reload-inbox')}
   </section>`;
+ }
+
+ function inboxItem(item){
+  const work=item.work||{},link=webLink(item.sourceLink)||item.sourceLink==='/nurimarket/admin'&&item.sourceLink;
+  return `<details class="desk-item" ${ui.openItem===item.id?'open':''}><summary id="inbox-item-${esc(item.id)}">${esc(labels[item.kind]||'누리마켓')} · ${esc(item.subject)} · ${esc(stateLabels[work.status||'open'])}${item.isNew?' <span class="desk-new-comment">새 댓글</span>':''}</summary>
+   <p class="desk-inbox-text">${esc(item.body)}</p><p class="caption">${esc(dt(item.createdAt))} KST${item.answered?' · 쇼핑몰 답변 등록됨':''}</p>
+   <div class="toolbar">${link?`<a class="link" href="${esc(link)}" target="_blank" rel="noopener noreferrer">원본 열기 ↗</a>`:''}${item.isNew?buttonFor('읽음 표시','comment-seen',item.id):''}</div>
+   <form class="form-grid section-gap" data-desk-form="inbox"><input type="hidden" name="id" value="${esc(item.id)}"><input type="hidden" name="version" value="${work.version||1}">
+   ${formField('담당자','assignee',work.assignee||'','text','maxlength="80"')}${selectField('처리 상태','status',Object.entries(stateLabels),work.status||'open')}
+   ${formField('답변 초안','draft',work.draft||'','textarea','maxlength="2000"')}
+   <div class="full"><button type="submit" class="btn">처리·초안 저장</button></div></form></details>`;
  }
 
  function traffic(){
@@ -253,6 +282,9 @@ window.NuriDesk=(()=>{
  function renderDesk(){
   if(session.readOnly)return empty('운영 도구는 운영자 계정에서 사용할 수 있습니다.');
   const views={schedule,brand,inbox,traffic,weekly};
+  if(ui.tab==='inbox'&&!ui.inbox&&!ui.loadingInbox&&!ui.inboxError)queueMicrotask(()=>{
+   if(state.page==='desk'&&ui.tab==='inbox'&&!ui.inbox&&!ui.loadingInbox)void loadInbox(undefined,undefined,'desk-tab-inbox');
+  });
   return `<nav class="site-tabs desk-tabs" aria-label="운영 도구">
    ${sections.map(([id,l])=>`<button type="button" id="desk-tab-${id}" data-desk-tab="${id}" ${ui.tab===id?'aria-current="page"':''}>${l}</button>`).join('')}
    </nav>${views[ui.tab]()}`;
@@ -286,11 +318,25 @@ window.NuriDesk=(()=>{
   try{
    if(action==='move-time'){
     const time=trigger.closest('form').elements.at;
-    time.value=id;conflicts(time.form);time.focus();
+    time.value=id;time.dispatchEvent(new Event('change',{bubbles:true}));time.focus();
    }else if(action==='append-footer'){
     const form=trigger.closest('form'),body=form?.elements.body,value=preset(form?.elements.brand.value)?.footer;
     if(body&&value&&!body.value.endsWith(value)){body.value=[body.value.trimEnd(),value].filter(Boolean).join('\n\n');body.dispatchEvent(new Event('input',{bubbles:true}));body.focus();}
-   }else if(action==='reload-inbox'||action==='inbox-page')await loadInbox(action==='inbox-page'?Number(id):ui.inboxPage);
+   }else if(action==='reload-inbox'||action==='inbox-page')await loadInbox(action==='inbox-page'?Number(id):ui.inboxPage,ui.commentPage,trigger.id||'desk-tab-inbox');
+   else if(action==='comment-page')await loadInbox(ui.inboxPage,Number(id),'comments-filter-'+ui.commentFilter);
+   else if(action==='comment-filter'){
+    ui.commentFilter=id;
+    ui.openItem='';
+    await loadInbox(ui.inboxPage,1,trigger.id);
+   }else if(action==='comment-seen'){
+    trigger.disabled=true;
+    try{
+     await api('desk/comment-seen',{id});
+     ui.openItem=id;
+     await loadInbox(ui.inboxPage,ui.commentPage,ui.commentFilter==='new'?'comments-filter-new':'inbox-item-'+id);
+     toast('읽음 상태를 저장했습니다.');
+    }finally{trigger.disabled=false;}
+   }
    else if(action==='copy-link'){const link=props().links.find(link=>link.id===id);if(link){await navigator.clipboard.writeText(link.url);toast('추적 링크를 복사했습니다.');}}
    else if(action==='weekly-csv'){
     const cells=[['서비스·채널','항목','확인 결과'],...weeklyRows()];
@@ -312,12 +358,20 @@ window.NuriDesk=(()=>{
    if(values.version)values.version=Number(values.version);
    if(action==='hold')values.active=values.active==='true';
    const result=await api('desk/'+action,values);
-   if(action==='inbox'||action==='comments'){await loadInbox();toast(action==='comments'?result.received+'건의 댓글을 확인했습니다.':'처리 상태와 초안을 저장했습니다.');return;}
+   if(action==='inbox'||action==='comments'){
+    ui.openItem=action==='inbox'?values.id:'';
+    await loadInbox(ui.inboxPage,action==='comments'?1:ui.commentPage,action==='inbox'&&ui.commentFilter==='all'?'inbox-item-'+values.id:'comments-filter-'+ui.commentFilter);
+    toast(action==='comments'?(result.cached?'최근 확인한 댓글 '+result.received+'건을 표시합니다.':`댓글 ${result.received}건을 확인했습니다. 새 댓글 ${result.added??0}건을 추가했습니다.`):'처리 상태와 초안을 저장했습니다.');
+    return;
+   }
    data=action==='hold'||action==='brand'?result:await api('state');
    if(state.page==='desk')render();
    toast(action==='link'?'추적 링크를 만들었습니다.':action==='traffic'?'유입 조회 결과를 갱신했습니다.':'저장했습니다.');
   }catch(error){toast(error.message);}
   finally{button.disabled=false;}
  });
- return {render:renderDesk,brandFields,preset,hold,approvalComparison,siteStatus};
+ function goTo(tab){
+  if(sections.some(([id])=>id===tab)){ui.tab=tab;navigate('desk');}
+ }
+ return {render:renderDesk,brandFields,preset,hold,approvalComparison,siteStatus,goTo};
 })();

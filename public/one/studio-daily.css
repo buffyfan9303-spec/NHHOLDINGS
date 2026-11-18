@@ -1,0 +1,273 @@
+.studio-daily-controls {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.studio-daily-controls .studio-filter-pair {
+  width: min(100%, 360px);
+}
+
+.studio-daily-switch {
+  display: flex;
+  gap: 6px;
+}
+
+.studio-daily-switch button {
+  min-height: 44px;
+  padding: 8px 16px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.studio-daily-switch button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--side);
+  border-color: var(--line);
+}
+
+.studio-daily-switch button:hover,
+.studio-day-item:hover {
+  color: var(--ink);
+  background: var(--side);
+}
+
+.studio-daily-switch button:focus-visible,
+.studio-day-item:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.studio-daily-month-heading {
+  margin: 16px 0 10px;
+  font-size: 16px;
+}
+
+.studio-daily-calendar {
+  display: grid;
+  padding: 0 20px;
+}
+
+.studio-daily-date {
+  min-width: 0;
+  padding: 16px 0;
+}
+
+.studio-daily-date + .studio-daily-date {
+  border-top: 1px solid var(--line);
+}
+
+.studio-daily-date > h3,
+.studio-account-lane > h4,
+.studio-baseline-card h3,
+.studio-draft-handoff h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.studio-daily-date > h3 {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.studio-daily-date > h3 small,
+.studio-account-lane > h4 {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.studio-account-lanes,
+.studio-day-list {
+  display: grid;
+  gap: 0;
+}
+
+.studio-day-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-day-chronology {
+  display: none;
+}
+
+.studio-account-lane {
+  display: grid;
+  grid-template-columns: minmax(112px, 18%) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 5px 0;
+}
+
+.studio-account-lane + .studio-account-lane {
+  border-top: 1px solid var(--line);
+}
+
+.studio-account-lane > h4 {
+  padding: 13px 0;
+}
+
+.studio-day-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  width: 100%;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 48px;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.studio-day-item time,
+.studio-day-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-day-item-title {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  overflow-wrap: anywhere;
+}
+
+.studio-day-item-title small,
+.studio-day-item-state,
+.studio-day-time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.studio-day-empty.studio-placeholder {
+  margin: 0;
+  padding: 7px 0;
+}
+
+.studio-baseline-list {
+  display: grid;
+  margin-top: 12px;
+}
+
+.studio-baseline-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(155px, 30%) auto;
+  align-items: start;
+  gap: 8px 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.studio-baseline-card h3,
+.studio-draft-handoff h3 {
+  margin: 3px 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.studio-baseline-card small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.studio-baseline-reading {
+  display: grid;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-baseline-card .btn {
+  min-height: 44px;
+}
+
+.studio-baseline-history > summary {
+  min-height: 44px;
+  display: list-item;
+  padding: 12px 0;
+  color: var(--teal);
+  cursor: pointer;
+}
+
+.studio-draft-handoff {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--teal);
+  background: var(--side);
+  overflow-wrap: anywhere;
+}
+
+.studio-draft-handoff p {
+  margin: 5px 0;
+}
+
+@media (max-width: 900px) {
+  .studio-account-lanes {
+    display: none;
+  }
+
+  .studio-day-chronology {
+    display: grid;
+  }
+
+  .studio-day-list li + li {
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 600px) {
+  .studio-daily-controls,
+  .studio-daily-calendar {
+    padding-inline: 14px;
+  }
+
+  .studio-daily-controls {
+    gap: 12px;
+  }
+
+  .studio-daily-switch {
+    width: 100%;
+  }
+
+  .studio-daily-switch button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .studio-day-item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    row-gap: 2px;
+    padding-inline: 5px;
+  }
+
+  .studio-day-item-state {
+    grid-column: 2;
+  }
+
+  .studio-baseline-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studio-baseline-card .btn {
+    justify-self: start;
+  }
+}

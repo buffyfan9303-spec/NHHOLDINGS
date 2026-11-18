@@ -1,13 +1,17 @@
 'use strict';
 const crypto=require('node:crypto');
 const {pool}=require('./postgres.cjs');
-async function context(workspace){
+async function context(workspace,{omitKinds=[]}={}){
  if(!['live','sample'].includes(workspace))throw new Error('Workspace invalid');
  let connection;const q=(sql,args=[])=> (connection||pool()).query(sql,args);
  const documents=new Map();let money=[],audits=[];
  const key=(kind,id)=>JSON.stringify([kind,id]);
- async function reload(){documents.clear();for(const r of (await q('SELECT kind,id,data,updated FROM nh_documents WHERE workspace=$1 ORDER BY updated DESC',[workspace])).rows)documents.set(key(r.kind,r.id),r);money=(await q("SELECT * FROM nh_money WHERE workspace=$1 ORDER BY day DESC,id",[workspace])).rows.map(({workspace,...r})=>({...r,day:typeof r.day==='string'?r.day.slice(0,10):r.day.toISOString().slice(0,10),amount:Number(r.amount)}));audits=(await q('SELECT id,at,email,action,target FROM nh_audit WHERE workspace=$1 ORDER BY id DESC LIMIT 100',[workspace])).rows.map(r=>({...r,id:Number(r.id),at:r.at.toISOString()}));}
+ async function reload(){documents.clear();for(const r of (await q('SELECT kind,id,data,updated FROM nh_documents WHERE workspace=$1 AND NOT (kind=ANY($2::text[])) ORDER BY updated DESC',[workspace,omitKinds])).rows)documents.set(key(r.kind,r.id),r);money=(await q("SELECT * FROM nh_money WHERE workspace=$1 ORDER BY day DESC,id",[workspace])).rows.map(({workspace,...r})=>({...r,day:typeof r.day==='string'?r.day.slice(0,10):r.day.toISOString().slice(0,10),amount:Number(r.amount)}));audits=(await q('SELECT id,at,email,action,target FROM nh_audit WHERE workspace=$1 ORDER BY id DESC LIMIT 100',[workspace])).rows.map(r=>({...r,id:Number(r.id),at:r.at.toISOString()}));}
  await reload();
+ async function contentAudits(id){
+  const result=await q("SELECT id,at,email,action,target FROM nh_audit WHERE workspace=$1 AND (target=$2 OR left(target,length($2)+1)=$2||':') AND action LIKE 'content.%' ORDER BY id DESC LIMIT 60",[workspace,id]);
+  return result.rows.map(r=>({...r,id:Number(r.id),at:r.at.toISOString()}));
+ }
  const get=(kind,id)=>{const row=documents.get(key(kind,id));return row?structuredClone(row.data):null;};
  const list=kind=>[...documents.values()].filter(r=>r.kind===kind).sort((a,b)=>new Date(b.updated)-new Date(a.updated)).map(r=>({id:r.id,...structuredClone(r.data)}));
  async function put(kind,id,data){const old=documents.get(key(kind,id));const result=old?await q('UPDATE nh_documents SET data=$4,updated=now() WHERE workspace=$1 AND kind=$2 AND id=$3 AND data=$5::jsonb RETURNING updated',[workspace,kind,id,JSON.stringify(data),JSON.stringify(old.data)]):await q('INSERT INTO nh_documents(workspace,kind,id,data) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING updated',[workspace,kind,id,JSON.stringify(data)]);if(result.rowCount!==1)throw Object.assign(new Error('다른 작업에서 변경했습니다. 새로고침 후 다시 저장해주세요.'),{status:409});documents.set(key(kind,id),{kind,id,data:structuredClone(data),updated:result.rows[0].updated});}
@@ -21,6 +25,6 @@ async function context(workspace){
  const decrypt=v=>{const b=Buffer.from(v,'base64'),cipher=crypto.createDecipheriv('aes-256-gcm',secretKey,b.subarray(0,12));cipher.setAuthTag(b.subarray(-16));return JSON.parse(Buffer.concat([cipher.update(b.subarray(12,-16)),cipher.final()]).toString('utf8'));};
  const lock=async key=>{if(!connection)throw new Error('Transaction required');await q('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[workspace+':'+key]);};
  const lockRow=async(kind,id)=>{if(!connection)throw new Error('Transaction required');await q('SELECT id FROM nh_documents WHERE workspace=$1 AND kind=$2 AND id=$3 FOR UPDATE',[workspace,kind,id]);};
- return {workspace,get,list,put,audit,transaction,lock,lockRow,recordMoney,voidMoney,findMoney,encrypt,decrypt,reload,get money(){return money;},get audits(){return audits;}};
+ return {workspace,get,list,put,audit,contentAudits,transaction,lock,lockRow,recordMoney,voidMoney,findMoney,encrypt,decrypt,reload,get money(){return money;},get audits(){return audits;}};
 }
 module.exports={context};
