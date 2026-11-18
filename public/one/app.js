@@ -231,18 +231,24 @@ function platformExclusionControls(p){if(!snsPost(p)||p.status!=='published'||!p
 const inspectContentBase=inspectContent;
 inspectContent=function(id){inspectContentBase(id);const p=data.contents.find(p=>p.id===id),dialog=$('post-inspector');if(dialog.open)dialog.insertAdjacentHTML('beforeend',platformExclusionControls(p));};
 function siteCards(){
- const metrics={mind:['users','가입 회원'],holdem:['sourceBusinesses','연결 매장'],crm:['customers','등록 고객'],market:['orders','등록 주문']};
+ const metrics={mind:['users','회원 기록'],holdem:['sourceBusinesses','연결 매장'],crm:['customers','등록 고객'],market:['orders','등록 주문'],tistory:['posts','블로그 공개 글']};
  return `<div class="site-grid">${data.services.map(site=>{
-  const snapshot=site.snapshot?.data,field=metrics[site.id];
-  const value=field?snapshot?.[field[0]]:site.id==='tistory'?monthlyPublications().published:snapshot?.posts;
-  const label=field?.[1]||(site.id==='tistory'?'이번 달 실제 게시':'공개 게시물');
+  const snapshot=site.snapshot?.data,field=metrics[site.id]||['posts','공개 게시물'];
   const status=snapshot?(site.stale?'이전 조회':'조회 완료'):'연결 확인 필요';
+  const observedAt=snapshot?.observedAt;
   const tasks=data.tasks.filter(t=>t.service===site.id&&t.status!=='done').length;
   const scheduled=data.contents.filter(p=>p.service===site.id&&p.status==='scheduled'&&(site.id!=='tistory'||supportedChannel(p.channel))).length;
-  return `<button type="button" class="site-card" data-service="${esc(site.id)}">
-   ${mark(site)}<span class="site-card-copy"><strong>${esc(site.name)}</strong><small><span class="site-status ${site.stale?'stale':''}"></span>${status} · 업무 ${money(tasks)} · 예약 ${money(scheduled)}</small></span>
-   <span class="site-card-value"><strong>${money(value)}</strong><small>${label}</small></span>${icon('arrow')}
-  </button>`;
+  const url=site.id==='market'?'/nurimarket':webLink(site.url);
+  const name=site.id==='tistory'?'티스토리 · SNS':site.name;
+  return `<article class="site-card">
+   <button type="button" class="site-card-detail" data-service="${esc(site.id)}">
+    ${mark(site)}<span class="site-card-copy"><strong>${esc(name)}</strong>
+     <small><span class="site-status ${site.stale?'stale':''}"></span>${status}${observedAt?` · <time datetime="${esc(observedAt)}">${esc(dt(observedAt))}</time>`:''}</small>
+     <small>업무 ${money(tasks)} · 예약 ${money(scheduled)}</small>
+    </span><span class="site-card-value"><strong>${money(snapshot?.[field[0]])}</strong><small>${field[1]}</small></span>
+   </button>
+   ${url?`<a class="site-card-source" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(name)} 운영 사이트 열기" title="운영 사이트 열기">${icon('external')}</a>`:''}
+  </article>`;
  }).join('')}</div>`;
 }
 function costBreakdown(){const rs=filteredMoney(),categories=new Map();for(const r of rs.filter(r=>['expense','expense_refund'].includes(r.kind)))categories.set(r.category,(categories.get(r.category)||0)+(r.kind==='expense'?r.amount:-r.amount));const rows=[...categories].sort((a,b)=>b[1]-a[1]),total=financeTotals().cost,colors=['#65d6a5','#4c9ca1','#779baa','#657b8a','#465762'];return `<section class="panel panel-inner"><div class="panel-head"><div><h2>비용 구성</h2><p class="panel-desc">${state.month} · 기록한 운영 비용</p></div>${icon('file')}</div><div class="chart-stat">${won(total)}</div><p class="caption">${financeTotals().complete?'월별 비용 입력 확인 완료':'입력한 비용만 · 누락 항목 확인 필요'}</p>${total>0?`<div class="cost-track">${rows.filter(r=>r[1]>0).map(([l,v],i)=>`<span style="--c:${colors[i%5]};flex:${v}" title="${esc(l)} ${won(v)}"></span>`).join('')}</div>`:''}<div class="cost-list">${rows.slice(0,5).map(([l,v],i)=>`<div class="cost-item"><i style="--c:${colors[i%5]}"></i><span>${esc(l)}</span><strong>${won(v)}</strong></div>`).join('')||empty('아직 기록한 비용이 없습니다.')}</div></section>`;}

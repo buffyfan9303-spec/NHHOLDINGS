@@ -57,7 +57,15 @@ publicationContext.data.postPublications=originalPublications;publicationContext
 let pulse=vm.runInContext('publicationPulse()',publicationContext);
 assert(pulse.includes('이번 달 실제 게시</span><strong>2<small>건'));
 assert(pulse.includes('시각 확인분 · 미확인 2건(전체)'));
-assert(vm.runInContext('siteCards()',publicationContext).includes('<strong>2</strong><small>이번 달 실제 게시'));
+publicationContext.webLink=value=>value;
+Object.assign(publicationContext.data.services[0],{
+ url:'https://doto1.tistory.com',snapshot:{data:{posts:171,observedAt:'2026-10-09T00:00:00Z'}},
+});
+const websiteCards=vm.runInContext('siteCards()',publicationContext);
+assert(websiteCards.includes('<strong>171</strong><small>블로그 공개 글'));
+assert(websiteCards.includes('href="https://doto1.tistory.com"'));
+assert(websiteCards.includes('<time datetime="2026-10-09T00:00:00Z">'));
+assert(pulse.includes('이번 달 실제 게시</span><strong>2<small>건'));
 Object.assign(publicationContext,{manualChannels:new Set(['bluesky']),channelIcon:()=>'',campaigns:()=>[],empty:()=>''});
 Object.assign(publicationContext.state,{page:'overview',channel:'all',postStatus:'all'});
 vm.runInContext(publicationAppSource.split(/\r?\n/).find(l=>l.startsWith('function channelSummary()'))+'\n'+publicationAppSource.match(/^function mobilePostCards\(groups,cs\)\{[\s\S]*?^\}/m)[0]+'\n'+publicationAppSource.match(/^function mobileDashboard\(\)\{[\s\S]*?^\}/m)[0],publicationContext);const exclusionControlsSource=publicationAppSource.split(/\r?\n/).find(l=>l.startsWith('function platformExclusionControls('));publicationContext.session={readOnly:false};vm.runInContext(exclusionControlsSource,publicationContext);publicationContext.exclusionFixture={id:'active',version:3,service:'tistory',business:'platform',channel:'threads',status:'published',link:'https://www.threads.com/@sample/post/active'};const activeExclusionForm=vm.runInContext('platformExclusionControls(exclusionFixture)',publicationContext);assert(activeExclusionForm.includes('name="version" value="3"')&&activeExclusionForm.includes('플랫폼 삭제로 제외')&&activeExclusionForm.includes('플랫폼 삭제 확인 근거'));publicationContext.exclusionFixture={id:'retired',version:4,service:'tistory',business:'platform',channel:'threads',status:'published',link:'https://www.threads.com/@sample/post/retired',platformExclusion:{status:'excluded',excludedAt:'2026-10-08T00:00:00Z',reason:'확인'}};const restoreForm=vm.runInContext('platformExclusionControls(exclusionFixture)',publicationContext);assert(restoreForm.includes('집계 복원')&&restoreForm.includes('플랫폼 삭제로 집계 제외')&&restoreForm.includes('확인'));publicationContext.session.readOnly=true;assert.equal(vm.runInContext('platformExclusionControls(exclusionFixture)',publicationContext),'');publicationContext.session.readOnly=false;
