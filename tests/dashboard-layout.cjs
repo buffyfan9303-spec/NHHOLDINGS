@@ -43,6 +43,16 @@ async function main(){
      return {overflow:document.documentElement.scrollWidth>innerWidth+1,collisions,gaps,actions,firstCardTop:firstCard?rect(firstCard).top+scrollY:null,activeMode:document.querySelector('.view-switch [aria-current="page"]')?.textContent};
     });
     assert(!layout.overflow,`${width} ${route.hash}: horizontal overflow`);
+    const navigation=await page.evaluate(()=>{
+     const cut=[...document.querySelectorAll('#content :is(.site-tabs,.channel-tabs,.setup-tabs)')].some(list=>{
+      const bounds=list.getBoundingClientRect();
+      return [...list.querySelectorAll('button')].some(b=>b.getBoundingClientRect().right>bounds.right+1);
+     });
+     const inaccessible=[...document.querySelectorAll('#content .table-scroll')].some(table=>table.clientWidth>0&&table.scrollWidth>table.clientWidth+1&&(table.tabIndex!==0||!table.getAttribute('aria-label')));
+     return {cut,inaccessible};
+    });
+    assert(!navigation.cut,`${width} ${route.hash}: navigation controls must remain visible`);
+    assert(!navigation.inaccessible,`${width} ${route.hash}: scrollable tables must be keyboard accessible`);
     assert.deepEqual(layout.collisions,[],`${width} ${route.hash}: block overlap`);
     assert(layout.gaps.every(gap=>gap>=21),`${width} ${route.hash}: card/table gap`);
     assert(layout.actions.every(gap=>gap>=0&&gap<=25),`${width} ${route.hash}: disconnected section action`);
