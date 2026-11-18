@@ -63,3 +63,6 @@
 .personal-stock-table :is(th,td) {padding:7px;text-align:end;border-bottom:1px solid var(--line);white-space:nowrap}
 .personal-stock-table :is(th,td):first-child {text-align:start}
 .personal-stock-table thead {color:var(--muted)}
+#personal-sites-status:empty {display:none}
+.personal-revenue-meta {display:flex;gap:4px 12px;flex-wrap:wrap}
+.personal-revenue-meta span {white-space:nowrap}

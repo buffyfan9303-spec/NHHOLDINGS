@@ -30,8 +30,9 @@
       expense += BigInt(entry.expense);
       const row = node('article', '', 'personal-site-row');
       row.dataset.revenueId = entry.id;
-      row.append(node('h3', entry.name), node('p',
-        entry.category + ' · 수익 ' + won(entry.income) + ' · 비용 ' + won(entry.expense)));
+      const meta = node('p', '', 'personal-revenue-meta');
+      meta.append(node('span', entry.category), node('span', '수익 ' + won(entry.income)), node('span', '비용 ' + won(entry.expense)));
+      row.append(node('h3', entry.name), meta);
       const actions = node('div', '', 'personal-site-actions');
       const manage = node('button', '관리', 'btn');
       manage.type = 'button';

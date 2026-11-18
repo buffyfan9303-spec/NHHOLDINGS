@@ -5,7 +5,7 @@
   const editor = el('editor'), form = el('form'), share = el('share');
   const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const checked = new Intl.DateTimeFormat('ko-KR', {timeZone:'Asia/Seoul',dateStyle:'medium',timeStyle:'short'});
-  let session, state, editing, createId, busy = false;
+  let session, state, editing, createId, guideSelected, busy = false;
   const saveButtons = [form.querySelector('button[type="submit"]'), el('remove-confirm'), share.querySelector('button[type="submit"]')];
 
   function element(tag, content, className) {
@@ -31,6 +31,8 @@
   }
 
   function select(guide) {
+    if (guideSelected !== guide) status.replaceChildren();
+    guideSelected = guide;
     el('list-panel').hidden = guide;
     el('guide-panel').hidden = !guide;
     for (const tab of document.querySelectorAll('.personal-site-tabs a')) {
@@ -180,7 +182,7 @@
       }
       if (message === el('editor-status') && editor.open) editor.close();
       completed = true;
-      status.textContent = input.action === 'dns' ? 'DNS 확인을 마쳤습니다.' :
+      if (guideSelected === (input.action === 'share')) status.textContent = input.action === 'dns' ? 'DNS 확인을 마쳤습니다.' :
         input.action === 'remove' ? '목록에서 삭제했습니다.' :
         input.action === 'share' ? '승인된 개인 계정에 공유했습니다.' : '웹사이트를 저장했습니다.';
     } catch (error) {
@@ -198,8 +200,10 @@
       if (session === current) {
         busy = false;
         for (const control of saveButtons) control.disabled = false;
-        const nextFocus = completed && !editor.open && (input.action === 'share' || document.activeElement === document.body ||
-          (input.action === 'dns' && document.activeElement?.dataset.siteAction === 'dns'));
+        const focus = document.activeElement;
+        const nextFocus = completed && !editor.open && guideSelected === (input.action === 'share') &&
+          (input.action === 'share' || focus === document.body ||
+           (input.action === 'dns' && (focus?.dataset.siteAction === 'dns' || focus?.id === 'personal-main')));
         if (completed) render();
         if (nextFocus && input.action === 'share') el('share-open').focus();
         if (nextFocus && input.action !== 'share') {
