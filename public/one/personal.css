@@ -168,7 +168,7 @@ h2 {font-size:17px}
   .personal-account button {padding-inline:6px}
   .personal-account span {display:none}
   .personal-workspace {grid-template-columns:minmax(0,1fr);gap:16px;padding-top:12px}
-  .personal-nav {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding-block-end:9px;border-bottom:1px solid var(--line)}
+  .personal-nav {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding-block-end:9px;border-bottom:1px solid var(--line)}
   .personal-nav a {justify-content:center;text-align:center;word-break:keep-all;overflow-wrap:anywhere;padding:5px 3px;font-size:13px;line-height:1.35}
   .personal-home {grid-template-areas:'quick' 'today' 'links';grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(3,auto)}
   .personal-form :is(input:not([type="checkbox"]),textarea,select),.personal-quick input {font-size:16px}

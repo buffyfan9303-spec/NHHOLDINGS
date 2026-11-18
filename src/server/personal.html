@@ -14,6 +14,7 @@
  <link rel="stylesheet" href="/one/personal-files.css">
  <link rel="stylesheet" href="/one/personal-automation.css">
  <link rel="stylesheet" href="/one/personal-ai.css">
+ <link rel="stylesheet" href="/one/personal-sites.css">
 </head>
 <body class="personal-app">
  <a class="personal-skip" href="#personal-main">본문으로 이동</a>
@@ -37,9 +38,13 @@
    <a href="#schedule" data-personal-link="schedule">일정</a>
    <a href="#notes" data-personal-link="notes">메모</a>
    <a href="#links" data-personal-link="links">바로가기</a>
+   <a href="#sites" data-personal-link="sites">내 웹사이트</a>
    <a href="#social" data-personal-link="social">내 SNS</a>
    <a href="#mail" data-personal-link="mail">메일 예약</a>
    <a href="#files" data-personal-link="files">비공개 저장소</a>
+   <a href="#revenue" data-personal-link="revenue">수익 대시보드</a>
+   <a href="#getting-started" data-personal-link="getting-started">시작 가이드</a>
+   <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
   </nav>
   <main id="personal-main" tabindex="-1" class="personal-main" aria-busy="true">
    <div class="personal-title"><div><time id="personal-date"></time><h1 id="personal-title" tabindex="-1">오늘의 업무</h1></div>
@@ -79,8 +84,140 @@
     </div>
    </section>
    <section data-personal-view="social" hidden aria-label="내 SNS"><div id="personal-social-root"></div></section>
+   <section data-personal-view="sites" hidden aria-label="내 웹사이트" class="personal-sites">
+    <nav class="personal-site-tabs" aria-label="웹사이트 메뉴">
+     <a href="#sites" aria-current="page">내 사이트</a>
+     <a href="#website-guide">구매·연결 가이드</a>
+    </nav>
+    <p id="personal-sites-status" class="personal-message" role="status"></p>
+    <section id="personal-site-list-panel" class="personal-sheet" aria-labelledby="personal-sites-title">
+     <div class="personal-section-head"><h2 id="personal-sites-title">등록한 웹사이트</h2><button id="personal-site-add" class="btn primary" type="button" disabled>웹사이트 추가</button></div>
+     <div id="personal-site-list"></div>
+    </section>
+    <section id="personal-site-guide-panel" class="personal-sheet personal-site-guide" hidden aria-labelledby="personal-site-guide-title">
+     <h2 id="personal-site-guide-title">내 웹사이트를 열기까지</h2>
+     <p>주소를 이미 가지고 있다면 도메인 연결 단계부터 보세요. 사이트를 준비 중이라면 이름만 먼저 등록하고 나중에 주소를 붙일 수 있어요.</p>
+     <ol class="personal-site-guide-steps">
+      <li>
+       <details open>
+        <summary>가비아에서 도메인 구매</summary>
+        <p>원하는 이름을 .com, .kr 등으로 검색하고 등록 가능 여부를 확인하세요. 첫해 할인과 연장 가격, 등록 기간, 부가세를 포함한 결제 금액을 비교하세요.</p>
+        <p>계속 사용할 본인 계정과 복구 이메일로 등록하세요. 등록이 끝나면 내 웹사이트에 등록 업체와 만료일을 적어두세요.</p>
+        <a class="personal-link" href="https://domain.gabia.com/" target="_blank" rel="noopener noreferrer">가비아 도메인 검색</a>
+       </details>
+      </li>
+      <li>
+       <details>
+        <summary>호스팅을 정하고 먼저 미리보기 열기</summary>
+        <p>개발한 사이트라면 GitHub의 본인 저장소를 Vercel에서 가져오고, 테스트용 브랜치의 Preview 주소로 PC와 모바일 화면을 먼저 열어보세요. 제작 서비스에서 만든 사이트라면 해당 서비스의 도메인 연결 메뉴를 사용하세요.</p>
+        <p>로그인이나 개인 데이터가 있다면 테스트 계정으로 확인하세요. Supabase를 사용하는 경우 RLS를 켜고 계정 두 개로 서로의 데이터가 조회되지 않는지 확인하세요. 키는 호스팅 서비스의 비밀 설정에 보관하세요.</p>
+        <div class="personal-site-guide-links">
+         <a class="personal-link" href="https://vercel.com/docs/git/vercel-for-github" target="_blank" rel="noopener noreferrer">GitHub와 Vercel 연결</a>
+         <a class="personal-link" href="https://supabase.com/docs/guides/database/postgres/row-level-security" target="_blank" rel="noopener noreferrer">Supabase RLS</a>
+        </div>
+       </details>
+      </li>
+      <li>
+       <details>
+        <summary>도메인 연결과 HTTPS 확인</summary>
+        <p>Vercel이라면 프로젝트의 Domains에 도메인을 추가하세요. 가비아 네임서버를 사용하면 My가비아 → 서비스 관리 → DNS 관리툴의 해당 도메인에서 호스팅 화면이 안내하는 레코드를 입력하세요. 다른 네임서버를 쓰면 그 운영 서비스에서 설정하세요.</p>
+        <p>바꾸기 전에 기존 레코드를 백업하고, 호스팅 화면이 표시한 이름과 값을 복사하세요. 이메일의 MX·SPF·DKIM과 기존 서비스의 레코드는 유지하세요. 대표 주소와 www 주소를 쓸 경우 각각 열어 이동과 HTTPS를 확인하세요.</p>
+        <p>내 웹사이트의 DNS 확인에서 A·AAAA·CNAME 응답 여부를 볼 수 있어요. 공개 화면과 HTTPS 상태는 브라우저로 직접 열어 확인하세요.</p>
+        <div class="personal-site-guide-links">
+         <a class="personal-link" href="https://vercel.com/docs/domains/working-with-domains/add-a-domain" target="_blank" rel="noopener noreferrer">Vercel 도메인 연결 안내</a>
+         <a class="personal-link" href="https://customer.gabia.com/faq/detail/3041/3040" target="_blank" rel="noopener noreferrer">가비아 DNS 설정 안내</a>
+        </div>
+       </details>
+      </li>
+      <li>
+       <details>
+        <summary>공개하고 갱신과 장애에 대비하기</summary>
+        <p>미리보기에서 링크, 로그인, 문의를 확인하고 문제가 없으면 운영 브랜치로 반영하세요. 실제 주소에서 같은 흐름을 다시 열어보고, 문제가 생겼을 때 돌아갈 배포를 알아두세요.</p>
+        <p>검색에 노출할 공개 사이트라면 Search Console에서 도메인 속성을 추가하고 안내받은 DNS 레코드로 소유권을 확인하세요. 도메인 만료일, 호스팅 결제일, 복구 수단, 백업 위치를 정리하고 갱신을 미리 확인하세요.</p>
+        <a class="personal-link" href="https://support.google.com/webmasters/answer/9008080?hl=ko" target="_blank" rel="noopener noreferrer">Search Console 소유권 확인</a>
+       </details>
+      </li>
+     </ol>
+     <section class="personal-section-break" aria-labelledby="personal-site-shared-title">
+      <h3 id="personal-site-shared-title">운영자가 공유한 노하우</h3>
+      <p id="personal-site-shared-note" class="personal-site-note">공유 메모를 불러오는 중입니다.</p>
+      <button id="personal-site-share-open" type="button" class="btn" hidden>공유 메모 편집</button>
+      <form id="personal-site-share" class="personal-form" hidden>
+       <label for="personal-site-note-input">승인된 개인 계정에 보이는 메모</label>
+       <textarea id="personal-site-note-input" name="note" maxlength="4000" rows="5" aria-describedby="personal-site-note-hint"></textarea>
+       <small id="personal-site-note-hint">공유할 작업 순서나 해결 방법을 적어주세요. 비밀번호, API 키, 개인정보의 입력은 피해주세요.</small>
+       <div class="personal-form-actions">
+        <button id="personal-site-share-close" type="button" class="btn">취소</button>
+        <button type="submit" class="btn primary">승인 계정에 공유</button>
+       </div>
+      </form>
+     </section>
+    </section>
+   </section>
    <section data-personal-view="mail" hidden aria-label="메일 예약"><div id="personal-mail-root"></div></section>
    <section data-personal-view="files" hidden aria-label="비공개 저장소"><div id="personal-files-root"></div></section>
+   <section data-personal-view="revenue" hidden aria-label="수익 대시보드">
+    <div class="personal-sheet">
+     <form id="personal-revenue-period-form" class="personal-revenue-filter">
+      <label for="personal-revenue-period">정산 월</label>
+      <input id="personal-revenue-period" type="month" aria-describedby="personal-revenue-period-hint">
+      <small id="personal-revenue-period-hint">YYYY-MM</small>
+      <button type="submit" class="btn">조회</button>
+     </form>
+     <dl class="personal-revenue-totals">
+      <div><dt>수익</dt><dd id="personal-revenue-income">—</dd></div>
+      <div><dt>비용</dt><dd id="personal-revenue-expense">—</dd></div>
+      <div><dt>차액</dt><dd id="personal-revenue-net">—</dd></div>
+     </dl>
+     <p class="personal-revenue-source">내가 기록한 원화 금액을 합산합니다. 정산서나 입금 내역에 기준을 맞춰 기록하세요.</p>
+     <div class="personal-section-head"><h2>수익원</h2><button id="personal-revenue-add" class="btn primary" type="button" disabled>기록 추가</button></div>
+     <p id="personal-revenue-status" class="personal-message" role="status"></p>
+     <div id="personal-revenue-list"></div>
+    </div>
+   </section>
+   <section data-personal-view="getting-started" hidden aria-label="시작 가이드">
+    <section class="personal-sheet personal-site-guide">
+     <h2>내 계정으로 시작하기</h2>
+     <ol class="personal-site-guide-steps">
+      <li><details open><summary>웹사이트와 블로그 운영</summary><p>내 웹사이트에 주소와 갱신일을 등록하세요. 주소가 없으면 가비아 구매와 호스팅 연결 가이드부터 시작하세요. 웹사이트·블로그 수익과 비용은 정산 월별로 기록할 수 있어요.</p><div class="personal-site-guide-links"><a class="personal-link" href="#sites">내 웹사이트</a><a class="personal-link" href="#website-guide">구매·연결 가이드</a><a class="personal-link" href="#revenue">수익 대시보드</a></div></details></li>
+      <li><details><summary>AI 비서로 초안과 작업 만들기</summary><p>AI 비서의 모델 설정에서 본인 GPT, Claude 또는 Gemini API를 연결하세요. 채팅, 할 일, 일정, 메모, SNS·메일 초안, 카드뉴스 중 할 작업을 고르세요. 초안의 내용과 게시 계정을 확인한 뒤 예약할 수 있어요.</p><button class="btn" type="button" id="personal-start-ai">AI 비서 열기</button></details></li>
+      <li><details><summary>SNS와 메일 예약</summary><p>내 SNS에서 본인 채널을 연결하고 초안을 준비하세요. 게시 계정과 한국 시각을 확인해 예약을 승인하면 일정에서 게시 계획을 볼 수 있어요. 메일 예약에서 본인 Gmail도 같은 방식으로 준비할 수 있어요.</p><div class="personal-site-guide-links"><a class="personal-link" href="#social">내 SNS</a><a class="personal-link" href="#mail">메일 예약</a><a class="personal-link" href="#schedule">내 일정</a></div></details></li>
+      <li><details><summary>Google Drive에 자료 모으기</summary><p>비공개 저장소에서 본인 Google Drive를 연결하세요. 프로젝트 이름이 들어간 파일명을 써서 초안과 검증 자료를 찾기 쉽게 정리하세요. 누리원에서 올린 파일의 이름 앞부분으로 검색하고, 최근 업로드순이나 이름순으로 볼 수 있어요.</p><a class="personal-link" href="#files">비공개 저장소</a></details></li>
+     </ol>
+    </section>
+   </section>
+   <section data-personal-view="stock-program" hidden aria-label="자동 주식 프로그램">
+    <section class="personal-sheet personal-site-guide">
+     <h2>자동 주식 프로그램 연구 기록</h2>
+     <p>기존 프로젝트의 종목 선정, 매매 신호, 백테스트, 모의 계정 권한 검증을 모았습니다. 이 메뉴에서 연구 결과와 점검 순서를 열어볼 수 있어요.</p>
+     <ol class="personal-site-guide-steps">
+      <li><details open><summary>프로그램 구성</summary><p>시세와 공시를 수집하고, 종목 조건과 추세 신호를 계산한 뒤 포지션을 정합니다. 백테스트에서 거래비용과 손실 구간을 비교합니다. 기존 웹 화면에는 관심종목, 종목 정보, 백테스트와 개인별 모의 계정 설정이 있습니다.</p></details></li>
+      <li><details open><summary>저장된 검증 자료</summary><p>2026-09-28 연구 기록을 기준으로 확인한 결과입니다. 분석 기간은 2020-01-02부터 2026-09-23까지이며, 7개 시나리오를 두 벤치마크와 비교했습니다.</p>
+      <dl class="personal-stock-evidence">
+       <div><dt>기존 계산과 교차 대조</dt><dd>7개 시나리오의 연복리 수익률 차이 0.04~0.12%p</dd></div>
+       <div><dt>과거 시뮬레이션</dt><dd>거래비용·세금 가정을 반영하고 연도별 수익률, 최대낙폭, 스트레스 구간을 기록</dd></div>
+       <div><dt>과최적화 점검</dt><dd>8차 연구의 DSR 기준을 통과한 후보 0/46</dd></div>
+      </dl>
+      <p>출처는 기존 연구 기록 <code>docs/RESEARCH.md</code>와 <code>research/sim2020/</code>의 요약·스트레스·교차검증 CSV입니다.</p></details></li>
+      <li><details><summary>시나리오별 결과</summary>
+      <p>초기 가상 자금 1억 원으로 계산한 결과입니다. 벤치마크는 세전 보유로 비교했습니다.</p>
+      <div class="personal-stock-table" role="region" aria-label="가상 시뮬레이션 결과표" tabindex="0">
+       <table><thead><tr><th scope="col">구분</th><th scope="col">연복리 수익률</th><th scope="col">최대낙폭</th><th scope="col">최악 월</th></tr></thead><tbody>
+        <tr><th scope="row">A</th><td>30.5%</td><td>-36.9%</td><td>-18.9%</td></tr>
+        <tr><th scope="row">B</th><td>22.3%</td><td>-25.5%</td><td>-14.6%</td></tr>
+        <tr><th scope="row">C</th><td>19.7%</td><td>-24.6%</td><td>-11.5%</td></tr>
+        <tr><th scope="row">D</th><td>19.5%</td><td>-23.3%</td><td>-13.4%</td></tr>
+        <tr><th scope="row">E</th><td>18.5%</td><td>-21.7%</td><td>-11.2%</td></tr>
+        <tr><th scope="row">G</th><td>15.5%</td><td>-30.6%</td><td>-12.5%</td></tr>
+        <tr><th scope="row">H</th><td>12.5%</td><td>-14.7%</td><td>-9.2%</td></tr>
+        <tr><th scope="row">KOSPI200</th><td>24.7%</td><td>-40.8%</td><td>-21.3%</td></tr>
+        <tr><th scope="row">나스닥100</th><td>23.7%</td><td>-31.0%</td><td>-12.8%</td></tr>
+       </tbody></table>
+      </div></details></li>
+      <li><details><summary>테스트와 해석 범위</summary><p>외부 연결을 막고 pandas 2.3.3에서 테스트 36개가 통과했습니다. 합성 시계열에서 미래 자료를 제거해도 앞선 신호가 같았고, 임시 사용자로 계정 분리·키 가림·세션 종료를 확인했습니다. 최신 의존 조합에서는 급등·급락 연구의 이벤트 집계 테스트 1개가 실패해 호환성 점검이 남아 있습니다.</p><p>가상 성과는 표본을 보고 선택한 규칙의 과거 계산값입니다. 실시간 체결, 비용과 세금 추정, 독립 표본 기간의 성과는 별도 확인이 필요합니다. 이 화면은 읽기 전용입니다.</p><div class="personal-site-guide-links"><a class="personal-link" href="https://apiportal.koreainvestment.com/apiservice" target="_blank" rel="noopener noreferrer">KIS 모의·실전 API 문서</a><a class="personal-link" href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-47" target="_blank" rel="noopener noreferrer">가상 성과 해석 안내</a></div></details></li>
+     </ol>
+    </section>
+   </section>
   </main>
   <aside id="personal-ai-root" aria-label="AI 비서"></aside>
  </div>
@@ -103,6 +240,58 @@
    </div>
   </form>
  </dialog>
+ <dialog id="personal-site-editor" aria-labelledby="personal-site-editor-title">
+  <form id="personal-site-form" class="personal-form">
+   <h2 id="personal-site-editor-title">웹사이트 추가</h2>
+   <label for="personal-site-name">웹사이트 이름</label>
+   <input id="personal-site-name" name="name" required maxlength="90" placeholder="예시 사진 포트폴리오">
+   <label for="personal-site-url">공개 주소 <small>선택</small></label>
+   <input id="personal-site-url" name="url" type="text" inputmode="url" autocapitalize="none" spellcheck="false" maxlength="1000" placeholder="example.com" aria-describedby="personal-site-url-hint">
+   <small id="personal-site-url-hint">공개 HTTPS 주소를 입력하세요. 아직 주소가 없다면 비워도 됩니다.</small>
+   <div class="personal-site-fields">
+    <div><label for="personal-site-registrar">도메인 등록 업체</label>
+     <select id="personal-site-registrar" name="registrar"><option value="">선택 안 함</option><option>가비아</option><option>후이즈</option><option>Cloudflare Registrar</option><option>기타</option></select>
+    </div>
+    <div><label for="personal-site-host">호스팅</label>
+     <select id="personal-site-host" name="host"><option value="">선택 안 함</option><option>Vercel</option><option>GitHub Pages</option><option>Cloudflare Pages</option><option>카페24</option><option>기타</option></select>
+    </div>
+   </div>
+   <label for="personal-site-renew">도메인 갱신일 <small>선택</small></label>
+   <input id="personal-site-renew" name="renewOn" type="date">
+   <div id="personal-site-delete-prompt" hidden>
+    <p>이 웹사이트를 내 목록에서 삭제할까요?</p>
+    <button type="button" id="personal-site-remove-confirm" class="btn">목록에서 삭제</button>
+   </div>
+   <p id="personal-site-editor-status" class="personal-message" role="status"></p>
+   <div class="personal-form-actions">
+    <button type="button" id="personal-site-remove" class="btn personal-site-remove" hidden>삭제</button>
+    <button type="button" id="personal-site-close" class="btn">닫기</button>
+    <button type="submit" class="btn primary">저장</button>
+   </div>
+  </form>
+ </dialog>
+ <dialog id="personal-revenue-editor" aria-labelledby="personal-revenue-editor-title">
+  <form id="personal-revenue-editor-form" class="personal-form">
+   <h2 id="personal-revenue-editor-title">수익 기록 추가</h2>
+   <label for="personal-revenue-name">수익원 이름</label>
+   <input id="personal-revenue-name" name="name" required maxlength="100" placeholder="예시 블로그 광고">
+   <label for="personal-revenue-category">분류</label>
+   <select id="personal-revenue-category" name="category"><option>웹사이트</option><option>블로그</option><option>SNS</option><option>기타</option></select>
+   <div class="personal-site-fields">
+    <label for="personal-revenue-income-input">수익 (원)<input id="personal-revenue-income-input" name="income" type="number" min="0" max="1000000000000" step="1" inputmode="numeric" value="0" required></label>
+    <label for="personal-revenue-expense-input">비용 (원)<input id="personal-revenue-expense-input" name="expense" type="number" min="0" max="1000000000000" step="1" inputmode="numeric" value="0" required></label>
+   </div>
+   <div id="personal-revenue-delete-prompt" hidden><p>이 수익 기록을 삭제할까요?</p><button type="button" id="personal-revenue-remove-confirm" class="btn">기록 삭제</button></div>
+   <p id="personal-revenue-editor-status" class="personal-message" role="status"></p>
+   <div class="personal-form-actions">
+    <button type="button" id="personal-revenue-remove" class="btn personal-site-remove" hidden>삭제</button>
+    <button type="button" id="personal-revenue-close" class="btn">닫기</button>
+    <button type="submit" class="btn primary">저장</button>
+   </div>
+  </form>
+ </dialog>
+ <script src="/one/personal-revenue.js" defer></script>
+ <script src="/one/personal-sites.js" defer></script>
  <script src="/one/personal-files.js" defer></script>
  <script src="/one/personal-automation.js" defer></script>
  <script src="/one/personal-ai.js" defer></script>

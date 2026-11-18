@@ -63,6 +63,13 @@
         </div>
         <progress aria-label="파일 업로드 진행률" max="100" data-files-progress hidden></progress>
       </form>
+      <form class="personal-drive-filter" data-files-filter hidden>
+        <label for="personal-drive-prefix">파일명 앞부분</label>
+        <input id="personal-drive-prefix" name="prefix" type="search" maxlength="100">
+        <label for="personal-drive-sort">정렬</label>
+        <select id="personal-drive-sort" name="sort"><option value="recent">최근 업로드순</option><option value="name">파일 이름순</option></select>
+        <button type="submit" class="btn">찾기</button>
+      </form>
       <p class="personal-file-status" role="status" aria-live="polite" data-files-status>저장소 상태를 확인하고 있어요.</p>
       <ul class="personal-file-list" aria-label="내 파일 목록" data-files-list></ul>
       <button type="button" class="btn personal-file-more" data-files-more hidden>더 보기</button>
@@ -130,8 +137,10 @@
     const copyStatus = root.querySelector('[data-files-copy-status]');
     const more = root.querySelector('[data-files-more]');
     const progress = root.querySelector('[data-files-progress]');
+    const filter = root.querySelector('[data-files-filter]');
     const rows = new Map();
     let nextPage = null;
+    let search = {prefix:'', sort:'recent'};
     let connectionId = null;
     let maxBytes = 0;
     let pending = null;
@@ -161,6 +170,9 @@
       nextPage = null;
       connectionId = null;
       form.hidden = true;
+      filter.hidden = true;
+      filter.reset();
+      search = {prefix:'', sort:'recent'};
       more.hidden = true;
       connect.hidden = true;
       canonical.hidden = true;
@@ -179,7 +191,7 @@
       more.disabled = loading || busy;
       button.disabled = loading || busy || !input.files.length || input.files[0].size > maxBytes;
       input.disabled = busy;
-      for (const field of setupForm.elements) field.disabled = busy || loading;
+      for (const form of [setupForm, filter]) for (const field of form.elements) field.disabled = busy || loading;
     }
 
     function addFile(file, recentId) {
@@ -212,7 +224,7 @@
         } catch (error) {
           if (!hasCurrentAccess(version)) return;
           clearAfterAccessError(error);
-          if (error.status === 412) await load();
+          if (error.status === 412) {connectionId = null; await load();}
           message(error.message, true);
         } finally {download.disabled = false;}
       });
@@ -229,7 +241,11 @@
       loading = true;
       controls();
       try {
-        const data = await fileRequest(append && nextPage ? `?page=${encodeURIComponent(nextPage)}` : '');
+        const page = append ? nextPage : null;
+        const filtered = connectionId && (search.prefix || search.sort !== 'recent');
+        const data = filtered ? await fileRequest('', {method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({action:'list', ...search, page})}) :
+          await fileRequest(page ? `?page=${encodeURIComponent(page)}` : '');
         if (!hasCurrentAccess(version)) return;
         if (!append) {rows.clear(); list.replaceChildren();}
         maxBytes = data.maxBytes;
@@ -253,6 +269,7 @@
         else canonical.href = new URL('/personal#files', redirect).href;
         disconnect.hidden = !data.connected;
         form.hidden = !data.connected;
+        filter.hidden = !data.connected;
         connect.hidden = !data.configured || !redirect || !!otherOrigin;
         connect.textContent = data.connected ? 'Drive 다시 연결' : 'Google Drive 연결';
         connect.classList.toggle('primary', !data.connected);
@@ -271,7 +288,8 @@
         data.files.forEach(file => addFile(file, recentId));
         if (connectionResult === 'failed') message('Google Drive 연결을 완료하지 못했습니다. 다시 시도하세요.', true);
         else if (connectionResult === 'connected') message('Google Drive를 연결했습니다.');
-        else message(recentId ? '파일을 저장했습니다.' : rows.size || nextPage ? '' : '아직 올린 파일이 없어요.');
+        else message(recentId ? '파일을 저장했습니다.' : rows.size || nextPage ? '' :
+          search.prefix ? '이 이름으로 시작하는 파일이 없어요.' : '아직 올린 파일이 없어요.');
       } catch (error) {
         if (!hasCurrentAccess(version)) return;
         clearAfterAccessError(error);
@@ -291,6 +309,7 @@
       pending = null;
       input.value = '';
       progress.value = 100;
+      if (search.prefix) {search.prefix = ''; filter.elements.prefix.value = '';}
       await load(false, file.id);
     }
 
@@ -344,7 +363,7 @@
       } catch (error) {
         if (!hasCurrentAccess(version)) return;
         clearAfterAccessError(error);
-        if (error.status === 412) await load();
+        if (error.status === 412) {connectionId = null; await load();}
         message(error.message, true);
       }
       finally {
@@ -397,6 +416,8 @@
         await fileRequest('', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action, ...data})});
         if (!hasCurrentAccess(version)) return;
         setupForm.elements.clientSecret.value = '';
+        filter.reset();
+        search = {prefix:'', sort:'recent'};
         await load();
         if (hasCurrentAccess(version)) message(action === 'configure' ? 'Google Drive 연결 설정을 저장했습니다.' : 'Google Drive 연결을 끊었습니다.');
       } catch (error) {
@@ -416,7 +437,21 @@
     disconnect.addEventListener('click', () => {
       if (!busy && !loading) void updateConnection('disconnect');
     });
-    refresh.addEventListener('click', () => void load());
+    filter.addEventListener('submit', event => {
+      event.preventDefault();
+      if (busy || loading || filter.hidden) return;
+      search = {prefix:filter.elements.prefix.value.trim(), sort:filter.elements.sort.value};
+      rows.clear();
+      list.replaceChildren();
+      nextPage = null;
+      more.hidden = true;
+      message('파일을 찾는 중입니다.');
+      void load();
+    });
+    refresh.addEventListener('click', () => {
+      if (!filter.hidden) search = {prefix:filter.elements.prefix.value.trim(), sort:filter.elements.sort.value};
+      void load();
+    });
     more.addEventListener('click', () => void load(true));
     void load(false, '', oauthStatus);
   }

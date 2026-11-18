@@ -4,7 +4,7 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', notes:'메모', links:'바로가기', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', notes:'메모', links:'바로가기', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
   const kinds = {tasks:'task', schedule:'schedule', notes:'note', links:'link'};
   const dayFormatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
@@ -98,8 +98,10 @@
     const changed = target!==view;
     view = target;
     el('personal-title').textContent = names[view];
-    for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===view?'page':'false');
-    const visible = kinds[view]?'items':view;
+    const guide = view==='website-guide';
+    for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===(guide?'sites':view)?'page':'false');
+    const visible = kinds[view]?'items':guide?'sites':view;
+    window.NuriPersonalSites?.select?.(guide);
     for(const section of screens) {
       section.hidden = section.dataset.personalView!==visible;
       if(!section.hidden&&changed) {
@@ -108,6 +110,8 @@
       }
     }
     if(ready) paintItems();
+    if(view==='revenue'&&ready)void window.NuriPersonalRevenue?.mount?.();
+    if(visible==='sites'&&ready)void window.NuriPersonalSites?.mount?.();
     if(view==='files'&&ready) void window.NuriPersonalFiles?.mount?.();
     if(ready&&(view==='social'||view==='mail'))void window.NuriPersonalAutomation?.mount?.(view);
     if(focus&&changed) {
@@ -273,6 +277,7 @@
   const date = el('personal-date');
   date.dateTime = day();
   date.textContent = dateFormatter.format(new Date());
+  el('personal-start-ai')?.addEventListener('click',()=>{if(ready)el('personal-ai-open').click();});
   window.addEventListener('hashchange',()=>route(true));
   window.addEventListener('personal-automation-changed',()=>{if(ready)void load();});
   document.querySelector('.personal-skip').addEventListener('click',event=>{
@@ -286,6 +291,8 @@
     ready=false;
     window.NuriPersonalAccount=null;
     window.NuriPersonalAutomation?.suspend?.();
+    window.NuriPersonalSites?.suspend?.();
+    window.NuriPersonalRevenue?.suspend?.();
     window.NuriPersonalAI?.suspend?.();
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }

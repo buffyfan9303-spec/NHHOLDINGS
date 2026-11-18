@@ -1,5 +1,5 @@
 import {type NextRequest, NextResponse} from 'next/server';
-import {body, limit, MarketError, requireOrigin} from '@/lib/security';
+import {body, limit, MarketError, requireOrigin, textValue} from '@/lib/security';
 import {
   beginDriveOAuth, beginPersonalFileUpload, disconnectDrive, downloadPersonalFile, driveAccessToken, DriveConnectionRequired,
   driveOAuthConfig, driveOAuthCookie, driveRedirectUri, getPersonalFile, listPersonalFiles, personalFileMaxBytes, requirePersonalFileIdentity, saveDriveApp,
@@ -70,6 +70,15 @@ export async function POST(req: NextRequest) {
         httpOnly: true, secure: req.nextUrl.protocol === 'https:', sameSite: 'lax', path: '/api/personal/files/oauth', maxAge: 600,
       });
       return response;
+    }
+    if (input.action === 'list') {
+      const prefix = textValue(input.prefix, '파일명 앞부분', 100, true);
+      const sort = textValue(input.sort, '파일 정렬', 10);
+      const page = input.page === null ? null : textValue(input.page, '목록 위치', 2048);
+      const {token, connectionId} = await driveAccessToken(actor, config, req.headers.get('x-drive-connection') ?? '');
+      const listed = await listPersonalFiles(token, actor, page, prefix, sort);
+      return Response.json({configured: true, clientId: config.clientId, redirectUri: driveRedirectUri(), connected: true,
+        connectionId, maxBytes: personalFileMaxBytes, ...listed}, {headers});
     }
     if (input.action !== 'upload') throw new MarketError('파일 동작을 확인하세요.');
     limit('personal-drive-upload:' + actor, 12);
