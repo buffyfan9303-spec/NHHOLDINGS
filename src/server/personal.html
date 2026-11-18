@@ -4,9 +4,11 @@
  <meta charset="utf-8">
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <meta name="color-scheme" content="dark light">
+ <meta name="theme-color" content="#101315">
  <meta name="robots" content="noindex, nofollow">
  <title>내 업무 | NURI ONE</title>
- <link rel="icon" href="/icon.svg">
+ <link rel="icon" href="/brand/nuri-one-favicon.svg">
+ <script src="/one/theme.js"></script>
  <link rel="stylesheet" href="/one/fonts/pretendard.css">
  <link rel="stylesheet" href="/one/personal.css">
  <link rel="stylesheet" href="/one/personal-files.css">
@@ -16,12 +18,13 @@
 <body class="personal-app">
  <a class="personal-skip" href="#personal-main">본문으로 이동</a>
  <header class="personal-top">
-  <a class="personal-brand" href="/personal" aria-label="누리원 내 업무 홈">NURI <span>ONE</span></a>
+  <a class="personal-brand" href="/personal" aria-label="누리원 내 업무 홈"><span class="personal-wordmark" aria-hidden="true"></span></a>
   <div class="personal-account">
    <button type="button" id="personal-ai-open" aria-expanded="false" aria-controls="personal-ai-root">AI 비서</button>
    <span id="personal-account"></span>
-   <a href="/dashboard" id="personal-owner" hidden>운영 대시보드</a>
+   <button type="button" data-one-theme aria-label="밝은 화면으로 전환">밝게</button>
    <button type="button" id="personal-logout">로그아웃</button>
+   <a href="/dashboard" id="personal-owner" hidden>운영 대시보드</a>
   </div>
  </header>
  <div class="personal-workspace">
