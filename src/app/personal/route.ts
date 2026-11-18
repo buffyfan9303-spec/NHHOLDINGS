@@ -9,10 +9,10 @@ export async function GET(request: NextRequest) {
   const headers = {'Cache-Control': 'private, no-store'};
   try {
     const user = await identity(request);
-    if (!user) return NextResponse.redirect(new URL('/login', request.url), {headers});
+    if (!user) return new NextResponse(null,{status:307,headers:{...headers,Location:'/login'}});
     const access = await accessStatus(user);
     if (!canUsePersonalWorkspace(access)) {
-      return NextResponse.redirect(new URL(destination('one', access), request.url), {headers});
+      return new NextResponse(null,{status:307,headers:{...headers,Location:destination('one',access)}});
     }
     const html = await readFile(join(process.cwd(), 'src/server/personal.html'), 'utf8');
     return new NextResponse(html, {headers: {

@@ -157,3 +157,6 @@ h2 {font-size:17px}
   .personal-arrive .personal-row:nth-child(4) {animation-delay:95ms}
   @keyframes personal-row-in {from {opacity:.45;transform:translateY(7px)} to {opacity:1;transform:translateY(0)}}
 }
+@media (prefers-reduced-motion:no-preference) {
+  .personal-arrive > #personal-social-root,.personal-arrive > #personal-mail-root {animation:personal-arrive .32s var(--arrive) both}
+}

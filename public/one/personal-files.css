@@ -39,6 +39,28 @@
 
 .personal-file-form label { font-weight: 650; }
 
+.personal-file-setup {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #8c959f66);
+}
+
+.personal-file-setup summary {
+  width: fit-content;
+  min-height: 42px;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.personal-file-setup p { margin: 2px 0 10px; font-size: .875rem; color: var(--muted, inherit); }
+.personal-file-callback,
+.personal-file-credentials { display: grid; gap: 10px; min-width: 0; margin-bottom: 10px; }
+.personal-file-credentials { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.personal-file-callback label,
+.personal-file-credentials label { display: grid; gap: 5px; min-width: 0; }
+.personal-file-setup input { width: 100%; min-width: 0; min-height: 42px; }
+
 .personal-file-controls { margin-top: 10px; }
 
 .personal-file-controls input {

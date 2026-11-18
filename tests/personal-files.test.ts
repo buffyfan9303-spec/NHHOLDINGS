@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 import {PGlite} from '@electric-sql/pglite';
-import {NextRequest} from 'next/server';
+import {NextRequest, NextResponse} from 'next/server';
 import {GET, POST} from '../src/app/api/personal/files/route';
 import {GET as callback} from '../src/app/api/personal/files/oauth/route';
 import {driveOAuthCookie, personalFileMaxBytes} from '../src/lib/personal-files';
@@ -55,6 +55,7 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
   let consent: URL | undefined;
   let calls = 0, tokenExchanges = 0, refreshes = 0, uploads = 0;
   let providerHasAccess = true;
+  let driveConnection = '';
   t.mock.method(globalThis, 'fetch', async (input: string | URL, init?: RequestInit) => {
     const url = new URL(input);
     const requestHeaders = new Headers(init?.headers);
@@ -106,7 +107,7 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
     JSON.stringify({email: guest.email, status: 'approved', scope: 'business'})]);
   function req(search = '', data?: unknown, actor = 'guest', header = actor, more?: Record<string, string>) {
     return new NextRequest(origin + path + search, {method: data ? 'POST' : 'GET',
-      headers: {Origin: origin, Cookie: 'nh_access=' + jwt(actor), 'X-Personal-Account': header, ...more},
+      headers: {Origin: origin, Cookie: 'nh_access=' + jwt(actor), 'X-Personal-Account': header, 'X-Drive-Connection': driveConnection, ...more},
       ...(data ? {body: JSON.stringify(data)} : {})});
   }
   assert.equal((await GET(new NextRequest(origin + path))).status, 403);
@@ -115,14 +116,19 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
   assert.equal((await GET(req('', undefined, 'guest', 'owner'))).status, 409);
   const unavailable = await GET(req());
   assert.equal(unavailable.headers.get('cache-control'), 'private, no-store');
-  assert.deepEqual(await unavailable.json(), {configured: false, connected: false, maxBytes: personalFileMaxBytes, files: [], nextPage: null});
+  assert.deepEqual(await unavailable.json(), {configured: false, clientId: '', redirectUri: origin + path + '/oauth',
+    connected: false, connectionId: null, maxBytes: personalFileMaxBytes, files: [], nextPage: null});
 
-  Object.assign(process.env, {PERSONAL_DRIVE_CLIENT_ID: clientId, PERSONAL_DRIVE_CLIENT_SECRET: 'synthetic-client-secret'});
+  const firstConfig = await POST(req('', {action: 'configure', clientId, clientSecret: 'synthetic-client-secret'}));
+  assert.equal(firstConfig.status, 200);
+  assert.equal(JSON.stringify(await firstConfig.json()).includes('synthetic-client-secret'), false);
   assert.equal((await (await GET(req())).json()).connected, false);
+  assert.equal((await (await GET(req('', undefined, 'owner'))).json()).configured, false);
   assert.equal((await POST(req('', {action: 'connect'}, 'guest', 'guest', {Origin: 'https://different.test.invalid'}))).status, 403);
   assert.equal((await POST(req('', {action: 'connect'}, 'guest', 'owner'))).status, 409);
   const start = await POST(req('', {action: 'connect'}));
   assert.equal(start.status, 200);
+  assert(start instanceof NextResponse);
   consent = new URL((await start.json()).url);
   assert.equal(consent.origin, 'https://accounts.google.com');
   assert.equal(consent.searchParams.get('scope'), scope);
@@ -146,13 +152,17 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
   const rows = await db.query("SELECT data FROM nh_documents WHERE kind='personal-drive'");
   assert.equal(JSON.stringify(rows.rows).includes('synthetic-refresh-token'), false);
   assert.equal(JSON.stringify(rows.rows).includes('synthetic-access-token'), false);
+  assert.equal(JSON.stringify(rows.rows).includes('synthetic-client-secret'), false);
 
   const listed = await (await GET(req())).json();
-  assert.deepEqual(listed, {configured: true, connected: true, maxBytes: personalFileMaxBytes, files: [
+  driveConnection = listed.connectionId;
+  assert.match(driveConnection, /^[a-f0-9-]{36}$/);
+  assert.deepEqual(listed, {configured: true, clientId, redirectUri: origin + path + '/oauth', connected: true, connectionId: driveConnection, maxBytes: personalFileMaxBytes, files: [
     {id: file.id, name: file.name, bytes: 3815483, createdAt: file.createdTime},
   ], nextPage: 'next='});
   assert.equal(refreshes, 1, 'expired access is refreshed using the saved encrypted token');
   assert.equal((await (await GET(req('', undefined, 'owner'))).json()).connected, false);
+  assert.equal((await GET(req('?download=' + file.id, undefined, 'guest', 'guest', {'X-Drive-Connection': 'stale'}))).status, 412);
   assert.equal((await GET(req('?download=' + other.id))).status, 404);
   assert.deepEqual(await (await GET(req('?download=' + file.id))).json(), {url: file.webContentLink});
   assert.equal((await POST(req('', {action: 'upload', name: file.name, bytes: personalFileMaxBytes + 1}))).status, 413);
@@ -170,6 +180,19 @@ test('personal Drive uses scoped one-time OAuth, owner-stamped files and direct 
   const disconnected = await (await GET(req())).json();
   assert.equal(disconnected.connected, false);
   assert.equal(JSON.stringify(disconnected).includes('sensitive-provider-detail'), false);
+  providerHasAccess = true;
+  const priorFlow = await POST(req('', {action: 'connect'}));
+  assert(priorFlow instanceof NextResponse);
+  const oldState = new URL((await priorFlow.json()).url).searchParams.get('state');
+  const oldCookie = priorFlow.cookies.get(driveOAuthCookie)!.value;
+  assert.equal((await POST(req('', {action: 'configure', clientId, clientSecret: 'synthetic-rotated-secret'}))).status, 200);
+  const beforeRotation = calls;
+  assert.match((await callback(req('/oauth?code=synthetic-code&state=' + oldState, undefined, 'guest', 'guest', {
+    Cookie: 'nh_access=' + jwt(guest.id) + '; ' + driveOAuthCookie + '=' + oldCookie,
+  }))).headers.get('location') ?? '', /drive=failed/);
+  assert.equal((await GET(req('?download=' + file.id))).status, 412);
+  assert.equal((await POST(req('', {action: 'disconnect'}))).status, 200);
+  assert.equal(calls, beforeRotation, 'changed credentials and disconnect prevent old operations from reaching Google');
   await db.query("UPDATE nh_documents SET data=jsonb_set(data,'{status}','\"revoked\"') WHERE id=$1", [guest.id]);
   const before = calls;
   assert.equal((await GET(req('?download=' + file.id))).status, 403);

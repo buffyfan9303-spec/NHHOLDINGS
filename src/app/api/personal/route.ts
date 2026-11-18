@@ -1,4 +1,5 @@
 import {NextRequest} from 'next/server';
+import {personalAgenda} from '@/lib/personal-agenda';
 import {accessStatus, canUsePersonalWorkspace, identity} from '@/lib/auth';
 import {body, failure, integer, MarketError, requireOrigin, textValue} from '@/lib/security';
 import {personalWorkspace, uuidPattern, type PersonalDraft} from '@/server/personal-workspace.cjs';
@@ -84,7 +85,8 @@ function rejected(error: unknown) {
 export async function GET(req: NextRequest) {
   try {
     const {workspace, account} = await actor(req);
-    return Response.json({account, items: await workspace.list()}, {headers});
+    const [items,agenda]=await Promise.all([workspace.list(),personalAgenda(account.id)]);
+    return Response.json({account,items,agenda}, {headers});
   } catch (error) {
     return rejected(error);
   }

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   let result = 'failed';
   try {
     const actor = await requirePersonalFileIdentity(req, false);
-    const config = driveOAuthConfig();
+    const config = await driveOAuthConfig(actor);
     if (config) {
       await finishDriveOAuth(req, actor, config);
       result = 'connected';

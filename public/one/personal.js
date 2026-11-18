@@ -4,12 +4,13 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', notes:'메모', links:'바로가기', files:'비공개 저장소'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', notes:'메모', links:'바로가기', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소'};
   const kinds = {tasks:'task', schedule:'schedule', notes:'note', links:'link'};
   const dayFormatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
   const day = () => dayFormatter.format(new Date());
-  let items = [], view = '', currentItem = null, editorKind = null, accountId = null, ready = false, saving = false;
+  const timeFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  let items = [], agenda = [], view = '', currentItem = null, editorKind = null, accountId = null, ready = false, saving = false;
   let checkNumber = 0, activeCheck = null, suspendedEditor = false, editRevision = 0;
   const editor = el('personal-editor');
   const form = el('personal-form');
@@ -52,7 +53,9 @@
     return '<ul class="personal-list">'+rows.map(item => {
       const isTask = item.kind==='task';
       const link = item.kind==='link'?safeLink(item.detail):'';
-      const primary = link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">'+esc(item.title)+'</a>':esc(item.title);
+      const automation=item.kind==='mail'||item.kind==='social';
+      const primary = automation?'<a href="#'+item.kind+'">'+esc(item.title)+'</a>':
+        link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">'+esc(item.title)+'</a>':esc(item.title);
       const details = !compact&&item.kind!=='link'&&item.detail?'<p>'+esc(item.detail)+'</p>':'';
       const controls = compact?'':button('편집','edit',item)+button('삭제','remove',item);
       const toggle = isTask?
@@ -71,7 +74,14 @@
     const schedule = items.filter(item=>item.kind==='schedule'&&item.dueOn>=now).sort(dateOrder);
     const links = items.filter(item=>item.kind==='link').sort(recent);
     el('personal-today').innerHTML = list(tasks.filter(item=>!item.dueOn||item.dueOn<=now).slice(0,6),'오늘 처리할 일이 없습니다.',true);
-    el('personal-upcoming').innerHTML = list(schedule.slice(0,4),'예정된 일정이 없습니다.',true);
+    const automated=agenda.filter(event=>Number.isFinite(Date.parse(event.scheduledAt))).map(event=>{
+      const label=event.kind==='mail'?'메일 예약':'SNS 예약';
+      return {...event,title:label+' · '+event.title,dueOn:dayFormatter.format(new Date(event.scheduledAt)),
+        dueTime:timeFormatter.format(new Date(event.scheduledAt)),createdAt:event.scheduledAt,done:false};
+    });
+    el('personal-upcoming').innerHTML = list([...schedule,...automated].sort(dateOrder).slice(0,4),'예정된 일정이 없습니다.',true);
+    el('personal-automation-agenda').hidden=view!=='schedule';
+    if(view==='schedule')el('personal-automation-events').innerHTML=list(automated,'예정된 게시나 메일이 없습니다.',true);
     el('personal-pinned').innerHTML = list(links.slice(0,5),'바로가기를 추가할 수 있습니다.',true);
     const kind = kinds[view];
     if(kind) {
@@ -99,6 +109,7 @@
     }
     if(ready) paintItems();
     if(view==='files'&&ready) void window.NuriPersonalFiles?.mount?.();
+    if(ready&&(view==='social'||view==='mail'))void window.NuriPersonalAutomation?.mount?.(view);
     if(focus&&changed) {
       el('personal-title').focus({preventScroll:true});
       window.scrollTo({top:0,behavior:'instant'});
@@ -132,6 +143,7 @@
       accountId=result.account.id;
       window.NuriPersonalAccount=accountId;
       items = result.items;
+      agenda = result.agenda||[];
       el('personal-account').textContent = result.account.email;
       el('personal-owner').hidden = !result.account.owner;
       ready = true;
@@ -247,6 +259,7 @@
       suspendedEditor=false;
       mask();
       items=[];
+      agenda=[];
       window.NuriPersonalAccount=null;
       paintItems();
       location.assign('/login');
@@ -256,6 +269,7 @@
   date.dateTime = day();
   date.textContent = dateFormatter.format(new Date());
   window.addEventListener('hashchange',()=>route(true));
+  window.addEventListener('personal-automation-changed',()=>{if(ready)void load();});
   document.querySelector('.personal-skip').addEventListener('click',event=>{
     event.preventDefault();
     el('personal-main').focus();
@@ -266,6 +280,7 @@
     document.body.classList.add('personal-revalidating');
     ready=false;
     window.NuriPersonalAccount=null;
+    window.NuriPersonalAutomation?.suspend?.();
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }
   function checkAccount(){mask();void load();}

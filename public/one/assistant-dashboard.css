@@ -53,3 +53,4 @@
 .personal-nav-icon {display:grid;place-items:center;width:20px;height:20px}
 .website-overview {display:grid;gap:18px}
 .website-overview .daily-queue {margin-bottom:0}
+.assistant-heading button.link {background:none;border:0;padding:0 4px}

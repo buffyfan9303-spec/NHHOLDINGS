@@ -23,6 +23,24 @@
           <button type="button" class="btn primary" data-files-connect hidden>Google Drive 연결</button>
         </div>
       </header>
+      <details class="personal-file-setup" data-files-setup hidden>
+        <summary>Google Drive 연결 설정</summary>
+        <p>Google 웹 애플리케이션에서 Drive API를 활성화한 뒤 승인된 리디렉션 주소를 등록하세요.</p>
+        <div class="personal-file-callback">
+          <label for="personal-drive-callback">승인된 리디렉션 주소</label>
+          <input type="text" id="personal-drive-callback" readonly>
+        </div>
+        <form data-files-config>
+          <div class="personal-file-credentials">
+            <label>OAuth Client ID <input name="clientId" type="text" maxlength="500" required autocomplete="off" spellcheck="false"></label>
+            <label>Client Secret <input name="clientSecret" type="password" maxlength="1024" autocomplete="new-password" placeholder="비워두면 기존 값 유지"></label>
+          </div>
+          <div class="personal-file-actions">
+            <button type="submit" class="btn">설정 저장</button>
+            <button type="button" class="btn" data-files-disconnect hidden>연결 끊기</button>
+          </div>
+        </form>
+      </details>
       <form class="personal-file-form" data-files-form hidden>
         <label for="personal-file-input">올릴 파일</label>
         <p class="personal-file-limit" id="personal-file-limit" data-files-limit></p>
@@ -80,7 +98,9 @@
     if (!root || !accountId || root.dataset.filesMounted === accountId) return;
     root.dataset.filesMounted = accountId;
     root.innerHTML = render();
-    const fileRequest = (search, options) => request(accountId, search, options);
+    const fileRequest = (search, options) => request(accountId, search, {
+      ...options, headers: {...options?.headers, 'X-Drive-Connection': connectionId ?? ''},
+    });
     const form = root.querySelector('[data-files-form]');
     const input = form.querySelector('input');
     const button = form.querySelector('button');
@@ -88,10 +108,15 @@
     const list = root.querySelector('[data-files-list]');
     const refresh = root.querySelector('[data-files-refresh]');
     const connect = root.querySelector('[data-files-connect]');
+    const setup = root.querySelector('[data-files-setup]');
+    const setupForm = root.querySelector('[data-files-config]');
+    const disconnect = root.querySelector('[data-files-disconnect]');
+    const callback = root.querySelector('#personal-drive-callback');
     const more = root.querySelector('[data-files-more]');
     const progress = root.querySelector('[data-files-progress]');
     const rows = new Map();
     let nextPage = null;
+    let connectionId = null;
     let maxBytes = 0;
     let pending = null;
     let loading = false;
@@ -118,9 +143,12 @@
       input.value = '';
       pending = null;
       nextPage = null;
+      connectionId = null;
       form.hidden = true;
       more.hidden = true;
       connect.hidden = true;
+      setup.hidden = true;
+      setupForm.reset();
     }
 
     function controls() {
@@ -129,6 +157,7 @@
       more.disabled = loading || busy;
       button.disabled = loading || busy || !input.files.length || input.files[0].size > maxBytes;
       input.disabled = busy;
+      for (const field of setupForm.elements) field.disabled = busy || loading;
     }
 
     function addFile(file, recentId) {
@@ -183,13 +212,24 @@
         if (!append) {rows.clear(); list.replaceChildren();}
         maxBytes = data.maxBytes;
         nextPage = data.nextPage;
+        if (connectionId !== (data.connectionId ?? null)) {
+          pending = null;
+          input.value = '';
+          connectionId = data.connectionId ?? null;
+        }
+        const firstLoad = setup.hidden;
+        setup.hidden = false;
+        if (firstLoad && !data.configured) setup.open = true;
+        if (!append) setupForm.elements.clientId.value = data.clientId ?? '';
+        callback.value = data.redirectUri ?? '';
+        disconnect.hidden = !data.connected;
         form.hidden = !data.connected;
         connect.hidden = !data.configured;
         connect.textContent = data.connected ? 'Drive 다시 연결' : 'Google Drive 연결';
         connect.classList.toggle('primary', !data.connected);
         more.hidden = !nextPage;
         if (!data.configured) {
-          message('관리자가 Google Drive 연결을 준비하면 이곳에서 파일을 올릴 수 있어요.');
+          message('Google Drive 앱 정보를 저장한 뒤 계정을 연결하세요.');
           return;
         }
         if (!data.connected) {
@@ -259,7 +299,7 @@
           const saved = await checkUpload(upload.id);
           if (!hasCurrentAccess(version)) return;
           if (!saved) {
-            if (error.status >= 400 && error.status < 500) pending = null;
+            if (error.status === 308 || (error.status >= 400 && error.status < 500)) pending = null;
             throw error;
           }
           await complete(saved);
@@ -300,6 +340,33 @@
         busy = false;
         controls();
       }
+    });
+    async function updateConnection(action, data = {}) {
+      const version = accessVersion;
+      busy = true;
+      controls();
+      try {
+        await fileRequest('', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action, ...data})});
+        if (!hasCurrentAccess(version)) return;
+        setupForm.elements.clientSecret.value = '';
+        await load();
+        if (hasCurrentAccess(version)) message(action === 'configure' ? 'Google Drive 연결 설정을 저장했습니다.' : 'Google Drive 연결을 끊었습니다.');
+      } catch (error) {
+        if (!hasCurrentAccess(version)) return;
+        clearAfterAccessError(error);
+        message(error.message, true);
+      } finally {
+        busy = false;
+        controls();
+      }
+    }
+    setupForm.addEventListener('submit', event => {
+      event.preventDefault();
+      if (busy || loading) return;
+      void updateConnection('configure', {clientId: setupForm.elements.clientId.value, clientSecret: setupForm.elements.clientSecret.value});
+    });
+    disconnect.addEventListener('click', () => {
+      if (!busy && !loading) void updateConnection('disconnect');
     });
     refresh.addEventListener('click', () => void load());
     more.addEventListener('click', () => void load(true));

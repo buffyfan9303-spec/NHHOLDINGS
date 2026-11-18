@@ -1,4 +1,4 @@
-import {createHash, randomBytes} from 'node:crypto';
+import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import type {NextRequest} from 'next/server';
 import {accessStatus, canUsePersonalWorkspace, identity} from './auth';
 import {equal, hash, MarketError, marketOrigin, seal, unseal} from './security';
@@ -14,21 +14,58 @@ const fileId = /^[A-Za-z0-9_-]{5,180}$/;
 const flowLifetime = 10 * 60_000;
 const fileFields = 'id,name,size,createdTime,trashed,ownedByMe,appProperties,webContentLink,capabilities(canDownload)';
 const documentKey = "workspace='live' AND kind='personal-drive' AND id=$1";
+const upsert = "INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-drive',$1,$2) " +
+  'ON CONFLICT(workspace,kind,id) DO UPDATE SET ';
+const validClientId = /^[\w-]+\.apps\.googleusercontent\.com$/;
 
 type OAuthConfig = {clientId: string; clientSecret: string};
 type DriveToken = {accessToken: string; refreshToken: string; expiresAt: number};
-type Connection = {clientHash: string; secret: string};
+type Connection = {id: string; clientHash: string; secret: string};
+type DriveRecord = {app?: string; connection?: Connection};
 type BrowserFlow = {state: string; verifier: string; actor: string; session: string; expires: number};
 
 export class DriveConnectionRequired extends MarketError {
   constructor() {super('Google Drive 계정을 연결해 주세요.', 412);}
 }
 
-export function driveOAuthConfig(): OAuthConfig | null {
+async function record(actor: string) {
+  const result = await pool().query<{data: DriveRecord}>('SELECT data FROM nh_documents WHERE ' + documentKey, [accountKey(actor)]);
+  return result.rows[0]?.data ?? {};
+}
+
+function configuredApp(data: DriveRecord): OAuthConfig | null {
+  if (data.app) return JSON.parse(unseal(data.app)) as OAuthConfig;
   const clientId = process.env.PERSONAL_DRIVE_CLIENT_ID;
   const clientSecret = process.env.PERSONAL_DRIVE_CLIENT_SECRET;
-  return clientId && /^[\w-]+\.apps\.googleusercontent\.com$/.test(clientId) && clientSecret?.trim()
+  return clientId && validClientId.test(clientId) && clientSecret?.trim()
     ? {clientId, clientSecret} : null;
+}
+
+export async function driveOAuthConfig(actor: string) {
+  return configuredApp(await record(actor));
+}
+
+const clientHashOf = (config: OAuthConfig) => hash(JSON.stringify([config.clientId, config.clientSecret]));
+
+export async function saveDriveApp(actor: string, input: {[key: string]: unknown}) {
+  const data = await record(actor);
+  const previous = configuredApp(data);
+  const clientId = typeof input.clientId === 'string' ? input.clientId.trim() : '';
+  const supplied = typeof input.clientSecret === 'string' ? input.clientSecret.trim() : '';
+  const clientSecret = supplied || (previous?.clientId === clientId ? previous.clientSecret : '');
+  if (clientId.length > 500 || !validClientId.test(clientId)) throw new MarketError('Google 웹 애플리케이션 Client ID를 확인하세요.');
+  if (!clientSecret || clientSecret.length > 1_024 || /\s/.test(clientSecret)) throw new MarketError('Client Secret을 확인하세요.');
+  const app = {clientId, clientSecret};
+  const unchanged = previous && clientHashOf(previous) === clientHashOf(app);
+  if (unchanged && data.app) return;
+  const combined = unchanged ? 'nh_documents.data' : "(nh_documents.data - 'flow' - 'connection')";
+  await pool().query(upsert + 'data=' + combined + ' || excluded.data,updated=clock_timestamp()',
+    [accountKey(actor), JSON.stringify({app: seal(JSON.stringify(app))})]);
+}
+
+export async function disconnectDrive(actor: string) {
+  await pool().query("UPDATE nh_documents SET data=data-'flow'-'connection',updated=clock_timestamp() WHERE " + documentKey,
+    [accountKey(actor)]);
 }
 
 export async function requirePersonalFileIdentity(req: NextRequest, accountHeader = true) {
@@ -52,9 +89,8 @@ function sessionBinding(req: NextRequest) {
   throw new MarketError('로그인 세션을 확인할 수 없습니다. 다시 로그인해주세요.', 403);
 }
 
-const redirectUri = () => marketOrigin() + '/api/personal/files/oauth';
-const flowKey = (actor: string) => 'oauth:' + hash(actor);
-const connectionKey = (actor: string) => 'account:' + hash(actor);
+export const driveRedirectUri = () => marketOrigin() + '/api/personal/files/oauth';
+const accountKey = (actor: string) => 'account:' + hash(actor);
 const ownerStamp = (actor: string) => hash('personal-drive:' + actor);
 
 export async function beginDriveOAuth(req: NextRequest, actor: string, config: OAuthConfig) {
@@ -64,14 +100,14 @@ export async function beginDriveOAuth(req: NextRequest, actor: string, config: O
   const session = sessionBinding(req);
   const expires = Date.now() + flowLifetime;
   const browser = seal(JSON.stringify({actor, session, state, verifier, expires}));
-  const pending = {session, stateHash: hash(state), clientHash: hash(config.clientId), expires};
+  const pending = {session, stateHash: hash(state), clientHash: clientHashOf(config), expires};
   await pool().query(
-    "INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-drive',$1,$2) ON CONFLICT(workspace,kind,id) DO UPDATE SET data=excluded.data,updated=clock_timestamp()",
-    [flowKey(actor), JSON.stringify(pending)],
+    upsert + 'data=nh_documents.data || excluded.data,updated=clock_timestamp()',
+    [accountKey(actor), JSON.stringify({flow: pending})],
   );
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.search = new URLSearchParams({
-    client_id: config.clientId, redirect_uri: redirectUri(), response_type: 'code', scope, state,
+    client_id: config.clientId, redirect_uri: driveRedirectUri(), response_type: 'code', scope, state,
     access_type: 'offline', prompt: 'consent select_account', include_granted_scopes: 'false',
     code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256',
   }).toString();
@@ -95,7 +131,7 @@ async function exchangeToken(config: OAuthConfig, values: Record<string, string>
     !Number.isSafeInteger(result.expires_in) || result.expires_in < 1 || result.expires_in > 86_400) {
     throw new MarketError('Google Drive 인증을 확인하지 못했습니다.', 503);
   }
-  if ((!previousRefresh || result.scope !== undefined) && (typeof result.scope !== 'string' || !result.scope.split(/\s+/).includes(scope))) {
+  if ((!previousRefresh || result.scope !== undefined) && (typeof result.scope !== 'string' || result.scope.trim() !== scope)) {
     throw new DriveConnectionRequired();
   }
   return {accessToken: result.access_token, refreshToken, expiresAt: Date.now() + result.expires_in * 1000};
@@ -115,42 +151,43 @@ export async function finishDriveOAuth(req: NextRequest, actor: string, config: 
     !code || code.length > 2_000 || searchParams.getAll('code').length !== 1 ||
     searchParams.getAll('state').length !== 1 || searchParams.has('error')) throw new Error('Invalid OAuth flow');
 
-  const clientHash = hash(config.clientId);
-  const filter = documentKey + " AND data->>'stateHash'=$2 AND data->>'session'=$3 AND data->>'clientHash'=$4 AND data->>'expires'=$5";
-  const bindings = [flowKey(actor), hash(state), session, clientHash, String(browser.expires)];
+  const clientHash = clientHashOf(config);
+  const filter = documentKey + " AND data->'flow'->>'stateHash'=$2 AND data->'flow'->>'session'=$3 AND data->'flow'->>'clientHash'=$4 AND data->'flow'->>'expires'=$5";
+  const bindings = [accountKey(actor), hash(state), session, clientHash, String(browser.expires)];
   const claimed = await pool().query(
-    "UPDATE nh_documents SET data=data || '{\"used\":true}'::jsonb,updated=clock_timestamp() WHERE " + filter + " AND data->>'used' IS NULL RETURNING id",
+    "UPDATE nh_documents SET data=jsonb_set(data,'{flow,used}','true'::jsonb),updated=clock_timestamp() WHERE " + filter + " AND data->'flow'->>'used' IS NULL RETURNING id",
     bindings,
   );
   if (!claimed.rowCount) throw new Error('OAuth flow already consumed');
-  const token = await exchangeToken(config, {grant_type: 'authorization_code', code, code_verifier: browser.verifier, redirect_uri: redirectUri()});
+  const token = await exchangeToken(config, {grant_type: 'authorization_code', code, code_verifier: browser.verifier, redirect_uri: driveRedirectUri()});
+  const connection = {id: randomUUID(), clientHash, secret: seal(JSON.stringify(token))};
   const saved = await pool().query(
-    "WITH active AS (SELECT id FROM nh_documents WHERE " + filter + " AND data->>'used'='true' FOR UPDATE) " +
-      "INSERT INTO nh_documents(workspace,kind,id,data) SELECT 'live','personal-drive',$6,$7::jsonb FROM active " +
-      "ON CONFLICT(workspace,kind,id) DO UPDATE SET data=excluded.data,updated=clock_timestamp() RETURNING id",
-    [...bindings, connectionKey(actor), JSON.stringify({clientHash, secret: seal(JSON.stringify(token))})],
+    "UPDATE nh_documents SET data=(data-'flow') || $6::jsonb,updated=clock_timestamp() WHERE " + filter + " AND data->'flow'->>'used'='true' RETURNING id",
+    [...bindings, JSON.stringify({connection})],
   );
   if (!saved.rowCount) throw new Error('OAuth flow superseded');
 }
 
-async function connection(actor: string, config: OAuthConfig) {
-  const key = connectionKey(actor);
-  const result = await pool().query<{data: Connection}>('SELECT data FROM nh_documents WHERE ' + documentKey, [key]);
-  const saved = result.rows[0]?.data;
-  if (!saved?.secret || saved.clientHash !== hash(config.clientId)) throw new DriveConnectionRequired();
+async function connection(actor: string, config: OAuthConfig, expectedConnectionId?: string) {
+  const saved = (await record(actor)).connection;
+  if (!saved?.secret || saved.clientHash !== clientHashOf(config) || (expectedConnectionId !== undefined && expectedConnectionId !== saved.id)) {
+    throw new DriveConnectionRequired();
+  }
   const token: DriveToken = JSON.parse(unseal(saved.secret));
-  return {key, saved, token};
+  return {saved, token};
 }
 
-export async function driveAccessToken(actor: string, config: OAuthConfig) {
-  const {key, saved, token} = await connection(actor, config);
-  if (token.expiresAt > Date.now() + 60_000) return token.accessToken;
+export async function driveAccessToken(actor: string, config: OAuthConfig, expectedConnectionId?: string) {
+  const {saved, token} = await connection(actor, config, expectedConnectionId);
+  if (token.expiresAt > Date.now() + 60_000) return {token: token.accessToken, connectionId: saved.id};
   const refreshed = await exchangeToken(config, {grant_type: 'refresh_token', refresh_token: token.refreshToken}, token.refreshToken);
   const committed = await pool().query(
-    "UPDATE nh_documents SET data=$2,updated=clock_timestamp() WHERE " + documentKey + " AND data->>'secret'=$3 RETURNING id",
-    [key, JSON.stringify({...saved, secret: seal(JSON.stringify(refreshed))}), saved.secret],
+    "UPDATE nh_documents SET data=jsonb_set(data,'{connection,secret}',to_jsonb($4::text)),updated=clock_timestamp() WHERE " +
+    documentKey + " AND data->'connection'->>'id'=$2 AND data->'connection'->>'secret'=$3 RETURNING id",
+    [accountKey(actor), saved.id, saved.secret, seal(JSON.stringify(refreshed))],
   );
-  return committed.rowCount ? refreshed.accessToken : (await connection(actor, config)).token.accessToken;
+  const accessToken = committed.rowCount ? refreshed.accessToken : (await connection(actor, config, saved.id)).token.accessToken;
+  return {token: accessToken, connectionId: saved.id};
 }
 
 async function driveRequest(url: string | URL, token: string, init?: RequestInit) {
@@ -196,9 +233,10 @@ export async function listPersonalFiles(token: string, actor: string, pageToken:
     ...(pageToken ? {pageToken} : {}),
   }).toString();
   const result = await (await driveRequest(url, token)).json();
-  if (!Array.isArray(result.files)) throw new Error('Invalid Drive file list');
+  const files = result.files ?? [];
+  if (!Array.isArray(files)) throw new Error('Invalid Drive file list');
   return {
-    files: result.files.map((file: DriveFile) => toPersonalFile(file, actor)).filter(Boolean),
+    files: files.map((file: DriveFile) => toPersonalFile(file, actor)).filter(Boolean),
     nextPage: typeof result.nextPageToken === 'string' ? result.nextPageToken : null,
   };
 }
