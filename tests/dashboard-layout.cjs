@@ -49,7 +49,22 @@ async function main(){
     assert.equal(layout.activeMode,'샘플');
     if(route.hash==='overview'){
      assert.equal(await page.locator('.dashboard-priority .priority-item').count(),3);
-     assert.ok(await page.locator('.site-grid .site-card').count());
+     const websiteRows=page.locator('.site-grid .site-card');
+     assert.ok(await websiteRows.count());
+     assert.equal(await websiteRows.locator('.site-card-actions button').count(),await websiteRows.count());
+     assert.equal(await websiteRows.locator('.site-card-actions .icon').count(),0);
+     if(width<=900){
+      const filters=await page.locator('.heading-filter-value .select').evaluateAll(items=>items.map(item=>({height:item.getBoundingClientRect().height,appearance:getComputedStyle(item).appearance})));
+      assert.equal(filters.length,2);
+      assert(filters.every(filter=>filter.appearance==='none'&&filter.height>=44),`${width}: mobile filters must show the inset indicator and fit touch`);
+     }
+     if(width<=760){
+      const actions=await websiteRows.evaluateAll(rows=>rows.flatMap(r=>Array.from(r.querySelectorAll('.site-card-actions button,.site-card-actions a'),a=>{
+       const b=a.getBoundingClientRect();
+       return {height:b.height,width:b.width,rightInset:r.getBoundingClientRect().right-b.right};
+      })));
+      assert(actions.every(a=>a.width>=44&&a.height>=44&&a.rightInset>=16),`${width}: website actions must be inset and fit touch`);
+     }
      assert.equal(await page.locator('.dashboard-section .kpis .kpi').count(),4);
     }
     if(route.hash==='overview'&&width>760)assert.equal(await page.locator('.publishing-board tbody tr').count(),4,'Overview shows recent four campaigns');

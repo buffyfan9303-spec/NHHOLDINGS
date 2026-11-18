@@ -148,7 +148,7 @@ window.NuriOperator = (() => {
   const update = () => {
    const tokens = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
    const matches = pagesToOpen.filter(([, label, aliases]) => tokens.every(token => (label + ' ' + aliases).toLowerCase().includes(token)));
-   results.innerHTML = matches.map(([page, label]) => `<li><button type="button" data-command="${page}">${label}${icon('arrow')}</button></li>`).join('')
+   results.innerHTML = matches.map(([page, label]) => `<li><button type="button" data-command="${page}">${label}</button></li>`).join('')
     || '<li class="caption" role="status">검색 결과가 없습니다.</li>';
   };
   const open = () => {
