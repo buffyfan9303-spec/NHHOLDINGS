@@ -5,6 +5,7 @@ const {PGlite} = require('@electric-sql/pglite');
 const {Pool} = require('pg');
 const {context} = require('../src/server/context.cjs');
 const {controller} = require('../src/server/dashboard.cjs');
+const {begin,transfer,chunkSize} = require('../src/server/youtube-upload.cjs');
 
 async function main() {
  const originalNow = Date.now;
@@ -182,6 +183,65 @@ async function main() {
   assert.equal(ytState.contents.find(p=>p.id==='yt-1').publishedAt,publishedAt);
   assert.equal(youtubeCalls.length,2,'reconciliation is read only on YouTube');
   console.log('YouTube channel binding, approval, duplicate reservation, publish, and read-back recovery passed.');
+  const legacy=ytState.contents.find(p=>p.id==='yt-legacy');
+  assert.equal(legacy.attempt.code,'approval');
+  assert.equal(typeof legacy.attempt.at,'string');
+  const uploadCtx=await context('live');
+  const channel='UC'+'a'.repeat(22);
+  const target={service:'tistory',channel:'youtube',userId:channel,verifiedAt:new Date().toISOString(),
+   secret:uploadCtx.encrypt({authType:'oauth2',token:'isolated-upload-token',expiresAt:new Date(Date.now()+3600000).toISOString()})};
+  await uploadCtx.put('channel','upload-test',target);
+  const fileSize=chunkSize+128;
+  const inputs={account:'upload-test',fingerprint:'a'.repeat(64),size:fileSize,mime:'video/mp4',title:'영상 제목',
+   description:'비공개 시험 영상',categoryId:'22',madeForKids:false,synthetic:true};
+  const uploadURL='https://www.googleapis.com/upload/youtube/v3/videos?upload_id=synthetic-upload-id';
+  let opens=0,bytesUploaded=0,finish=false,mismatch=false;
+  const provider=async (raw,init)=>{
+   const url=new URL(raw);
+   assert.equal(url.hostname,'www.googleapis.com');
+   if(url.pathname==='/youtube/v3/channels')return Response.json({items:[{id:mismatch?'UC'+'b'.repeat(22):channel,snippet:{title:'Fixture channel'}}]});
+   if(init.method==='POST'){
+    opens++;
+    assert.equal(url.searchParams.get('notifySubscribers'),'false');
+    assert.deepEqual(JSON.parse(init.body).status,{privacyStatus:'private',selfDeclaredMadeForKids:false,containsSyntheticMedia:true});
+    return new Response(null,{status:200,headers:{location:uploadURL}});
+   }
+   assert.equal(raw,uploadURL);
+   assert.equal(init.method,'PUT');
+   if(init.body.length===0&&finish){
+    return Response.json({id:'PrivateTest',snippet:{channelId:channel},status:{privacyStatus:'private'}});
+   }
+   if(init.body.length){
+    assert.equal(init.headers['Content-Range'],'bytes '+bytesUploaded+'-'+(bytesUploaded+init.body.length-1)+'/'+fileSize);
+    bytesUploaded+=init.body.length;
+    if(bytesUploaded===fileSize){finish=true;throw Error('simulated lost completion response');}
+   }
+   return new Response(null,{status:308,headers:bytesUploaded?{range:'bytes=0-'+(bytesUploaded-1)}:{}});
+  };
+  mismatch=true;
+  await assert.rejects(begin(uploadCtx,'owner',inputs,provider),{status:409});
+  assert.equal(opens,0);
+  mismatch=false;
+  const started=await begin(uploadCtx,'owner',inputs,provider);
+  assert.equal(started.received,0);
+  assert(!JSON.stringify(started).includes('synthetic-upload-id'));
+  assert(!(await controller({})).view().contents.some(p=>p.id===started.id));
+  await assert.rejects(transfer(await context('live'),'another-owner',started.id,null,null,provider),{status:404});
+  await assert.rejects(transfer(await context('live'),'owner',started.id,1,Buffer.alloc(chunkSize),provider),{status:409});
+  const part=await transfer(await context('live'),'owner',started.id,0,Buffer.alloc(chunkSize),provider);
+  assert.equal(part.received,chunkSize);
+  const same=await begin(await context('live'),'owner',inputs,provider);
+  assert.equal(same.id,started.id);
+  assert.equal(opens,1);
+  assert.equal((await transfer(await context('live'),'owner',started.id,null,null,provider)).received,chunkSize);
+  await assert.rejects(transfer(await context('live'),'owner',started.id,chunkSize,Buffer.alloc(128),provider),{status:502});
+  const finished=await transfer(await context('live'),'owner',started.id,null,null,provider);
+  assert.equal(finished.received,fileSize);
+  assert.equal(finished.videoId,'PrivateTest');
+  assert.equal(opens,1,'a missing completion response must not start a second upload');
+  assert.equal((await context('live')).get('youtube-upload',started.id).secret,null);
+  console.log('YouTube private upload, owner and channel binding, chunk validation, resume, and lost completion recovery passed.');
+
  } finally {
   Date.now = originalNow;
   globalThis.fetch = originalFetch;

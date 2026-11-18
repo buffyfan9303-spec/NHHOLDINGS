@@ -49,3 +49,29 @@
 }
 @media print {.operator-mobile {display: none !important}}
 .approval-media {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,132px),1fr));gap:10px}
+
+.today-shortcuts {display: none}
+.approval-filters {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.approval-filters select {width:100%;min-width:0;min-height:44px}
+.sns-connection-summary {margin-bottom:16px}
+.sns-provider {border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.sns-provider header,.sns-diagnostic-row,.youtube-upload-dialog header {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sns-provider h3,.youtube-upload-dialog h2 {margin:0}
+.sns-diagnostic-row {padding:10px 0;overflow-wrap:anywhere}
+.sns-diagnostic-row strong {display:block}
+.sns-diagnostic-row p,.youtube-upload-entry p {margin:5px 0 0}
+.sns-diagnostic-row .btn,.youtube-upload-entry .btn,.youtube-upload-dialog .btn {min-height:44px}
+.youtube-upload-dialog {box-sizing:border-box;width:min(540px,calc(100% - 32px));max-height:calc(100% - 32px);padding:20px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);overflow:auto}
+.youtube-upload-dialog::backdrop {background:#080b10aa}
+.youtube-upload-dialog form {margin-top:12px}
+.youtube-upload-dialog video {width:100%;max-height:200px;background:#080b10;border-radius:6px}
+.youtube-upload-dialog progress {width:100%;accent-color:var(--teal)}
+.youtube-upload-dialog input[type=file]{min-height:44px}
+@media (max-width: 720px) {
+ .today-shortcuts {display:flex;flex-wrap:wrap;gap:0 16px;padding:2px 0;border-bottom:1px solid var(--line);margin-bottom:14px}
+ .today-shortcuts button {background:none;color:var(--ink);padding:0 2px;min-height:44px;display:inline-flex;align-items:center;gap:7px}
+ .today-shortcuts strong {font-variant-numeric:tabular-nums}
+ .today-shortcuts+.overview-top .priority-item[data-approval-filter] {display:none}
+ .approval-filters {grid-template-columns:repeat(2,minmax(0,1fr))}
+ .approval-filters .field:last-child {grid-column:1 / -1}
+}

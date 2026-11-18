@@ -21,6 +21,10 @@ function videoId(value) {
  return typeof id === 'string' && videoPattern.test(id) ? id : '';
 }
 
+function validMetadata(title, description) {
+ return !!title&&!!description&&Array.from(title).length<=100&&Buffer.byteLength(description,'utf8')<=5000&&!/[<>]/.test(title+description);
+}
+
 function fail(message, status = 409) {
  throw Object.assign(new Error(message), {status});
 }
@@ -37,7 +41,9 @@ async function requestVideo(token, params, request, update) {
    redirect:'error',signal:AbortSignal.timeout(20000),
   });
  } catch { fail('YouTube의 응답을 확인하지 못했습니다. Studio에서 공개 여부를 확인하세요.',502); }
- if (!response.ok) fail('YouTube 요청을 완료하지 못했습니다. 계정 권한과 Studio 상태를 확인하세요.',502);
+ if (!response.ok) {
+  throw Object.assign(new Error('YouTube 요청을 완료하지 못했습니다. 계정 권한과 Studio 상태를 확인하세요.'),{status:502,connectionIssue:response.status===401});
+ }
  return await response.json().catch(() => fail('YouTube 응답 형식을 확인할 수 없습니다.',502));
 }
 
@@ -60,14 +66,15 @@ async function checkReady(post, account, config, request = fetch) {
  return video;
 }
 
-async function publish(post, account, config, request = fetch) {
+async function publish(post, account, config, request = fetch, beforeWrite = ()=>{}) {
  const video = await checkReady(post,account,config,request);
  // YouTube replaces writable fields in the status part. Carry over existing settings that this workflow does not manage.
  const {license,embeddable,publicStatsViewable} = video.status;
  const status = {privacyStatus:'public',license,embeddable,publicStatsViewable,
   selfDeclaredMadeForKids:post.youtubeMadeForKids,containsSyntheticMedia:post.youtubeSynthetic};
+ beforeWrite();
  const result = await requestVideo(config.token,{part:'status'},request,{id:video.id,status});
  if (result.id !== video.id || result.status?.privacyStatus !== 'public') fail('YouTube 공개 응답을 확인하지 못했습니다. Studio에서 확인하세요.',502);
  return {externalId:video.id,link:watchUrl(video.id)};
 }
-module.exports = {videoId,channelPattern,watchUrl,studioUrl,readVideo,checkReady,publish};
+module.exports = {videoId,channelPattern,watchUrl,studioUrl,validMetadata,readVideo,checkReady,publish};

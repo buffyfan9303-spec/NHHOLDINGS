@@ -100,9 +100,10 @@ Instagram·YouTube·Threads·X의 액세스 토큰을 개발자 도구에서 직
 ## YouTube 동영상·Shorts의 공개 예약
 
 1. Google Cloud에서 YouTube Data API v3를 켜고 웹 OAuth 앱에 위 콜백 URI를 등록합니다. 누리원 연결 설정에서 앱 정보를 저장하고, 게시할 YouTube 채널에 권한이 있는 사용자가 Google 공식 동의를 완료합니다. [Google 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server)
-2. YouTube Studio에 영상을 비공개로 올립니다. Studio에서 자체 공개 예약을 설정하지 않고, 영상이 처리될 때까지 기다립니다. Shorts는 YouTube가 판단합니다. 일반 채널에서는 세로 또는 정사각형과 최대 3분 조건을 확인하세요. [YouTube Shorts 기준](https://support.google.com/youtube/answer/15424877)
+2. 누리원 YouTube 원고에서 제목, 설명, 아동용 여부, 현실적인 변경·합성 여부를 입력하고 **영상 파일 비공개로 올리기**를 누릅니다. MP4·MOV·WebM은 최대 512 MB이며, 전송이 끊기면 같은 파일과 원고를 선택해서 이어 올립니다. 이미 YouTube Studio에 비공개로 올린 영상도 연결할 수 있습니다. Studio의 자체 공개 예약은 해제하고 영상 처리가 끝날 때까지 기다립니다. Shorts는 YouTube가 판단합니다. 일반 채널에서는 세로 또는 정사각형과 최대 3분 조건을 확인하세요. [YouTube Shorts 기준](https://support.google.com/youtube/answer/15424877)
 3. 누리원에서 YouTube 초안에 공식 영상 주소 또는 영상 ID, Studio와 같은 제목·설명, 아동용 여부와 현실적으로 보이는 변경·합성 콘텐츠 여부를 입력합니다. 승인함에서 영상, 채널과 KST 공개 시각을 승인합니다.
-4. 누리원 예약 실행에서 동일 채널의 비공개 영상 상태와 메타데이터를 다시 확인한 뒤 공개합니다. 공개 응답이 끊기면 승인함에서 실제 영상의 공개 상태를 조회합니다. 채널에 연결하기 전에는 실제 공개가 검증되지 않습니다. [YouTube 영상 업데이트](https://developers.google.com/youtube/data/reference/rest/v3/videos/update)
+4. 누리원 예약 실행에서 동일 채널의 비공개 영상 상태와 메타데이터를 다시 확인한 뒤 공개합니다. 승인함에서 계정과 예약 상태를 필터링할 수 있습니다. 비공개 업로드와 공개 예약은 각각 별도로 확인하세요. 공개 응답이 끊기면 승인함에서 실제 영상의 공개 상태를 조회합니다. 채널에 연결하기 전에는 실제 공개가 검증되지 않습니다. [YouTube 영상 업데이트](https://developers.google.com/youtube/data/reference/rest/v3/videos/update)
+5. YouTube가 검수하지 않은 API 프로젝트에서 올린 영상에는 비공개 제한이 적용될 수 있습니다. Google의 API 검수가 필요한지는 프로젝트와 실제 업로드의 Studio 상태에서 확인하세요. [YouTube 파일 업로드 조건](https://developers.google.com/youtube/data/reference/rest/v3/videos/insert)
 
 ## Threads: 프로필과 앱 자격 증명
 

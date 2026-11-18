@@ -9,9 +9,16 @@ window.NuriOperator = (() => {
   'content.instagram_paused': 'Instagram 예약을 일시정지했습니다',
   'content.cancelled': '게시 예약을 취소했습니다',
   'content.published': '채널에 게시를 완료했습니다',
+  'content.preflight_review': '게시 조건 확인이 필요합니다',
   'content.publish_review': '채널에서 게시 결과를 확인해야 합니다',
   'content.sample_published': '샘플 게시를 완료했습니다',
  };
+ const filters={channel:'all',account:'all',status:'all'};
+ const attemptLabels={connection:'재연결 필요',approval:'재승인 필요',preflight:'게시 조건 확인',uncertain:'게시 결과 확인 필요',processing:'미디어 처리 중'};
+ const diagnostics=p=>attemptLabels[p.attempt?.code]||(p.status==='scheduled'&&!p.approval?'재승인 필요':
+  p.status==='scheduled'&&Date.parse(p.scheduledAt)<Date.now()-5*60000?'예약 지연':'');
+ const readyAccounts=()=>data.accounts.filter(a=>snsRecord(a)&&['instagram','youtube'].includes(a.channel));
+ const needsConnection=()=>['instagram','youtube'].filter(channel=>!readyAccounts().some(a=>a.channel===channel&&a.verifiedAt&&!a.connectionError));
  const supported = p => snsPost(p) && requiresApproval(p);
  const channelName = p => p.channel==='youtube'?'YouTube':'Instagram';
  const mediaReady = p => p.channel==='youtube'?!!p.youtubeVideoId&&typeof p.youtubeMadeForKids==='boolean'&&typeof p.youtubeSynthetic==='boolean':!!webLink(p.videoUrl||p.media);
@@ -31,7 +38,7 @@ window.NuriOperator = (() => {
  ];
 
  function scheduleForm(post) {
-  const accounts = data.accounts.filter(a => accountFits(a, post) && a.verifiedAt);
+  const accounts = data.accounts.filter(a => accountFits(a, post) && a.verifiedAt && !a.connectionError);
   const ready = mediaReady(post);
   const channel = channelName(post);
   const accountOptions = accounts.map(account => [account.id, accountName(account)]);
@@ -39,7 +46,7 @@ window.NuriOperator = (() => {
    <input type="hidden" name="version" value="${post.version ?? 1}">
    ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account)}
    ${formField('게시 시각 · 한국 시간', 'at', dateField(post.scheduledAt), 'datetime-local', 'required')}
-   ${post.uncertain || post.status === 'review' ? `<div class="full">${checkbox(channel+'에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
+   ${post.uncertain || post.status === 'review' && !['preflight','connection'].includes(post.attempt?.code) ? `<div class="full">${checkbox(channel+'에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
    <label class="check-label full"><input type="checkbox" name="approved" required>위 원고와 미디어, 선택한 계정과 시각을 확인했습니다.</label>
    <div class="full"><button class="btn primary" type="submit" ${!accounts.length || !ready ? 'disabled' : ''}>${post.status === 'paused' ? '다시 승인하고 예약' : '승인하고 예약'}</button></div>
    ${!accounts.length ? '<p class="caption full">설정에서 '+channel+' 계정을 연결하고 확인하세요.</p>' : ''}
@@ -58,18 +65,23 @@ window.NuriOperator = (() => {
   const video=isYouTube&&/^[A-Za-z0-9_-]{11}$/.test(post.youtubeVideoId||'')
    ? 'https://studio.youtube.com/video/'+post.youtubeVideoId+'/edit' : webLink(post.videoUrl);
   const yesNo=value=>value===true?'예':value===false?'아니요':'미입력';
-  const status = post.status === 'scheduled' && !post.approval ? '재승인 필요' : statusLabels[post.status];
+  const status=diagnostics(post)||statusLabels[post.status];
+  const published=post.status==='published';
+  const permalink=published&&webLink(post.link);
   const actions = session.readOnly ? '' : (post.status === 'scheduled' && post.approval ? button('일시정지', 'pause', post.id) : '')
    + (['paused', 'scheduled'].includes(post.status) ? button('예약 취소', 'cancel', post.id) : '')
    + (isYouTube && post.status==='review' && post.uncertain ? button('YouTube 공개 여부 확인', 'youtube-reconcile', post.id) : '')
-   + (post.status !== 'publishing' ? button('원고 수정', 'content-edit', post.id) : '');
+   + (post.attempt?.code==='connection' ? button('계정 연결 확인','sns-settings') : '')
+   + (published&&!permalink&&post.externalId ? button('게시 주소 다시 확인','check-post',post.id) : '')
+   + (!published&&post.status!=='publishing' ? button('원고 수정', 'content-edit', post.id) : '');
   const showForm = !session.readOnly && (waiting(post) || post.status === 'paused');
   return `<article class="approval-card" id="approval-${esc(post.id)}">
    <div class="approval-card-head">
     <div><span class="caption">${channel}${account ? ' · ' + esc(accountName(account)) : ''}</span><h3>${esc(post.title)}</h3></div>
-    <span class="approval-state ${waiting(post) ? 'needs-review' : ''}">${esc(status)}</span>
+    <span class="approval-state ${waiting(post)||diagnostics(post) ? 'needs-review' : ''}">${esc(status)}</span>
    </div>
-   <p class="caption">${post.status === 'publishing' ? channel+' 응답을 기다리는 중입니다.' : post.scheduledAt ? dt(post.scheduledAt) + ' KST' : '게시 계정과 일정을 선택해 주세요.'}${post.approval ? ' · 승인 ' + dt(post.approval.at) : ''}</p>
+   <p class="caption">${post.status === 'publishing' ? channel+' 응답을 기다리는 중입니다.' : published&&post.publishedAt ? '게시 '+dt(post.publishedAt)+' KST' : post.scheduledAt ? '예약 '+dt(post.scheduledAt) + ' KST' : '게시 계정과 일정을 선택해 주세요.'}${post.approval ? ' · 승인 ' + dt(post.approval.at) : ''}</p>
+   ${post.attempt?.at ? `<p class="caption">마지막 기록 <time datetime="${esc(post.attempt.at)}">${dt(post.attempt.at)} KST</time></p>` : ''}
    ${post.error ? `<p class="warning">${esc(post.error)}</p>` : ''}
    <details class="approval-preview">
     <summary>원고와 미디어 보기</summary>
@@ -80,24 +92,44 @@ window.NuriOperator = (() => {
     ${media.length ? `<div class="approval-media">${media.map((url, i) => `<a class="approval-image" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" loading="lazy" referrerpolicy="no-referrer" alt="게시 이미지 ${i + 1}">${i + 1}번 이미지 ↗</a>`).join('')}</div>` : ''}
     ${showForm ? scheduleForm(post) : ''}
    </details>
-   ${actions ? `<div class="toolbar">${actions}</div>` : ''}
+   ${actions||permalink ? `<div class="toolbar">${permalink?`<a class="btn" href="${esc(permalink)}" target="_blank" rel="noopener noreferrer">게시물 열기 ↗</a>`:''}${actions}</div>` : ''}
   </article>`;
  }
 
  function pendingCount() {
-  return data.contents.filter(p => supported(p) && waiting(p)).length;
+  return data.contents.filter(p=>supported(p)&&waiting(p)&&p.status!=='review'&&!diagnostics(p)).length;
  }
 
- function render() {
-  const posts = data.contents.filter(supported);
+ function attentionCount(){
+  return data.contents.filter(p=>supported(p)&&['review','scheduled'].includes(p.status)&&!p.externalId&&(p.status==='review'||!!diagnostics(p)&&p.attempt?.code!=='processing')).length;
+ }
+
+ function setFilter(name,value){
+  if(name==='channel')filters.account='all';
+  if(Object.hasOwn(filters,name))filters[name]=value;
+ }
+
+ function renderApproval() {
+  const accounts=readyAccounts().filter(a=>filters.channel==='all'||a.channel===filters.channel);
+  if(!accounts.some(a=>a.id===filters.account))filters.account='all';
+  const posts=data.contents.filter(p=>supported(p)&&(filters.channel==='all'||p.channel===filters.channel)&&(filters.account==='all'||p.account===filters.account));
   const titles = new Map(posts.map(p => [p.id, p.title]));
-  const ongoing = posts.filter(p => ['scheduled', 'paused', 'publishing'].includes(p.status) && !waiting(p));
+  const sections=[
+   ['pending','검토 대기',p=>waiting(p)&&p.status!=='review'&&!diagnostics(p),'승인할 원고가 없습니다.'],
+   ['issues','확인 필요',p=>p.status==='review'||p.status==='scheduled'&&diagnostics(p)&&p.attempt?.code!=='processing','확인이 필요한 예약이 없습니다.'],
+   ['scheduled','예약과 실행',p=>['scheduled','paused','publishing'].includes(p.status)&&(!diagnostics(p)||p.attempt?.code==='processing'),'진행 중인 예약이 없습니다.'],
+   ['published','게시 완료',p=>p.status==='published','게시 완료 기록이 없습니다.'],
+  ];
   const audit = data.audit.filter(event => titles.has(event.target) && auditLabels[event.action]).slice(0, 8);
-  return `<div class="approval-layout"><section class="panel approval-section">
-    <h2>검토 대기</h2>${posts.filter(waiting).map(card).join('') || empty('승인할 원고가 없습니다.')}
-   </section><section class="panel approval-section">
-    <h2>예약과 실행</h2>${ongoing.map(card).join('') || empty('진행 중인 예약이 없습니다.')}
-   </section>${session.readOnly ? '' : `<section class="panel approval-section approval-history">
+  return `<div class="approval-filters" role="group" aria-label="승인함 필터">
+    ${selectField('채널','approval-channel',[['all','모든 채널'],['instagram','Instagram'],['youtube','YouTube']],filters.channel)}
+    ${selectField('게시 계정','approval-account',[['all','모든 계정'],...accounts.map(a=>[a.id,accountName(a)])],filters.account)}
+    ${selectField('상태','approval-status',[['all','모든 상태'],...sections.map(([key,label])=>[key,label])],filters.status)}
+   </div><div class="approval-layout">${sections.filter(([key])=>filters.status==='all'||filters.status===key).map(([key,label,test,blank])=>{
+    const matches=posts.filter(test);
+    if(key==='published')matches.sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt));
+    return `<section class="panel approval-section"><h2>${label}</h2>${(key==='published'&&filters.status==='all'?matches.slice(0,5):matches).map(card).join('')||empty(blank)}${key==='published'&&filters.status==='all'&&matches.length>5?'<button type="button" class="btn" data-approval-filter="published">게시 기록 전체 보기</button>':''}</section>`;
+   }).join('')}${session.readOnly||filters.status!=='all' ? '' : `<section class="panel approval-section approval-history">
     <h2>최근 게시 활동</h2>${audit.length ? `<ol>${audit.map(event => `<li><time datetime="${esc(event.at)}">${dt(event.at)} KST</time><span><strong>${esc(titles.get(event.target))}</strong><span>${auditLabels[event.action]}</span></span></li>`).join('')}</ol>` : empty('기록된 게시 활동이 없습니다.')}
    </section>`}</div>`;
  }
@@ -155,7 +187,31 @@ window.NuriOperator = (() => {
   } finally {button.disabled=false;}
  }
 
+ function resetFilters(){
+  Object.assign(filters,{channel:'all',account:'all',status:'all'});
+ }
+
+ function renderDashboardFilter(name){
+  window.requestAnimationFrame(()=>{
+   render();
+   document.querySelector('.approval-filters [name="'+name+'"]')?.focus({preventScroll:true});
+  });
+ }
+
  function init() {
+  document.addEventListener('change',e=>{
+   const match=/^approval-(channel|account|status)$/.exec(e.target.name||'');
+   if(!match)return;
+   setFilter(match[1],e.target.value);
+   renderDashboardFilter(e.target.name);
+  });
+  document.addEventListener('click',e=>{
+   const control=e.target.closest('[data-approval-filter]');
+   if(!control)return;
+   setFilter('status',control.dataset.approvalFilter);
+   if(state.page==='approval')renderDashboardFilter('approval-status');
+   else navigate('approval');
+  });
   const palette = document.getElementById('command-palette');
   const query = document.getElementById('command-query');
   const results = document.getElementById('command-results');
@@ -252,5 +308,5 @@ window.NuriOperator = (() => {
   if ('serviceWorker' in navigator && !location.search) navigator.serviceWorker.register('/one/operator-sw.js', {scope:'/dashboard'}).catch(() => {});
  }
 
- return {render, pendingCount, contentControl, reveal, init, pushPanel, disconnectPush};
+ return {render:renderApproval, pendingCount, attentionCount, needsConnection, resetFilters, diagnostics, contentControl, reveal, init, pushPanel, disconnectPush};
 })();
