@@ -13,7 +13,7 @@ async function handle(req:NextRequest,ctx:{params:Promise<{route:string[]}>}){tr
  if(demo&&process.env.NODE_ENV==='production')return Response.json({error:'운영 환경에서는 샘플을 사용할 수 없습니다.'},{status:404});
  if(req.method==='POST')requireOrigin(req);if(route==='/api/logout')return logout(req);
  const headers={'Cache-Control':'private, no-store'};
- if(route==='/api/session'&&req.method==='GET')return Response.json({authenticated:true,email:user.email,setup:false,demo,owner,readOnly:!owner,access},{headers});
+ if(route==='/api/session'&&req.method==='GET')return Response.json({authenticated:true,email:user.email,setup:false,demo,owner,readOnly:!owner,access,passkeys:owner&&!demo&&process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED==='true'},{headers});
  const input=req.method==='POST'?await body(req):{},app=await controller({demo,collect}),response=await app.handle(req,route,input,user.email!);
  if(!owner&&route==='/api/state'&&response.ok){const state=await response.json();return Response.json({...state,socialApps:{},accounts:state.accounts.map(({id,label,service,channel,username,verifiedAt}:Record<string,unknown>)=>({id,label,service,channel,username,verifiedAt})),aiConfig:{},naver:{},google:{configured:false,reports:state.google?.reports??[]},audit:[]},{headers});}
  response.headers.set('Cache-Control','private, no-store');return response;

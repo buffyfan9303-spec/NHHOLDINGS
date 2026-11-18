@@ -1,5 +1,7 @@
 # 누리원 · Codex / Claude 협업 기준
 
+- 누리원 패스키 · 2026-11-18 KST · Codex가 누리원 운영자용 패스키 등록·로그인 구현을 맡았다. 격리 Supabase Auth v2.197.0에서 Chrome 가상 인증기로 등록·로그아웃·패스키 재로그인·사용한 챌린지 거부를 확인했고, npm run typecheck 및 npm test를 통과했다. 프로젝트에서 실험 기능과 RP 원점을 확인한 뒤 운영자 본인 기기로 등록·복구를 검증할 때 활성화한다.
+
 - 게시 승인함과 PWA · 2026-11-18 KST · Codex가 main f84573c에서 승인함 화면, Instagram 예약·캐러셀·감사, 명령 검색·모바일 이동, 오프라인 안내 구현과 검증 담당.
 - npm run typecheck, npm test, npm run build, git diff --check 통과. 로컬 PostgreSQL과 인증 응답 모의 환경에서 역할 구분, 320~1440px 화면, 승인·일시정지·재승인·취소, 오프라인 복귀, MARKET 상태값을 확인. Instagram API 모의 응답으로 3건 확인.
 - 판매자 정보: 필드 대조 진행. 고객센터 이메일·통신판매업 신고번호·구매안전서비스 URL 입력 미완료. 정책·배송·상품·PG 운영 확인과 Passkey/MFA·푸시·실계정 게시 검증 별도.
