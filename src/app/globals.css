@@ -237,6 +237,7 @@
 .nh-login h1{font-size:24px;line-height:1.4;letter-spacing:-.035em;font-weight:550}
 .nh-login-heading p{font-size:14px;line-height:1.6;color:#a0a4a6;margin-top:10px;word-break:keep-all}
 .nh-google-button{display:flex;align-items:center;justify-content:center;min-height:46px;width:100%;padding:11px 16px;border:1px solid #d8e8df24;border-radius:9px;background:linear-gradient(#ffffff04,#ffffff00),#1c2420;color:#ededee;font-size:14px;font-weight:500;line-height:1.5;box-shadow:0 1px 2px #00000012;transition:background-color 180ms,border-color 180ms,box-shadow 180ms,transform 180ms cubic-bezier(.2,.8,.2,1)}
+.nh-google-button + .nh-google-button{margin-top:8px}
 .nh-google-button:hover{background-color:#27322c;border-color:#b8d4c447;box-shadow:0 4px 12px #00000020;transform:translateY(-1px)}
 .nh-google-button:active{transform:translateY(0) scale(.99)}
 .nh-login-divider{display:flex;align-items:center;gap:14px;margin:22px 0;color:#98a39d;font-size:12px;line-height:1.5}

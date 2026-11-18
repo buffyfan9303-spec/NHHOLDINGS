@@ -55,6 +55,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
           {signup && <p>{market ? '이메일로 간편하게 시작하세요.' : '관리자 승인 후 이용할 수 있습니다.'}</p>}
         </header>
         <a href={`/api/auth/google?portal=${portal}`} className="nh-google-button">Google로 계속하기</a>
+        {identifierLogin && process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED === 'true' && <a href="/login/passkey" className="nh-google-button">운영자 패스키로 계속하기</a>}
         <div className="nh-login-divider">{identifierLogin ? '또는 아이디·이메일로' : '또는 이메일로'}</div>
         <form onSubmit={submit} aria-busy={busy}>
           <div className="nh-login-field">

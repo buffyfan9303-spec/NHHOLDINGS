@@ -12,6 +12,34 @@ import {GET as accessList,POST as review} from '../src/app/api/access/route';
 import {GET as operations,POST as configure} from '../src/app/api/operations/route';
 import {GET as dashboard,POST as mutate} from '../src/app/api/dashboard/[...route]/route';
 import {accessStatus,isOwner} from '../src/lib/auth';
+import {POST as passkey} from '../src/app/api/auth/passkey/route';
+
+test('operator passkeys require opt-in, same-origin requests and operator enrollment',async()=>{
+ const previous={flag:process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED,origin:process.env.MARKET_ORIGIN,fetch:globalThis.fetch};
+ const origin='https://passkey.example.invalid';
+ const request=(mode:unknown,from=origin)=>new NextRequest(origin+'/api/auth/passkey',{
+  method:'POST',headers:{Origin:from,'Content-Type':'application/json'},
+  body:JSON.stringify({mode,step:'options'}),
+ });
+ try{
+  process.env.MARKET_ORIGIN=origin;
+  globalThis.fetch=async()=>{throw new Error('The authentication provider must not be reached.');};
+  delete process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED;
+  assert.equal((await passkey(request('login'))).status,404);
+  process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED='true';
+  assert.equal((await passkey(request('login','https://other.example.invalid'))).status,403);
+  const anonymous=await passkey(request('register'));
+  assert.equal(anonymous.status,401);
+  assert.equal(anonymous.headers.get('Cache-Control'),'private, no-store');
+  assert.equal((await passkey(request(['register']))).status,400);
+ }finally{
+  if(previous.flag===undefined)delete process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED;
+  else process.env.NEXT_PUBLIC_ONE_PASSKEYS_ENABLED=previous.flag;
+  if(previous.origin===undefined)delete process.env.MARKET_ORIGIN;
+  else process.env.MARKET_ORIGIN=previous.origin;
+  globalThis.fetch=previous.fetch;
+ }
+});
 
 test('portal separation, owner approvals, read-only access and immediate revocation',async()=>{
  const db=new PGlite(),previousFetch=globalThis.fetch,global=globalThis as typeof globalThis&{nhPool?:unknown},previousPool=global.nhPool,previousEnv={...process.env};
