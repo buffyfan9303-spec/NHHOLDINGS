@@ -86,6 +86,14 @@ async function main(){
  assert.equal(payloads.length,3);
  await dispatch(ctx,send,time('19T23:05:00'));
  assert.deepEqual(payloads[3],{type:'operator-digest',attention:0,activity:true});
+ await update(ctx,{enabled:true,activity:true,timing:{...timing,from:'06:00',to:'10:00'},subscription:{endpoint:address,keys}},owner);
+ ctx.audits.unshift({id:10,action:'content.saved',target:'draft'});
+ await dispatch(ctx,send,time('20T23:15:00'));
+ assert.equal(payloads.length,4);
+ await dispatch(ctx,send,time('21T01:05:00'));
+ await dispatch(ctx,send,time('21T01:10:00'));
+ assert.deepEqual(payloads[4],{type:'operator-digest',attention:0,activity:true});
+ assert.equal(payloads.length,5);
 
  const events=new Map();
  const notices=[];

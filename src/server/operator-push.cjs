@@ -97,7 +97,11 @@ function eventIsCurrent(ctx,event){
 function notificationPlan(ctx,device,events,stamp) {
  const [day,clock]=kstClock.format(stamp).split(' ');
  const prefs=device.timing||DEFAULT_TIMING;
- const quiet=prefs.quiet&&(prefs.from<prefs.to?clock>=prefs.from&&clock<prefs.to:clock>=prefs.from||clock<prefs.to);
+ const quietAt=time=>prefs.quiet&&(prefs.from<prefs.to?time>=prefs.from&&time<prefs.to:time>=prefs.from||time<prefs.to);
+ const quiet=quietAt(clock);
+ const digestAt=quietAt(prefs.morningAt)?prefs.to:prefs.morningAt;
+ const digestDay=clock>=digestAt?day:kstClock.format(stamp-86400000).split(' ')[0];
+ const sinceDigest=(asMinutes(clock)-asMinutes(digestAt)+1440)%1440;
  const previous=device.pending||{};
  const unseen=events.filter(event=>event.id>device.cursor);
  const add=unseen.filter(event=>attentionActions.has(event.action)&&postId.test(event.target))
@@ -110,9 +114,9 @@ function notificationPlan(ctx,device,events,stamp) {
   const event=attention[0];
   message={type:'sns-attention',id:event.target,reason:event.action.split('.').at(-1)};
   remaining=attention.slice(1);
- }else if(!quiet&&prefs.morning&&lastDigestDay!==day&&clock>=prefs.morningAt&&asMinutes(clock)<asMinutes(prefs.morningAt)+60&&(attention.length||activity)){
+ }else if(!quiet&&prefs.morning&&lastDigestDay!==digestDay&&sinceDigest<60&&(attention.length||activity)){
   message={type:'operator-digest',attention:attention.length,activity};
-  lastDigestDay=day;
+  lastDigestDay=digestDay;
   remaining=[];
   pendingActivity=false;
  }else if(!quiet&&!prefs.morning&&activity){

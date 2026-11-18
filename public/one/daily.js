@@ -123,7 +123,7 @@ if(typeof window!=='undefined')Object.assign(oneDaily,{
    formField('조용한 시간 시작','push-from',prefs?.from||'22:00','time')+
    formField('조용한 시간 종료','push-to',prefs?.to||'08:00','time')+
    formField('아침 요약','push-morningAt',prefs?.morningAt||'08:00','time')+'</div>'+
-   '<p class="caption">수신 시간을 적용하려면 이 기기에서 알림 받기를 누르세요.</p></fieldset>';
+   '<p class="caption">조용한 시간과 겹치는 아침 요약은 조용한 시간이 끝난 뒤 받습니다. 수신 시간을 적용하려면 이 기기에서 알림 받기를 누르세요.</p></fieldset>';
  },
  pushOptions(){
   const panel=document.querySelector('.daily-push');
