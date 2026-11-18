@@ -1,5 +1,6 @@
 import {NextRequest} from 'next/server';
 import {controller} from '@/server/dashboard.cjs';
+import {probeWebsite} from '@/server/operator-desk.cjs';
 import {collect} from '@/lib/dashboard';
 import {equal} from '@/lib/security';
 import {getDB} from '@/lib/db';
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     const publishJob = controller({collect}).then(app => app.tick());
     const followupJob = publishJob.catch(() => undefined).then(async () => (await controller({collect})).followup());
     const [sources, publishing, maintenance, followup] = await Promise.allSettled([
-      controller({collect}).then(app => app.refresh()),
+      controller({collect,probe:probeWebsite}).then(app => app.refresh()),
       publishJob,
       getDB().then(runMaintenance),
       followupJob,
