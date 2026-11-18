@@ -90,3 +90,21 @@
 @media (max-width: 480px) {
  .site-operation-grid .metric-tile strong {font-size:clamp(18px,5.1vw,24px);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 }
+
+.desk-tabs {margin-bottom:14px}
+.desk-tabs button[aria-current=page] {color:var(--teal);border-bottom-color:var(--teal)}
+.desk-item,.desk-compare {border-top:1px solid var(--line);padding:12px 0;margin-top:12px}
+.desk-item summary,.desk-compare summary {cursor:pointer;min-height:44px;align-content:center;overflow-wrap:anywhere}
+.desk-item .form-grid,.desk-compare-grid {margin-top:8px}
+.desk-list {list-style:none;margin:8px 0;padding:0}
+.desk-list li {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:8px 0;border-bottom:1px solid var(--line)}
+.desk-compare-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.desk-compare-grid>div {padding:8px 12px;background:var(--bg);border-radius:6px}
+.desk-compare-grid p,.desk-inbox-text {overflow-wrap:anywhere;white-space:pre-wrap}
+.desk-site-state small,.desk-brand-note:empty {display:block}
+.desk-reservation-warning:empty,.desk-brand-note:empty {display:none}
+.desk-tracking-link {overflow-wrap:anywhere}
+.desk-item .btn,.desk-compare .btn,.desk-reservation-warning .btn,.desk-editor-preset .btn,[data-desk-action] {min-height:44px}
+@media (max-width:480px) {
+ .desk-compare-grid {grid-template-columns:1fr}
+}

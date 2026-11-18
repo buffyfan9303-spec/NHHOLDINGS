@@ -7,6 +7,7 @@ const providers=Object.freeze({
  instagram:Object.freeze({name:'Instagram',scopes:Object.freeze(['instagram_business_basic','instagram_business_content_publish']),authorize:'https://www.instagram.com/oauth/authorize',token:'https://api.instagram.com/oauth/access_token',docs:'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/business-login/'}),
  threads:Object.freeze({name:'Threads',scopes:Object.freeze(['threads_basic','threads_content_publish']),authorize:'https://threads.net/oauth/authorize',token:'https://graph.threads.net/oauth/access_token',docs:'https://developers.facebook.com/docs/threads/get-started/get-access-tokens-and-permissions/'}),
 });
+const commentScope='instagram_business_manage_comments';
 const analyticsScope=Object.freeze({youtube:'https://www.googleapis.com/auth/yt-analytics.readonly',instagram:'instagram_business_manage_insights'});
 const failure=()=>Object.assign(new Error('SNS 인증 응답을 확인할 수 없습니다. 계정을 다시 연결해주세요.'),{status:502});
 function provider(id){if(!Object.hasOwn(providers,id))throw Object.assign(new Error('지원하는 SNS를 선택하세요.'),{status:400});return providers[id];}
@@ -14,8 +15,8 @@ function value(v){if(typeof v!=='string'||!v.trim()||v.length>10000||/[\r\n\0]/.
 function app(c){return {clientId:value(c?.clientId),clientSecret:value(c?.clientSecret),...(c?.version?{version:version(c.version)}:{})};}
 function version(v='v25.0'){if(!/^v\d{1,3}\.0$/.test(v))throw failure();return v;}
 function redirect(v){try{const u=new URL(value(v));if(u.username||u.password||u.hash||!(u.protocol==='https:'||u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname)))throw failure();return u.href;}catch{throw failure();}}
-function authorization(id,c,{state,verifier,redirectUri,analytics}){
- const p=provider(id),a=app(c),u=new URL(p.authorize);u.search=new URLSearchParams({client_id:a.clientId,redirect_uri:redirect(redirectUri),response_type:'code',scope:[...p.scopes,...(analytics===true&&Object.hasOwn(analyticsScope,id)?[analyticsScope[id]]:[])].join(id==='x'||id==='youtube'?' ':','),state:value(state)}).toString();
+function authorization(id,c,{state,verifier,redirectUri,analytics,comments}){
+ const p=provider(id),a=app(c),u=new URL(p.authorize);u.search=new URLSearchParams({client_id:a.clientId,redirect_uri:redirect(redirectUri),response_type:'code',scope:[...p.scopes,...(analytics===true&&Object.hasOwn(analyticsScope,id)?[analyticsScope[id]]:[]),...(id==='instagram'&&comments===true?[commentScope]:[])].join(id==='x'||id==='youtube'?' ':','),state:value(state)}).toString();
  if(id==='youtube'){u.searchParams.set('access_type','offline');u.searchParams.set('prompt','consent');}
  if(id==='x'||id==='youtube'){if(!/^[A-Za-z0-9._~-]{43,128}$/.test(verifier||''))throw failure();u.searchParams.set('code_challenge',crypto.createHash('sha256').update(verifier).digest('base64url'));u.searchParams.set('code_challenge_method','S256');}
  return u.href;
@@ -26,7 +27,7 @@ function issued(c,v){const token=value(v.access_token),seconds=Number(v.expires_
 function form(body){return {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)};}
 function xForm(c,body){const options=form({...body,client_id:c.clientId});options.headers.Authorization='Basic '+Buffer.from(encodeURIComponent(c.clientId)+':'+encodeURIComponent(c.clientSecret)).toString('base64');return options;}
 function graph(id){return id==='instagram'?'https://graph.instagram.com':'https://graph.threads.net';}
-async function exchange(id,c,{code,verifier,redirectUri,analytics},request=fetch){
+async function exchange(id,c,{code,verifier,redirectUri,analytics,comments},request=fetch){
  const p=provider(id),a=app(c),body={grant_type:'authorization_code',code:value(code),redirect_uri:redirect(redirectUri)};
  if(id==='x'){
   if(!/^[A-Za-z0-9._~-]{43,128}$/.test(verifier||''))throw failure();
@@ -43,7 +44,7 @@ async function exchange(id,c,{code,verifier,redirectUri,analytics},request=fetch
  const short=await json(p.token,form({...body,client_id:a.clientId,client_secret:a.clientSecret}),request);
  const shortToken=value(short.access_token||short.data?.[0]?.access_token),u=new URL(graph(id)+'/access_token');
  u.search=new URLSearchParams({grant_type:id==='instagram'?'ig_exchange_token':'th_exchange_token',client_secret:a.clientSecret,access_token:shortToken}).toString();
- const v=await json(u.href,{method:'GET'},request);const permissions=short.permissions??short.data?.[0]?.permissions;const granted=Array.isArray(permissions)?permissions:typeof permissions==='string'?permissions.split(',').map(p=>p.trim()):null;return issued({...a,...(id==='instagram'?{version:version(a.version),analytics:analytics===true&&(granted===null||granted.includes(analyticsScope.instagram))}:{})},v);
+ const v=await json(u.href,{method:'GET'},request);const permissions=short.permissions??short.data?.[0]?.permissions;const granted=Array.isArray(permissions)?permissions:typeof permissions==='string'?permissions.split(',').map(p=>p.trim()):null;return issued({...a,...(id==='instagram'?{version:version(a.version),analytics:analytics===true&&(granted===null||granted.includes(analyticsScope.instagram)),comments:comments===true&&(granted===null||granted.includes(commentScope))}:{})},v);
 }
 async function refresh(id,c,request=fetch){
  provider(id);if(c?.authType!=='oauth2'||!Number.isFinite(Date.parse(c.expiresAt)))throw failure();

@@ -7,7 +7,15 @@ import {initialSettings,sampleProducts} from './seed';
 export interface Queryable {query<T=Record<string,unknown>>(sql:string,params?:unknown[]):Promise<{rows:T[]}>}
 export interface Database extends Queryable {transaction<T>(work:(tx:Queryable)=>Promise<T>):Promise<T>;close():Promise<void>}
 const state = globalThis as typeof globalThis & {nuriMarketDB?:Promise<Database>};
-export async function createDatabase(directory?:string):Promise<Database> {
+const rehearsalDatabases=new WeakSet<Queryable>();
+export const isRehearsalDatabase=(db:Queryable)=>rehearsalDatabases.has(db);
+export async function createRehearsalDatabase(directory:string){
+ const db=await createDatabase(directory,{seedDemo:true});
+ rehearsalDatabases.add(db);
+ return db;
+}
+export async function createDatabase(directory?:string,options:{seedDemo?:true}={}):Promise<Database> {
+ if(options.seedDemo&&!directory)throw new Error('An isolated directory is required');
  let db:Database;
  if(process.env.DATABASE_URL && !directory){
   const pool=cloudPool();
@@ -25,7 +33,7 @@ export async function createDatabase(directory?:string):Promise<Database> {
  if(!(await db.query('SELECT id FROM mkt_settings WHERE id=$1',['store'])).rows.length){
   await db.transaction(async tx=>{
    await tx.query('INSERT INTO mkt_settings(id,data) VALUES($1,$2) ON CONFLICT DO NOTHING',['store',JSON.stringify(initialSettings)]);
-   if(process.env.SEED_DEMO_DATA!=='false' && (directory||!process.env.DATABASE_URL))for(const p of sampleProducts){
+   if(options.seedDemo===true||process.env.SEED_DEMO_DATA!=='false' && (directory||!process.env.DATABASE_URL))for(const p of sampleProducts){
     const {variants,...data}=p;
     await tx.query('INSERT INTO mkt_products(id,slug,name,category,price,data) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING',[p.id,p.slug,p.name,p.category,p.price,JSON.stringify(data)]);
     for(const v of variants)await tx.query('INSERT INTO mkt_variants(id,product_id,label,price_delta,options,on_hand) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING',[v.id,p.id,v.label,v.priceDelta,JSON.stringify(v.options),v.onHand]);

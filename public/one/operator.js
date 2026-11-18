@@ -32,6 +32,7 @@ window.NuriOperator = (() => {
  const accountName = account => account?.username ? account.label + ' · ' + (account.channel==='youtube'?'':'@') + account.username : account?.label;
  const pagesToOpen = [
   ['approval', '게시 승인함', '승인 예약 일시정지 인스타그램 유튜브 게시'],
+  ['desk','운영 도구','예약 중지 브랜드 문의 유입 주간 보고 리허설'],
   ['studio', '콘텐츠 작업실', '새 카드뉴스 생성 작성 초안 만들기'],
   ['calendar', '게시 캘린더', '일정 달력 스케줄'],
   ['overview', '전체 현황', '대시보드 홈 요약'],
@@ -40,14 +41,15 @@ window.NuriOperator = (() => {
  ];
 
  function scheduleForm(post) {
-  const accounts = data.accounts.filter(a => accountFits(a, post) && a.verifiedAt && !a.connectionError);
+  const accounts = data.accounts.filter(a => accountFits(a, post) && a.verifiedAt && !a.connectionError && !NuriDesk.hold(a.id)?.active);
   const ready = mediaReady(post);
   const channel = channelName(post);
   const accountOptions = accounts.map(account => [account.id, accountName(account)]);
   return `<form class="schedule-form approval-form form-grid" data-id="${esc(post.id)}">
    <input type="hidden" name="version" value="${post.version ?? 1}">
-   ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account||post.youtubeCheck?.account)}
+   ${selectField('게시 계정', 'account', [['', '게시 계정 선택'], ...accountOptions], post.account||post.youtubeCheck?.account||NuriDesk.preset(post.brand)?.[post.channel])}
    ${formField('게시 시각 · 한국 시간', 'at', dateField(post.scheduledAt), 'datetime-local', 'required')}
+   <div class="full desk-reservation-warning" data-desk-conflicts aria-live="polite"></div>
    ${post.uncertain || post.status === 'review' && !['preflight','connection'].includes(post.attempt?.code) ? `<div class="full">${checkbox(channel+'에서 기존 게시물이 없음을 확인했습니다.', 'checked')}</div>` : ''}
    <label class="check-label full"><input type="checkbox" name="approved" required>위 원고와 미디어, 선택한 계정과 시각을 확인했습니다.</label>
    <div class="full"><button class="btn primary" type="submit" ${!accounts.length || !ready ? 'disabled' : ''}>${post.status === 'paused' ? '다시 승인하고 예약' : '승인하고 예약'}</button></div>
@@ -90,6 +92,8 @@ window.NuriOperator = (() => {
    ${ownerCheck?`<p class="caption" role="status">${esc(preparationMessage[prep?.state]||'처리 상태 조회 대기')}${prep?.checkedAt?' · '+esc(dt(prep.checkedAt))+' KST':''}${prep?.message?' · '+esc(prep.message):''}</p>`:''}
    ${published&&post.checkStatus==='visible'?`<p class="caption">채널 조회로 게시 확인 · ${esc(dt(post.checkedAt))} KST</p>`:''}
    ${published&&!post.manual&&followup?.publication?.state&&followup.publication.state!=='visible'?'<p class="caption">채널의 공개 결과를 확인하는 중입니다.</p>':''}
+   ${post.accountPaused&&post.status==='paused'?'<p class="warning">계정 일시정지로 해제된 예약입니다. 새 시각과 원고를 다시 승인하세요.</p>':''}
+   ${session.readOnly?'':NuriDesk.approvalComparison(post)}
    ${post.error ? `<p class="warning">${esc(post.error)}</p>` : ''}
    <details class="approval-preview">
     <summary>원고와 미디어 보기</summary>
@@ -151,7 +155,7 @@ window.NuriOperator = (() => {
    article=document.getElementById('approval-'+id);
   }
   if (!article) return;
-  const details = article.querySelector('details');
+  const details = article.querySelector('.approval-preview');
   details.open = true;
   details.querySelector('summary').focus();
   article.scrollIntoView({block:'nearest'});
