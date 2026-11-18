@@ -24,9 +24,12 @@
    <span id="personal-account"></span>
    <button type="button" data-one-theme aria-label="밝은 화면으로 전환">밝게</button>
    <button type="button" id="personal-logout">로그아웃</button>
-   <a href="/dashboard" id="personal-owner" hidden>운영 대시보드</a>
   </div>
  </header>
+ <nav id="personal-owner-links" class="personal-owner-links" aria-label="운영 공간 이동" hidden>
+  <a class="personal-link" href="/dashboard" id="personal-owner">운영 대시보드</a>
+  <a class="personal-link" href="/dashboard#connections/integrations">기존 운영 연동</a>
+ </nav>
  <div class="personal-workspace">
   <nav class="personal-nav" aria-label="내 업무 메뉴">
    <a href="#home" data-personal-link="home" aria-current="page">오늘</a>

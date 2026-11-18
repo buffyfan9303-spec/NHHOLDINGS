@@ -150,7 +150,7 @@
       items = result.items;
       agenda = result.agenda||[];
       el('personal-account').textContent = result.account.email;
-      el('personal-owner').hidden = !result.account.owner;
+      el('personal-owner-links').hidden = !result.account.owner;
       ready = true;
       document.body.classList.remove('personal-revalidating');
       el('personal-message').textContent = '';
