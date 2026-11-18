@@ -54,13 +54,19 @@ async function main(){
   const options={inquiries:async(_page,id)=>({rows:id&&id!==marketKey.slice(7)?[]:[{id:marketKey,kind:'market',body:'합성 문의',createdAt:at}],total:1,page:1,pageSize:20})};
   const call=async(route,body,status=200)=>{
    const app=await controller(options),method=body===undefined?'GET':'POST';
-   const res=await app.handle({url:'http://fixture.invalid'+route,method},route,body||{},'operator@example.test');
+   const res=await app.handle({url:'http://fixture.invalid'+route,method},route.split('?')[0],body||{},'operator@example.test');
    const result=await res.json();
    assert.equal(res.status,status,route+' '+JSON.stringify(result).slice(0,160));
    return result;
   };
-  let state=await call('/api/content/schedule',{id:'first',account:'a',at,approved:true,version:1});
+  const approval={id:'first',account:'a',at,approved:true,version:1};
+  assert.deepEqual((await call('/api/content/readiness',{...approval,at:''})).issues.map(issue=>issue.field),['at']);
+  assert.equal((await call('/api/content/readiness',approval)).ready,true);
+  let state=await call('/api/content/schedule',approval);
   assert.equal(state.desk.approved[0].title,'원본');
+  const timeline=(await call('/api/content/timeline',{id:'first'})).events;
+  assert.equal(timeline.find(event=>event.type==='approved').actor,'operator@example.test');
+  assert.equal(timeline.find(event=>event.type==='scheduled').scheduledAt,at);
   state=await call('/api/desk/hold',{id:'a',active:true,version:1,reason:'권한 확인'});
   assert.equal(state.contents.find(p=>p.id==='first').status,'paused');
   assert.equal(state.contents.find(p=>p.id==='second').status,'scheduled');
@@ -98,6 +104,11 @@ async function main(){
   const inbox=await call('/api/desk/inbox');
   assert.equal(inbox.items.length,2);
   assert(!JSON.stringify(inbox).includes('private-comment-id'));
+  const commentId=inbox.items.find(row=>row.kind==='instagram').id;
+  assert.equal((await call('/api/desk/inbox?commentFilter=new')).commentTotal,1);
+  await call('/api/desk/comment-seen',{id:commentId});
+  assert.equal((await call('/api/desk/inbox?commentFilter=new')).commentTotal,0);
+  assert.equal((await call('/api/desk/inbox?commentFilter=open')).commentTotal,1);
   await call('/api/desk/inbox',{id:marketKey,status:'working',assignee:'검증 담당',draft:'합성 답변 초안',version:1});
   assert.equal((await call('/api/desk/inbox')).items.find(x=>x.id===marketKey).work.status,'working');
   console.log('Operator desk passed: pause/reapproval, snapshot, presets, safe links, GA4 zero, comments and inquiry work, website incidents.');

@@ -4,7 +4,7 @@ const {readFileSync}=require('node:fs');
 const vm=require('node:vm');
 const {createECDH,randomBytes}=require('node:crypto');
 const {generateVAPIDKeys}=require('web-push');
-const {config,update,dispatch}=require('../src/server/operator-push.cjs');
+const {config,update,dispatch,preferences}=require('../src/server/operator-push.cjs');
 
 async function main(){
  const owner='owner@example.test';
@@ -65,6 +65,36 @@ async function main(){
  assert.equal(payloads.length,2);
  assert(!JSON.stringify(payloads).includes('비공개 제목'));
 
+ const postId='needs-result',timing={immediate:false,morning:true,quiet:true,from:'22:00',to:'08:00',morningAt:'08:00'};
+ const time=value=>Date.parse('2026-11-'+value+'Z');
+ await update(ctx,{enabled:true,activity:true,timing,subscription:{endpoint:address,keys}},owner);
+ assert.deepEqual(preferences(ctx,address,owner),{active:true,activity:true,timing});
+ assert.throws(()=>preferences(ctx,address,'another@example.test'),{status:409});
+ await assert.rejects(()=>update(ctx,{enabled:true,timing:{...timing,to:'22:00'},subscription:{endpoint:address,keys}},owner),{status:400});
+ ctx.audits.unshift({id:7,action:'content.saved',target:'draft'},
+  {id:8,action:'sns.attention.result',target:postId,email:'private@example.test'});
+ ctx.audits.sort((a,b)=>b.id-a.id);
+ await dispatch(ctx,send,time('18T13:30:00'));
+ assert.equal(payloads.length,2);
+ assert(!JSON.stringify(ctx.list('push-device')[0].pending).includes('private@example.test'));
+ await dispatch(ctx,send,time('18T23:05:00'));
+ await dispatch(ctx,send,time('18T23:10:00'));
+ assert.deepEqual(payloads[2],{type:'operator-digest',attention:1,activity:true});
+ assert.equal(payloads.length,3);
+ ctx.audits.unshift({id:9,action:'content.saved',target:'draft'});
+ await dispatch(ctx,send,time('19T01:00:00'));
+ assert.equal(payloads.length,3);
+ await dispatch(ctx,send,time('19T23:05:00'));
+ assert.deepEqual(payloads[3],{type:'operator-digest',attention:0,activity:true});
+ await update(ctx,{enabled:true,activity:true,timing:{...timing,from:'06:00',to:'10:00'},subscription:{endpoint:address,keys}},owner);
+ ctx.audits.unshift({id:10,action:'content.saved',target:'draft'});
+ await dispatch(ctx,send,time('20T23:15:00'));
+ assert.equal(payloads.length,4);
+ await dispatch(ctx,send,time('21T01:05:00'));
+ await dispatch(ctx,send,time('21T01:10:00'));
+ assert.deepEqual(payloads[4],{type:'operator-digest',attention:0,activity:true});
+ assert.equal(payloads.length,5);
+
  const events=new Map();
  const notices=[];
  const destinations=[];
@@ -90,10 +120,14 @@ async function main(){
  assert(!JSON.stringify(notices).includes('원고 제목'));
  await event('notificationclick',{notification:{tag:notices[0].tag,close(){}}});
  assert.deepEqual(destinations,['https://nuri.example.test/dashboard#approval']);
- await event('push',{data:{json:()=>payloads.at(-1)}});
+ await event('push',{data:{json:()=>payloads[1]}});
  assert.equal(notices.at(-1).body,'채널의 게시 결과를 확인하세요.');
  await event('notificationclick',{notification:{tag:notices.at(-1).tag,data:notices.at(-1).data,close(){}}});
  assert.equal(destinations.at(-1),'https://nuri.example.test/dashboard#approval/tistory/needs-result');
+ await event('push',{data:{json:()=>payloads[2]}});
+ assert.equal(notices.at(-1).title,'누리원 아침 요약');
+ await event('notificationclick',{notification:{tag:notices.at(-1).tag,close(){}}});
+ assert.equal(destinations.at(-1),'https://nuri.example.test/dashboard#overview');
  console.log('Approval activity push passed: private payload, device ownership, deduplication, expiry, and approval navigation.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

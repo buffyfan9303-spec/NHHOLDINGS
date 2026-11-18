@@ -24,7 +24,14 @@ function summarize(history, timestamp=Date.now()) {
   return {day:date,users:byDay.get(date)?.users??null};
  });
  const current=byDay.get(day),past=byDay.get(shift(day,-7));
- return {points,change:current&&past?current.users-past.users:null};
+ const previous=byDay.get(shift(day,-1));
+ const recent=current&&previous&&validUsers(current.users)&&validUsers(previous.users)&&
+  Date.parse(current.observedAt)>Date.parse(previous.observedAt)&&
+  Date.parse(current.observedAt)-Date.parse(previous.observedAt)<=36*3600000;
+ const delta=recent?current.users-previous.users:null;
+ const threshold=recent?Math.max(5,Math.ceil(previous.users*.05)):null;
+ const daily=recent?{state:Math.abs(delta)>=threshold?'significant':'quiet',current,previous,delta,threshold}:{state:'insufficient'};
+ return {points,change:current&&past?current.users-past.users:null,daily};
 }
 
 module.exports={update,summarize};

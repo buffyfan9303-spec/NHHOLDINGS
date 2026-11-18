@@ -1,0 +1,17 @@
+.approval-readiness {border-top: 1px solid var(--line); padding-top: 10px}
+.approval-readiness ul, .approval-timeline ol, .desk-comment-errors {list-style: none; padding: 0; margin: 8px 0}
+.approval-readiness li {display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-block: 6px}
+.approval-readiness li > span {flex: 1 1 150px; min-width: 0; overflow-wrap: anywhere}
+.approval-readiness li strong, .approval-readiness li span span {display: block}
+.approval-readiness li span span {color: var(--muted)}
+.approval-timeline {margin-top: 8px}
+.approval-timeline summary {min-height: 44px; align-content: center; cursor: pointer}
+.approval-timeline li {display: flex; flex-wrap: wrap; gap: 3px 10px; overflow-wrap: anywhere; padding: 8px 0; border-top: 1px solid var(--line)}
+.approval-timeline li > span {width: 100%; min-width: 0}
+.desk-inbox-filters {display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px}
+.desk-inbox-filters .btn {min-height: 44px}
+.desk-inbox-filters [aria-pressed="true"] {outline: 2px solid currentColor; outline-offset: -2px}
+.desk-inbox-group summary, .desk-comment-errors {overflow-wrap: anywhere}
+.desk-new-comment {display: inline-block; padding: 2px 6px; border: 1px solid currentColor; border-radius: 6px; font-size: .8em; white-space: nowrap}
+.desk-comment-errors li {margin-bottom: 8px}
+.desk-comment-errors li span {display: block; color: var(--muted)}

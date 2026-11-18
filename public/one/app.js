@@ -15,7 +15,27 @@ const metricsLabels={rental_charge:'대여료 청구 · 할인 전',rental_disco
 const pages={desk:['운영 도구','예약, 콘텐츠 준비와 사이트 업무를 관리합니다.','settings'],approval:['게시 승인함','Instagram과 YouTube 원고를 검토하고 예약을 관리합니다.','task'],studio:['콘텐츠 작업실','글쓰기부터 채널별 홍보, SEO·GEO 점검과 발행 준비까지.','content'],calendar:['게시 캘린더','예약과 게시 기록을 한국 시간으로 확인합니다.','clock'],growth:['계정 성장 · 수익','조회·공유·저장·팔로우와 실제 수익·비용을 기록합니다.','chart'],overview:['운영 대시보드','웹사이트, 쇼핑몰과 게시 일정을 한곳에서 확인합니다.','grid'],businesses:['사업장 관리','직접 운영하는 사업장과 운영 현황을 관리합니다.','business'],finance:['매출 · 비용 · 손익','확인한 거래와 비용, 사업장별 실적을 대조합니다.','chart'],partners:['거래처','서비스와 연결된 거래처를 검색하고 관리합니다.','people'],content:['콘텐츠 작성 · 자동 업로드','채널별 콘텐츠를 작성하고 게시 계정과 예약을 관리합니다.','content'],prompts:['프롬프트 · 반복 설정','SNS 작성 규칙과 반복 생성 일정을 설정합니다.','settings'],history:['콘텐츠 · 실행 내역','작성된 콘텐츠와 생성 당시 프롬프트, 예약·게시 기록을 확인합니다.','file'],publish:['SNS 업로드 현황','무엇이 게시됐고 언제 올라갈지, 채널별로 확인합니다.','channels'],'publishing-settings':['발행 운영 설정','하루 티스토리 발행 개수와 시간을 정합니다.','settings'],site:['웹사이트 관리','서비스별 실적과 운영을 한곳에서 관리합니다.','business'],traffic:['블로그 · 유입 분석','티스토리와 Google 검색 유입을 확인합니다.','chart'],tasks:['업무 관리','담당자와 기한, 진행 상태를 관리합니다.','task'],servers:['서버 · 연결 상태','원천 데이터와 채널 연결 상태를 확인합니다.','server'],reports:['리포트','선택한 기간의 실적과 운영 기록을 내려받습니다.','file'],connections:['설정 · 계정 연결','웹사이트, 게시 계정, 로그인 계정을 연결합니다.','settings']};
 let data=null,session=null,state={page:'overview',scope:'all',month:today().slice(0,7),query:'',business:null,contentEdit:null,taskEdit:null,partnerEdit:null,channelEdit:null,planEdit:null,contentStatus:'all',siteId:null,siteTab:'overview',channel:'all',postStatus:'all',draftSeed:null,promptService:null,promptChannel:'all'},toastTimer,operations=null,accessRequests=[],setupLoading=false,setupError='';
 function toast(msg){clearTimeout(toastTimer);$('toast').textContent=msg;$('toast').classList.remove('hidden');toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),6500);}
-async function api(route,body){if(body!==undefined&&!navigator.onLine)throw Error('연결을 복구한 뒤 다시 시도하세요.');const r=await fetch('/api/dashboard/'+(new URLSearchParams(location.search).has('sample')?'sample/':'')+route,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)}),v=await r.json();if(!r.ok){if((r.status===401||r.status===403)&&session?.authenticated){session.authenticated=false;location.assign(r.status===403?'/access-pending':'/login');}throw new Error(v.error||'작업을 완료하지 못했습니다.');}return v;}
+let refreshEpoch=0, dashboardWrites=0;
+for(const event of ['click','input','change','submit','keydown'])document.addEventListener(event,e=>{
+ if(e.target.closest?.('#app,dialog'))refreshEpoch++;
+},true);
+async function api(route,body){
+ const write=body!==undefined;
+ if(write&&!navigator.onLine)throw Error('연결을 복구한 뒤 다시 시도하세요.');
+ if(write){dashboardWrites++;refreshEpoch++;}
+ try{
+  const sample=new URLSearchParams(location.search).has('sample');
+  const r=await fetch('/api/dashboard/'+(sample?'sample/':'')+route,{
+   method:write?'POST':'GET',headers:write?{'Content-Type':'application/json'}:{},
+   body:write?JSON.stringify(body):undefined
+  }),v=await r.json();
+  if(!r.ok){
+   if((r.status===401||r.status===403&&v.error==='소유자의 사용 승인이 필요합니다.')&&session?.authenticated){session.authenticated=false;location.assign(r.status===403?'/access-pending':'/login');}
+   throw Object.assign(new Error(v.error||'작업을 완료하지 못했습니다.'),{status:r.status,response:v});
+  }
+  return v;
+ }finally{if(write){dashboardWrites--;refreshEpoch++;}}
+}
 const selected=()=>data.services.filter(s=>state.scope==='all'||s.id===state.scope);
 const inScope=s=>state.scope==='all'||s===state.scope;
 const service=id=>data.services.find(s=>s.id===id),serviceName=id=>service(id)?.name||id;
@@ -86,14 +106,13 @@ function overviewPriority(){
   </button>`).join('')}</div>
  </section>`;
 }
+document.addEventListener('change',e=>{if(e.target.name==='daily-brand')window.NuriDaily.selectBrand(e.target.value);});
+document.addEventListener('click',e=>{
+ if(!e.target.closest('[data-daily-return]'))return;
+ window.NuriDaily.selectBrand(window.NuriDaily.brand);
+});
 function overview(){
- const review=NuriOperator.pendingCount(),attention=NuriOperator.attentionCount(),connections=session?.readOnly||data.demo?[]:NuriOperator.needsConnection();
- const actions=[
-  attention&&`<button type="button" data-approval-filter="issues">예약 확인 <strong>${money(attention)}</strong></button>`,
-  review&&`<button type="button" data-approval-filter="pending">검토 대기 <strong>${money(review)}</strong></button>`,
-  connections.length&&`<button type="button" data-action="sns-settings">SNS 연결 <strong>${connections.length}</strong></button>`,
- ].filter(Boolean);
- return '<div class="operational-overview">'+(actions.length?`<section class="today-shortcuts" aria-label="오늘 처리할 SNS 작업">${actions.join('')}</section>`:'')+'<div class="overview-top">'
+ return '<div class="operational-overview">'+window.NuriDaily.queue()+'<div class="overview-top">'
   +'<section class="panel dashboard-sites" aria-label="웹사이트별 현황">'+sectionHeading('웹사이트별 현황','',button('연결 설정','go','connections','text'))+siteCards()+'</section>'
   +'<div class="overview-aside">'+overviewPriority()
   +'<section class="dashboard-section overview-work" aria-label="운영 업무">'+sectionHeading('처리할 업무','',button('전체 업무','go','tasks','text'))+taskBrief()+'</section></div></div>'
@@ -156,11 +175,12 @@ function observeScrollableTables(){
   tableObserver?.observe(table);
  }
 }
-function render(){if(!data)return;document.querySelectorAll('.view-switch a').forEach(a=>a.setAttribute('aria-current',a.href.includes('sample=1')===!!data.demo?'page':'false'));const compact=compactViewport()&&state.page==='publish';$('app').classList.toggle('compact-view',compact);if(state.page==='site')state.scope=state.siteId;if(automationPage()){state.scope='tistory';state.business=null;}sync();const p=pages[state.page],title=state.page==='site'?serviceName(state.siteId):state.page==='publish'&&state.channel!=='all'?labels[state.channel]+' · 업로드 현황':p[0];$('page-title').textContent=title;$('page-subtitle').textContent=compact?'채널별 게시 여부를 빠르게 확인하세요.':p[1];$('breadcrumb').textContent=title;$('period-note').textContent=state.month+(compact?' · ':' · KRW · ')+(state.scope==='all'?'전체 웹사이트':serviceName(state.scope));$('view-time').textContent=dt(data.observedAt)+' KST';const stale=selected().filter(s=>s.stale).length;$('data-status').textContent=data.demo?'샘플 환경 · 실제 게시 없음':stale?'실제 조회 · '+stale+'개 확인 필요':'실제 데이터';$('data-status').className='pill '+(stale?'amber':data.demo?'gray':'');const views={desk:()=>NuriDesk.render(),approval:()=>NuriOperator.render(),studio:()=>NuriStudio.render('studio'),calendar:()=>NuriStudio.render('calendar'),growth:()=>NuriStudio.render('growth'),overview,businesses:businessPage,finance,partners,content,prompts:promptSettings,history:contentHistory,publish:publishingPage,'publishing-settings':publishingSettingsPage,site:sitePage,traffic,tasks,servers,reports,connections};$('content').innerHTML=compact?mobileDashboard():views[state.page]();document.querySelectorAll('#operator-mobile [data-page]').forEach(link=>{if(link.dataset.page===state.page)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});applyReadOnly();
+function render(){if(!data)return;refreshEpoch++;document.querySelectorAll('.view-switch a').forEach(a=>a.setAttribute('aria-current',a.href.includes('sample=1')===!!data.demo?'page':'false'));const compact=compactViewport()&&state.page==='publish';$('app').classList.toggle('compact-view',compact);if(state.page==='site')state.scope=state.siteId;if(automationPage()){state.scope='tistory';state.business=null;}sync();const p=pages[state.page],title=state.page==='site'?serviceName(state.siteId):state.page==='publish'&&state.channel!=='all'?labels[state.channel]+' · 업로드 현황':p[0];$('page-title').textContent=title;$('page-subtitle').textContent=compact?'채널별 게시 여부를 빠르게 확인하세요.':p[1];$('breadcrumb').textContent=title;$('period-note').textContent=state.month+(compact?' · ':' · KRW · ')+(state.scope==='all'?'전체 웹사이트':serviceName(state.scope));$('view-time').textContent=dt(data.observedAt)+' KST';const stale=selected().filter(s=>s.stale).length;$('data-status').textContent=data.demo?'샘플 환경 · 실제 게시 없음':stale?'실제 조회 · '+stale+'개 확인 필요':'실제 데이터';$('data-status').className='pill '+(stale?'amber':data.demo?'gray':'');const views={desk:()=>NuriDesk.render(),approval:()=>NuriOperator.render(),studio:()=>NuriStudio.render('studio'),calendar:()=>NuriStudio.render('calendar'),growth:()=>NuriStudio.render('growth'),overview,businesses:businessPage,finance,partners,content,prompts:promptSettings,history:contentHistory,publish:publishingPage,'publishing-settings':publishingSettingsPage,site:sitePage,traffic,tasks,servers,reports,connections};$('content').innerHTML=window.NuriDaily.brandBar()+(compact?mobileDashboard():views[state.page]());document.querySelectorAll('#operator-mobile [data-page]').forEach(link=>{if(link.dataset.page===state.page)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');});applyReadOnly();
  observeScrollableTables();
+ if(state.page==='connections')void window.NuriDaily.loadPush();
  if(['studio','calendar','growth'].includes(state.page))NuriStudio.mount?.();}
-function navigate(page,approvalId){if(!pages[page])return;if(approvalId)NuriOperator.resetFilters();if(page!==state.page&&window.NuriStudio?.canLeave&&!NuriStudio.canLeave())return;if(state.page==='site'&&state.siteId==='tistory'&&page==='publish')state.scope='all';state.page=page;if(page==='overview'){state.scope='all';state.channel='all';}if(automationPage()){state.scope='tistory';state.business=null;}if(page==='prompts'){state.channel='all';state.promptService='tistory';}const cameFromMenu=$('sidebar').classList.contains('open');closeSidebar();const update=()=>{render();writeRoute();window.scrollTo(0,0);if(cameFromMenu)$('page-title').focus({preventScroll:true});if(approvalId)NuriOperator.reveal(approvalId);};if(document.startViewTransition&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.startViewTransition(update);}else update();}
-async function load(){data=await api('state');readRoute();$('login').classList.add('hidden');$('app').classList.remove('hidden');$('account-name').textContent=session.email;render();revealApprovalLink();}
+function navigate(page,approvalId){if(!pages[page])return;if(approvalId)NuriOperator.resetFilters();if(page!==state.page&&window.NuriStudio?.canLeave&&!NuriStudio.canLeave())return;refreshEpoch++;window.NuriDaily.target=page==='approval'?approvalId||null:null;if(state.page==='site'&&state.siteId==='tistory'&&page==='publish')state.scope='all';state.page=page;if(page==='overview'){state.scope='all';state.channel='all';}if(automationPage()){state.scope='tistory';state.business=null;}if(page==='prompts'){state.channel='all';state.promptService='tistory';}const cameFromMenu=$('sidebar').classList.contains('open');closeSidebar();const update=()=>{render();writeRoute();window.scrollTo(0,0);if(cameFromMenu)$('page-title').focus({preventScroll:true});if(approvalId)NuriOperator.reveal(approvalId);};if(document.startViewTransition&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.startViewTransition(update);}else update();}
+async function load(){data=await api('state');window.NuriDaily.restoreBrand();readRoute();$('login').classList.add('hidden');$('app').classList.remove('hidden');$('account-name').textContent=session.email;render();revealApprovalLink();}
 function download(name,body,type){const url=URL.createObjectURL(new Blob([body],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function csv(){const values=[['거래일','서비스','사업장','유형','분류','거래처','금액','고유번호','근거'],...filteredMoney().map(r=>[r.day,serviceName(r.service),businessName(r.service,r.business),r.kind,r.category,r.partner,r.amount,r.reference,r.note])];const safe=v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';download('NURI-ONE-'+state.month+'.csv','\ufeff'+values.map(r=>r.map(safe).join(',')).join('\r\n'),'text/csv;charset=utf-8');}
 async function save(route,body){data=await api(route,body);render();toast('저장했습니다.');}
@@ -270,9 +290,25 @@ document.addEventListener('submit',async e=>{const f=e.target,formId=f.matches('
 }catch(err){if(formId==='generate-form'&&$('generate-message'))$('generate-message').textContent=err.message;toast(err.message);}finally{if(button)button.disabled=false;}});
 NuriOperator.init();
 api('session').then(async v=>{session=v;if(v.authenticated){await load();const adsense=new URLSearchParams(location.search).get('adsense');if(adsense){state.page='traffic';render();toast(adsense==='connected'?'Google 동의 완료 · 조회할 AdSense 계정을 선택하세요.':'AdSense 연결이 완료되지 않았습니다. 앱·리디렉션 URI·동의를 확인하세요.');history.replaceState(null,'','/dashboard#traffic');}const social=new URLSearchParams(location.search).get('social');if(social){state.setupTab='integrations';render();toast(social==='connected'?'SNS 계정을 연결·확인했습니다.':'연결이 완료되지 않았습니다. 앱·콜백·권한을 확인하고 다시 연결하세요.');history.replaceState(null,'','/dashboard#connections');}}else location.assign('/login');}).catch(e=>{$('login-error').textContent='서버 연결을 확인하세요. '+e.message;});
-// Keep status fresh without re-rendering a form somebody is editing.
-setInterval(async()=>{if(!data||!['overview','servers','publish','site','approval'].includes(state.page)||document.activeElement?.matches('input,textarea,select,#content button:focus-visible,#content a:focus-visible')||document.querySelector('.approval-preview[open],.desk-compare[open],dialog[open],.sidebar.open'))return;
- try{const next=await api('state');if(document.activeElement?.matches('input,textarea,select,#content button:focus-visible,#content a:focus-visible')||document.querySelector('.approval-preview[open],.desk-compare[open],dialog[open],.sidebar.open'))return;data=next;render();}catch{}},30000);
+// Replacing the dashboard is safe only while the same view stays idle.
+const pollDashboard=window.NuriDaily.createPoll({
+ capture:()=>refreshEpoch,
+ blocked:()=>!data||dashboardWrites>0||document.hidden||!['overview','servers','publish','site','approval'].includes(state.page)||
+  state.page==='site'&&!['overview','operations'].includes(state.siteTab)||
+  document.activeElement?.matches('input,textarea,select,#content button:focus-visible,#content a:focus-visible,#content summary')||
+  !!document.querySelector('#content details[open],dialog[open],.sidebar.open'),
+ read:()=>api('state'),
+ apply:next=>{
+  const {observedAt:oldAt,...current}=data,{observedAt:newAt,...currentNext}=next;
+  data=next;
+  if(JSON.stringify(current)!==JSON.stringify(currentNext)||window.NuriDaily.crossedTimeBoundary(next.contents,oldAt,newAt)){
+   const x=window.scrollX,y=window.scrollY;
+   render();
+   window.scrollTo(x,y);
+  }else $('view-time').textContent=dt(newAt)+' KST';
+ },
+});
+setInterval(pollDashboard,30000);
 
 function tistoryCard(p){return `<article class="panel content-card"><div class="status-row"><span class="channel-name">티스토리 블로그</span><span class="pill ${p.status==='published'?'':'gray'}">${statusLabels[p.status]}</span></div><h2 style="margin-top:16px">${esc(p.title)}</h2><p>${esc(p.body)}</p><p class="caption">티스토리 공식 글쓰기 API는 종료됐습니다. AI 초안과 발행 링크를 이곳에서 관리합니다.</p><div class="toolbar">${p.status==='published'?`<a class="btn" href="${esc(webLink(p.link))}" target="_blank" rel="noopener noreferrer">발행 글 열기 ↗</a>`:button('본문 수정','content-edit',p.id)+button('본문 복사','copy',p.id)+button('HTML 다운로드','html',p.id)+`<a class="btn" href="https://doto1.tistory.com/manage/newpost" target="_blank" rel="noopener noreferrer">에디터 열기 ↗</a>`+button('발행 링크 등록','manual-link',p.id)}</div></article>`;}
 function marketPanel(){
@@ -350,7 +386,7 @@ function siteCards(){
       <small>업무 ${money(tasks)} · 예약 ${money(scheduled)}</small>
      </div>
     </div>
-    <span class="site-card-value"><strong>${money(snapshot?.[field])}</strong><small>${label}</small>${site.userTrend?`<small class="site-user-delta">7일 순변동 ${formatUserChange(site.userTrend.change)}</small>`:''}</span>
+    <span class="site-card-value"><strong>${money(snapshot?.[field])}</strong><small>${label}</small>${site.userTrend?`<small class="site-user-delta">7일 순변동 ${formatUserChange(site.userTrend.change)}</small>`:''}${window.NuriDaily.trend(site)}</span>
     <div class="site-card-observation">
      <span><span class="site-status ${!snapshot||site.stale?'stale':''}" aria-hidden="true"></span>${status}</span>
      ${observedAt?`<time datetime="${esc(observedAt)}">${esc(dt(observedAt))}</time>`:''}
@@ -400,14 +436,15 @@ function closeSidebar(restoreFocus=false){
  $('operator-mobile').inert=false;
  if(restoreFocus)$('mobile-menu').focus();
 }
-function writeRoute(){if(typeof window==='undefined')return;const path=state.page==='site'?'site/'+encodeURIComponent(state.siteId)+'/'+state.siteTab:['publish','content','history'].includes(state.page)?state.page+'/'+state.channel+(state.scope==='all'?'':'/'+encodeURIComponent(state.scope)):state.page+(state.scope==='all'?'':'/'+encodeURIComponent(state.scope));if(window.location.hash!=='#'+path)window.history.pushState(null,'','#'+path);}
+let lastHash=location.hash;
+function writeRoute(){if(typeof window==='undefined')return;const path=state.page==='site'?'site/'+encodeURIComponent(state.siteId)+'/'+state.siteTab:['publish','content','history'].includes(state.page)?state.page+'/'+state.channel+(state.scope==='all'?'':'/'+encodeURIComponent(state.scope)):state.page+(state.scope==='all'?'':'/'+encodeURIComponent(state.scope))+(state.page==='approval'&&window.NuriDaily.target?'/'+encodeURIComponent(window.NuriDaily.target):'');if(window.location.hash!=='#'+path)window.history.pushState(null,'','#'+path);lastHash=window.location.hash;}
 function revealApprovalLink(){
  if(state.page!=='approval')return;
  const id=location.hash.match(/^#approval\/tistory\/([A-Za-z0-9_-]{1,80})$/)?.[1];
  if(id)NuriOperator.reveal(id);
 }
-function readRoute(){if(typeof window==='undefined')return;let parts;try{parts=window.location.hash.slice(1).split('/').map(decodeURIComponent);}catch{return;}if(!pages[parts[0]])return;state.page=parts[0];state.channel='all';state.scope='all';state.postStatus='all';state.business=null;if(state.page==='site'){if(!service(parts[1])){state.page='overview';return;}state.siteId=parts[1];state.scope=parts[1];state.siteTab=['overview','finance','operations','tasks','partners','content','connections'].includes(parts[2])?parts[2]:'overview';}else if(['publish','content','history'].includes(state.page)){state.channel=parts[1]==='all'||labels[parts[1]]?parts[1]:'all';if(service(parts[2]))state.scope=parts[2];else if(service(parts[1]))state.scope=parts[1];}else if(service(parts[1]))state.scope=parts[1];}
-if(typeof window!=='undefined'){let wasCompact=compactViewport();window.addEventListener('resize',()=>{const compact=compactViewport();if(!window.matchMedia('(max-width:900px)').matches)closeSidebar();if(compact!==wasCompact){wasCompact=compact;if(data&&['overview','publish','site'].includes(state.page)&&(state.page!=='site'||['overview','content'].includes(state.siteTab))){if($('post-inspector').open)$('post-inspector').close();render();}}});window.addEventListener('popstate',()=>{closeSidebar();if(data){readRoute();if(state.page==='approval')NuriOperator.resetFilters();render();revealApprovalLink();}});$('post-inspector').addEventListener('click',e=>{if(e.target===$('post-inspector'))$('post-inspector').close();});}
+function readRoute(){if(typeof window==='undefined')return;lastHash=location.hash;let parts;try{parts=window.location.hash.slice(1).split('/').map(decodeURIComponent);}catch{return;}if(!pages[parts[0]])parts=['overview'];state.page=parts[0];window.NuriDaily.target=state.page==='approval'&&parts[1]==='tistory'&&/^[A-Za-z0-9_-]{1,80}$/.test(parts[2]||'')?parts[2]:null;state.channel='all';state.scope='all';state.postStatus='all';state.business=null;if(state.page==='site'){if(!service(parts[1])){state.page='overview';return;}state.siteId=parts[1];state.scope=parts[1];state.siteTab=['overview','finance','operations','tasks','partners','content','connections'].includes(parts[2])?parts[2]:'overview';}else if(['publish','content','history'].includes(state.page)){state.channel=parts[1]==='all'||labels[parts[1]]?parts[1]:'all';if(service(parts[2]))state.scope=parts[2];else if(service(parts[1]))state.scope=parts[1];}else if(service(parts[1]))state.scope=parts[1];}
+if(typeof window!=='undefined'){let wasCompact=compactViewport();window.addEventListener('resize',()=>{const compact=compactViewport();if(!window.matchMedia('(max-width:900px)').matches)closeSidebar();if(compact!==wasCompact){wasCompact=compact;if(data&&['overview','publish','site'].includes(state.page)&&(state.page!=='site'||['overview','content'].includes(state.siteTab))){if($('post-inspector').open)$('post-inspector').close();render();}}});const syncRoute=()=>{closeSidebar();if(data){readRoute();if(state.page==='approval')NuriOperator.resetFilters();render();revealApprovalLink();}};window.addEventListener('popstate',syncRoute);window.addEventListener('hashchange',()=>{if(location.hash!==lastHash)syncRoute();});$('post-inspector').addEventListener('click',e=>{if(e.target===$('post-inspector'))$('post-inspector').close();});}
 
 function compactViewport(){return typeof window!=='undefined'&&typeof window.matchMedia==='function'&&window.matchMedia('(max-width:760px)').matches;}
 function publicationCounts(posts){const count={published:0,scheduled:0,review:0,draft:0};for(const p of posts){const k=postState(p).kind;count[k==='published'?'published':['scheduled','publishing'].includes(k)?'scheduled':['review','missing','overdue'].includes(k)?'review':'draft']++;}return count;}

@@ -10,6 +10,8 @@ vm.runInContext(fs.readFileSync('public/one/app.js','utf8').split(/\r?\n/).filte
 vm.runInContext(fs.readFileSync('public/one/studio.js','utf8'),context);
 Object.assign(context,{dateKey:v=>String(v||'').slice(0,10),dt:v=>v,serviceName:v=>v,statusLabels:{published:'게시 완료',scheduled:'예약 대기'}});
 context.data.contents=[{id:'m',service:'tistory',channel:'instagram',title:'manual-october',status:'published',manual:true,registeredAt:'2026-10-08T03:50:00Z',publishedAt:'2026-09-30T01:00:00Z'},{id:'a',service:'tistory',channel:'instagram',title:'api-september',status:'published',publishedAt:'2026-09-30T01:00:00Z',registeredAt:'2026-10-08T03:50:00Z'},{id:'s',service:'tistory',channel:'threads',title:'scheduled-october',status:'scheduled',scheduledAt:'2026-10-09T10:30:00Z',createdAt:'2026-09-01T00:00:00Z'}];
+context.document.querySelector=()=>null;
+handlers.click({target:{closest:()=>({dataset:{studio:'calendar-view',id:'month'}})},preventDefault(){}});
 let calendar=context.window.NuriStudio.render('calendar');
 assert(calendar.includes('manual-october')&&calendar.includes('URL 등록'));
 assert(calendar.includes('2026-10-08T03:50:00Z KST')&&!calendar.includes('api-september'));
@@ -19,7 +21,7 @@ assert(calendar.includes('api-september')&&!calendar.includes('manual-october')&
 assert.equal(vm.runInContext("publicationTimeLabel({manual:true})",context),'URL 등록 시각');
 assert.equal(vm.runInContext("effectiveAt({status:'published',manual:true,publishedAt:'legacy'})",context),'legacy');
 context.state.month='2026-10';
-const publicationContext={state:{month:'2026-10',scope:'all'},labels:{blog:'블로그',instagram:'인스타그램',threads:'Threads'},statusLabels:{published:'게시 완료',scheduled:'예약',draft:'초안',review:'확인 필요'},Date:class extends Date{static now(){return Date.parse('2026-10-09T00:00:00Z');}},esc:context.esc,money:String,mark:()=>'',icon:()=>'',dt:v=>v,postAccount:()=>'',data:{services:[{id:'tistory',name:'SNS'}],tasks:[],contents:[
+const publicationContext={window:{NuriDaily:{trend:()=>''}},state:{month:'2026-10',scope:'all'},labels:{blog:'블로그',instagram:'인스타그램',threads:'Threads'},statusLabels:{published:'게시 완료',scheduled:'예약',draft:'초안',review:'확인 필요'},Date:class extends Date{static now(){return Date.parse('2026-10-09T00:00:00Z');}},esc:context.esc,money:String,mark:()=>'',icon:()=>'',dt:v=>v,postAccount:()=>'',data:{services:[{id:'tistory',name:'SNS'}],tasks:[],contents:[
  {id:'old',service:'tistory',channel:'blog',status:'published',manual:true,publishedAt:'2026-10-08T00:00:00Z',registeredAt:'2026-10-08T00:00:00Z'},
  {id:'missing',service:'tistory',channel:'blog',status:'published',manual:true,publishedAt:'2026-10-08T00:00:00Z',registeredAt:'2026-10-08T00:00:00Z'},
  {id:'api-sep',service:'tistory',channel:'blog',status:'published',publishedAt:'2026-09-30T14:59:59Z'},

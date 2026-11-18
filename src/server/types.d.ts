@@ -1,5 +1,5 @@
 declare module '*.cjs' {
- export function controller(options:{demo?:boolean;collect?:(source:{id:string})=>Promise<unknown>;probe?:(service:string)=>Promise<unknown>;inquiries?:(page:number,id?:string)=>Promise<unknown>}):Promise<{handle:(req:Request,route:string,input:Record<string,unknown>,email:string)=>Promise<Response>;view:()=>unknown;refresh:()=>Promise<void>;followup:()=>Promise<{checked:number;alerts:number}>;tick:()=>Promise<{due:number;pending:number;review:number}|undefined>}>;
+ export function controller(options:{demo?:boolean;actorId?:string;stateOnly?:boolean;collect?:(source:{id:string})=>Promise<unknown>;probe?:(service:string)=>Promise<unknown>;inquiries?:(page:number,id?:string)=>Promise<unknown>}):Promise<{handle:(req:Request,route:string,input:Record<string,unknown>,email:string)=>Promise<Response>;view:()=>unknown;refresh:()=>Promise<void>;followup:()=>Promise<{checked:number;alerts:number}>;tick:()=>Promise<{due:number;pending:number;review:number}|undefined>}>;
  export function pool():import('pg').Pool;
  export function context(workspace:'live'|'sample'):Promise<any>;
  export const SOURCES:{id:string;name:string}[];
