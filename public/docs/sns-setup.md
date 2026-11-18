@@ -39,7 +39,7 @@ SEO·GEO는 검증한 답변·근거·주체·조건·날짜를 기준으로 합
 | SNS API 게시 완료 | 실제 게시 결과 ID를 받은 상태입니다. 공급자에서 공개 글과 대상 계정을 다시 확인합니다. |
 | 응답 중단·잘못된 성공 응답 | ‘확인 필요’로 보관하고 자동 재전송하지 않습니다. 채널에서 게시 유무를 먼저 확인합니다. |
 
-X 길이는 [공식 twitter-text](https://github.com/twitter/twitter-text)의 URL·이모지 가중 계산을 사용합니다. Instagram API는 현재 단일 이미지이며 캐러셀·영상 게시와 구분합니다. 글·이미지 생성은 기존 구독 도구를 사용할 수 있지만 Claude·ChatGPT 구독과 서버 API 연결은 별도입니다. 추가 과금이나 크레딧 구매를 자동 활성화하지 않습니다.
+X 길이는 [공식 twitter-text](https://github.com/twitter/twitter-text)의 URL·이모지 가중 계산을 사용합니다. Instagram 승인함은 단일 JPEG, JPEG 캐러셀, 릴스의 준비 상태를 구분합니다. 글·이미지 생성은 기존 구독 도구를 사용할 수 있지만 Claude·ChatGPT 구독과 서버 API 연결은 별도입니다. 추가 과금이나 크레딧 구매를 자동 활성화하지 않습니다.
 
 이번 보완은 기존 Git·NPM·CUA·Supabase/Vercel MCP와 앱 자동화를 재사용했습니다. 공식 `twitter-text` 3.1.0(Apache-2.0)만 추가했으며 새 플러그인·hooks·외부 계정은 만들지 않았습니다. UI 담당은 `public/one/app.js`·`studio.js`, 보안 담당은 `src/server/dashboard.cjs`·발행 회귀 검사, 글자 수 담당은 `content-tools.cjs`·`tests/x-text.cjs`를 맡았습니다. 좁은 탐색/UI 작업은 gpt-6-luna low/medium, 동시성·성공 판정은 gpt-6.1-sol high로 제한했습니다. 주 에이전트가 빌드·배포·실제 화면을 통합 확인하며, 모의 API 테스트는 실제 계정 게시 성공을 대신하지 않습니다.
 
@@ -61,13 +61,14 @@ X 길이는 [공식 twitter-text](https://github.com/twitter/twitter-text)의 UR
 4. NURI로 돌아온 뒤 실제 사용자명·계정 ID와 연결 상태를 확인합니다. 표시 이름만 저장되거나 버튼을 눌렀다는 사실은 인증 성공의 증거가 아닙니다.
 5. 운영자가 승인한 테스트 콘텐츠 1건으로 실제 게시와 외부 URL을 확인합니다. 연결·갱신·게시 실패는 각각 구분해 처리합니다.
 
-Instagram·Threads·X의 액세스 토큰을 개발자 도구에서 직접 복사해 붙이는 절차는 기본 연결 방식이 아닙니다. 공식 동의 결과로 서버가 토큰을 발급·보관하고, 유효한 갱신 조건에서 갱신하도록 준비합니다.
+Instagram·YouTube·Threads·X의 액세스 토큰을 개발자 도구에서 직접 복사해 붙이는 절차는 기본 연결 방식이 아닙니다. 공식 동의 결과로 서버가 토큰을 발급·보관하고, 유효한 갱신 조건에서 갱신하도록 준비합니다.
 
 ### 입력 필드
 
 | 공급자 | 사용자가 준비할 필드 | 주의점 |
 | --- | --- | --- |
 | Instagram | Instagram App ID를 Client ID로, Instagram App Secret을 Client Secret으로 입력 | Instagram Login 제품의 값을 사용합니다. Meta 앱의 다른 제품 ID와 혼동하지 마세요. |
+| YouTube | Google Cloud의 웹 애플리케이션 OAuth Client ID·Client Secret | 브랜드를 운영할 YouTube 채널에 권한을 가진 사용자로 공식 동의합니다. |
 | Threads | Threads App ID를 Client ID로, Threads App Secret을 Client Secret으로 입력 | Threads 제품에 표시되는 앱 자격 증명을 사용합니다. |
 | X | OAuth 2.0 Client ID·Client Secret | API Key·API Key Secret이나 앱 전용 Bearer Token과 다릅니다. |
 | 공통 SNS 계정 | 서비스·계정 표시 이름 | 실제 사용자명·계정 ID는 공식 인증 응답으로 확인합니다. |
@@ -80,6 +81,7 @@ Instagram·Threads·X의 액세스 토큰을 개발자 도구에서 직접 복�
 | 공급자 | 승인된 리디렉션·OAuth 콜백 URL | 요청 권한 |
 | --- | --- | --- |
 | Instagram | `https://nhholdings.xyz/api/social/instagram` | `instagram_business_basic`, `instagram_business_content_publish` |
+| YouTube | `https://nhholdings.xyz/api/social/youtube` | `https://www.googleapis.com/auth/youtube.force-ssl` |
 | Threads | `https://nhholdings.xyz/api/social/threads` | `threads_basic`, `threads_content_publish` |
 | X | `https://nhholdings.xyz/api/social/x` | `tweet.read`, `tweet.write`, `users.read`, `offline.access` |
 
@@ -93,7 +95,14 @@ Instagram·Threads·X의 액세스 토큰을 개발자 도구에서 직접 복�
 4. `instagram_business_basic`, `instagram_business_content_publish`를 요청하도록 구성합니다. 예전 `business_*` 권한 이름이나 Facebook Login용 권한 목록을 대신 입력하지 마세요. [공식 Meta Instagram 예제](https://www.postman.com/meta/workspace/instagram/documentation/23987686-9386f468-7714-490f-9bfc-9442db5c8f00)
 5. 개발 모드에서는 앱 역할·테스터로 허용된 계정인지 확인하고 필요한 초대를 수락합니다. 외부 계정에 공개할 때는 해당 앱의 권한 수준·앱 검수·사업자 확인 요구를 콘솔에서 완료합니다. 회사 계정이라는 이유만으로 검수가 자동 면제되는 것은 아닙니다.
 6. NURI에 앱 자격 증명을 저장하고 계정 표시 이름을 입력한 뒤 공식 동의를 진행합니다. 돌아온 실제 Instagram 사용자명이 맞는지 확인합니다.
-7. 승인한 이미지 1장과 본문으로 테스트합니다. 현재 게시 코드는 단일 이미지와 캡션용입니다. 이미지 주소는 Instagram 서버가 읽을 수 있는 HTTPS 주소여야 합니다. AI 초안 생성은 이미지를 자동으로 만들어 주지 않으며, 캐러셀·릴스·영상 게시까지 구현됐다고 간주하지 마세요.
+7. 승인함에서 실제 계정, 캡션, 미디어, 공개 시각을 확인합니다. 단일 JPEG에는 대체 텍스트를 넣을 수 있고, JPEG 캐러셀은 첫 사진에 추가 사진을 붙여 입력합니다. 릴스는 사진 필드 대신 Meta가 열 수 있는 공개 영상 URL을 사용합니다. 미디어 컨테이너 처리 완료 후에만 게시합니다. 실제 계정·영상으로 시험하기 전에는 성공 여부가 미확인입니다. [Meta 게시 API](https://developers.facebook.com/documentation/instagram-platform/content-publishing)
+
+## YouTube 동영상·Shorts의 공개 예약
+
+1. Google Cloud에서 YouTube Data API v3를 켜고 웹 OAuth 앱에 위 콜백 URI를 등록합니다. 누리원 연결 설정에서 앱 정보를 저장하고, 게시할 YouTube 채널에 권한이 있는 사용자가 Google 공식 동의를 완료합니다. [Google 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server)
+2. YouTube Studio에 영상을 비공개로 올립니다. Studio에서 자체 공개 예약을 설정하지 않고, 영상이 처리될 때까지 기다립니다. Shorts는 YouTube가 판단합니다. 일반 채널에서는 세로 또는 정사각형과 최대 3분 조건을 확인하세요. [YouTube Shorts 기준](https://support.google.com/youtube/answer/15424877)
+3. 누리원에서 YouTube 초안에 공식 영상 주소 또는 영상 ID, Studio와 같은 제목·설명, 아동용 여부와 현실적으로 보이는 변경·합성 콘텐츠 여부를 입력합니다. 승인함에서 영상, 채널과 KST 공개 시각을 승인합니다.
+4. 누리원 예약 실행에서 동일 채널의 비공개 영상 상태와 메타데이터를 다시 확인한 뒤 공개합니다. 공개 응답이 끊기면 승인함에서 실제 영상의 공개 상태를 조회합니다. 채널에 연결하기 전에는 실제 공개가 검증되지 않습니다. [YouTube 영상 업데이트](https://developers.google.com/youtube/data/reference/rest/v3/videos/update)
 
 ## Threads: 프로필과 앱 자격 증명
 

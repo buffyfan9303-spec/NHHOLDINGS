@@ -58,12 +58,21 @@ export const integrationCatalog: readonly Integration[] = [
   },
   {
     id: 'instagram', name: 'Instagram', category: 'publishing', status: 'requires-setup',
-    description: 'Instagram Login으로 전문 계정을 개별 연결합니다. 승인함에서 단일 이미지 또는 캐러셀과 게시 시각을 확인합니다.',
+    description: 'Instagram Login으로 전문 계정을 개별 연결합니다. 승인함에서 단일 이미지, 이미지 캐러셀, 릴스와 게시 시각을 검토합니다.',
     requirements: ['Business 또는 Creator 계정', 'Instagram 앱 Client ID·Client Secret', 'instagram_business_basic·instagram_business_content_publish', '정확한 콜백 URI·앱 역할 또는 검수'],
     freeUsage: '무료 무제한 사용으로 보장하지 않습니다. Meta 정책·권한·게시 한도를 확인해야 하며 광고비는 별도입니다.',
     docsUrl: 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/',
     pricingUrl: 'https://developers.facebook.com/docs/graph-api/overview/rate-limiting/',
     setupSteps: ['누리홀덤과 누리마인드 Instagram을 각각 Business 또는 Creator 계정으로 설정합니다.', 'Meta 앱에서 Instagram Login·게시 권한과 콜백 https://nhholdings.xyz/api/social/instagram 을 등록합니다.', '앱 Client ID·Client Secret을 누리원 설정에 저장합니다.', '계정 표시 이름을 구분하고 공식 동의창에서 각 프로필을 연결합니다.', '두 계정의 사용자명을 대조한 뒤 실제 게시물은 승인함에서 건별로 확인합니다.'],
+  },
+  {
+    id: 'youtube', name: 'YouTube', category: 'publishing', status: 'requires-setup',
+    description: 'YouTube Studio에서 처리된 비공개 영상의 채널과 원고를 확인하고, 승인한 시각 이후 공개합니다.',
+    requirements: ['회사 YouTube 채널과의 공식 Google OAuth', 'YouTube Data API v3 및 Web OAuth 클라이언트', 'youtube.force-ssl 권한', '처리된 비공개 영상'],
+    freeUsage: 'YouTube Data API 프로젝트의 요청 할당량이 적용됩니다.',
+    docsUrl: 'https://developers.google.com/youtube/data/reference/rest/v3/videos/update',
+    pricingUrl: 'https://developers.google.com/youtube/v3/determine_quota_cost',
+    setupSteps: ['Google Cloud에서 YouTube Data API v3와 OAuth 동의를 준비합니다.', '웹 클라이언트에 https://nhholdings.xyz/api/social/youtube 콜백을 등록합니다.', '누리원에서 앱을 저장하고 채널 소유자가 공식 동의를 완료합니다.', 'Studio에 비공개로 영상 파일을 올리고 누리원 승인함에서 계정, 원고와 공개 시각을 확인합니다.'],
   },
   {
     id: 'threads', name: 'Threads', category: 'publishing', status: 'requires-setup',

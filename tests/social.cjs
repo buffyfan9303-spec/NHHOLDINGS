@@ -18,6 +18,27 @@ async function run(){
   const old={...meta,issuedAt:new Date(Date.now()-2*86400000).toISOString()};const renewed=await refresh(id,old,async url=>{assert.equal(new URL(url).searchParams.get('grant_type'),id==='instagram'?'ig_refresh_token':'th_refresh_token');return response({access_token:'renewed',expires_in:5184000});});assert.equal(renewed.token,'renewed');
   const who=await identity(id,meta,async url=>{assert.match(url,id==='instagram'?/v25\.0\/me\?fields=user_id,username/:/v1\.0\/me\?fields=id,username/);return response(id==='instagram'?{user_id:'123',username:'operator'}:{id:'123',username:'operator'});});assert.deepEqual(who,{userId:'123',username:'operator'});
  }
+ const google=new URL(authorization('youtube',app,{state:'state',verifier,redirectUri}));
+ assert.equal(google.hostname,'accounts.google.com');
+ assert.equal(google.searchParams.get('access_type'),'offline');
+ assert.equal(google.searchParams.get('code_challenge_method'),'S256');
+ assert.equal(google.searchParams.get('scope'),providers.youtube.scopes[0]);
+ const y=await exchange('youtube',app,{code:'code',verifier,redirectUri},async(url,o)=>{
+  assert.equal(url,'https://oauth2.googleapis.com/token');
+  assert.equal(o.body.get('code_verifier'),verifier);
+  return response({access_token:'yt-token',refresh_token:'yt-refresh',expires_in:3600,scope:providers.youtube.scopes[0]});
+ });
+ await assert.rejects(exchange('youtube',app,{code:'code',verifier,redirectUri},async()=>response({access_token:'secret',expires_in:3600,scope:'anything-else'})),{status:502});
+ const channelId='UC'+'a'.repeat(22);
+ assert.deepEqual(await identity('youtube',y,async url=>{
+  assert.equal(url,'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true');
+  return response({items:[{id:channelId,snippet:{title:'Fixture channel'}}]});
+ }),{userId:channelId,username:'Fixture channel'});
+ await assert.rejects(identity('youtube',y,async()=>response({items:[{id:'123',snippet:{title:'Fixture channel'}}]})),{status:502});
+ assert.equal((await refresh('youtube',y,async(url,o)=>{
+  assert.equal(o.body.get('refresh_token'),'yt-refresh');
+  return response({access_token:'yt-renewed',expires_in:3600});
+ })).refreshToken,'yt-refresh');
  assert.deepEqual(await identity('x',x,async()=>response({data:{id:'123',username:'operator'}})),{userId:'123',username:'operator'});
  for(const stub of [async()=>({ok:false,json:async()=>({error:'secret-provider-body'})}),async()=>response({access_token:'secret-provider-body'}),async()=>{throw Error('secret-provider-body');},async()=>({ok:true,json:async()=>{throw Error('secret-provider-body');}})])await assert.rejects(exchange('x',app,{code:'code',verifier,redirectUri},stub),e=>e.status===502&&!String(e).includes('secret-provider-body'));
  await assert.rejects(identity('x',x,async()=>response({data:{id:'bad',username:'operator'}})),{status:502});
