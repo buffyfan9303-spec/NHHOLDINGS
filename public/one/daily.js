@@ -54,7 +54,13 @@ if(typeof window!=='undefined')Object.assign(oneDaily,{
   try{this.brand=this.choice(sessionStorage.getItem(this.brandKey()));}catch{}
  },
  selectBrand(value){
-  this.brand=this.choice(value);
+  const brand=this.choice(value);
+  if(brand!==this.brand&&window.NuriStudio?.prepareBrandChange&&!window.NuriStudio.prepareBrandChange()){
+   const control=document.querySelector('[name="daily-brand"]');
+   if(control)control.value=this.brand;
+   return;
+  }
+  this.brand=brand;
   this.target=null;
   try{sessionStorage.setItem(this.brandKey(),this.brand);}catch{}
   if(state.page==='approval'){

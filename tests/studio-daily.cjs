@@ -12,7 +12,11 @@ const data={contents:[],accounts:[
 ]};
 const state={page:'calendar',scope:'tistory',month:'2026-11'};
 const session={email:'operator@example.invalid',readOnly:false,owner:true};
-const window={addEventListener(){},NuriDaily:{matchesBrand:p=>selectedBrand==='all'||selectedBrand===p.brand}};
+const window={addEventListener(){},NuriDaily:{
+ get brand(){return selectedBrand;},
+ labels:{holdem:'누리홀덤',mind:'누리마인드'},
+ matchesBrand:p=>selectedBrand==='all'||selectedBrand===p.brand,
+}};
 let selectedBrand='all';
 let now=Date.parse('2026-11-30T15:05:00Z');
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -33,6 +37,7 @@ const context={
  formField:(text,name,value)=>'['+name+'='+esc(value)+']',
  publicationFields:value=>{fields.push(value);return '';},
  requiresApproval:()=>false,
+ manualChannels:new Set(),manualUrlChannels:new Set(),
  manualBlog:()=>false,
  download:(...args)=>downloads.push(args),
 };
@@ -121,6 +126,77 @@ const apiSample=(p,views,age=25,hours=24,state='observed')=>({id:p.id,metrics:[
  {hours,state,sample:{views,observedAt:new Date(Date.parse(p.publishedAt)+age*hour).toISOString()}},
 ]});
 
+async function studioBrand(){
+ state.page='studio';
+ data.contents=[
+  post('mind-blog',{channel:'blog',status:'draft'}),
+  post('holdem-blog',{channel:'blog',status:'draft',brand:'holdem'}),
+  post('mind-published',{status:'published',link:'https://www.instagram.com/p/mind123/'}),
+  post('holdem-published',{status:'published',brand:'holdem',link:'https://www.instagram.com/p/holdem123/'}),
+  post('legacy-external',{channel:'blog',status:'draft',brand:'holdem',business:'another-business'}),
+ ];
+ data.postObservations=data.contents.filter(p=>p.status==='published').map(p=>({
+  id:'obs-'+p.id,service:'tistory',channel:p.channel,contentId:p.id,views:20,note:'observation for '+p.id,
+  publishedAt:'2026-12-03T00:00:00Z',observedAt:'2026-12-04T00:00:00Z',
+ }));
+ data.growthCheckpoints=data.postObservations.map(p=>({contentId:p.contentId,channel:p.channel,status:'publish-time-missing'}));
+ data.postForecasts=data.postObservations.map(p=>({id:'forecast-'+p.contentId,contentId:p.contentId,mode:'manual',horizonHours:24,note:'forecast for '+p.contentId}));
+ assert.equal(window.NuriStudio.prepareBrandChange(),true);
+ selectedBrand='holdem';
+ let html=render('studio');
+ assert.match(html,/data-id="holdem-blog"/);
+ assert.doesNotMatch(html,/data-id="mind-blog"|legacy-external/);
+ assert.equal(fields.at(-1).id,'holdem-blog');
+ assert.equal(window.NuriStudio.open('mind-blog'),true);
+ html=render('studio');
+ assert.match(html,/선택한 게시물의 브랜드 · 누리마인드/);
+ assert.doesNotMatch(html,/data-studio="open" data-id="mind-blog"/);
+ assert.equal(fields.at(-1).id,'mind-blog');
+ await click('new');
+ render('studio');
+ assert.equal(fields.at(-1).brand,'holdem');
+ assert.equal(fields.at(-1).id,'');
+ const prefix='nuri-studio:live:operator@example.invalid:new';
+ for(const [suffix,title] of [['','모든 브랜드 임시 초안'],[':holdem','홀덤 임시 초안'],[':mind','마인드 임시 초안']]){
+  stored.set(prefix+suffix,JSON.stringify({id:'',channel:'blog',title,body:''}));
+ }
+ await click('draft-restore');
+ render('studio');
+ assert.equal(fields.at(-1).title,'홀덤 임시 초안');
+ context.confirm=()=>false;
+ assert.equal(window.NuriStudio.prepareBrandChange(),false);
+ render('studio');
+ assert.equal(fields.at(-1).title,'홀덤 임시 초안');
+ context.confirm=()=>true;
+ assert.equal(window.NuriStudio.prepareBrandChange(),true);
+ selectedBrand='mind';
+ render('studio');
+ assert.equal(fields.at(-1).id,'mind-blog');
+ await click('new');
+ render('studio');
+ assert.equal(fields.at(-1).brand,'mind');
+ await click('draft-restore');
+ render('studio');
+ assert.equal(fields.at(-1).title,'마인드 임시 초안');
+ state.month='2026-12';
+ html=render('growth');
+ assert.match(html,/observation for mind-published/);
+ assert.match(html,/forecast for mind-published/);
+ assert.match(html,/실제 게시 시각 미확인 1건/);
+ assert.doesNotMatch(html,/holdem-published/);
+ assert.equal(window.NuriStudio.prepareBrandChange(),true);
+ selectedBrand='all';
+ await click('new');
+ await click('draft-restore');
+ render('studio');
+ assert.equal(fields.at(-1).title,'모든 브랜드 임시 초안');
+ assert.equal(window.NuriStudio.prepareBrandChange(),true);
+ data.postObservations=[];
+ data.growthCheckpoints=[];
+ data.postForecasts=[];
+ state.page='growth';
+}
+
 async function baseline(){
  const main=source('릴스 <원본>','2026-10-09T00:00:00Z',{brand:'mind',campaignId:'reference-campaign',growthCampaign:'growth-campaign',link:'https://www.instagram.com/reel/sample/',youtubeVideoId:'discard-me',body:'복사하지 않는 원본 본문'});
  const examples=[
@@ -185,6 +261,6 @@ async function baseline(){
  assert.equal(submits,1);
 }
 
-calendar().then(baseline).then(()=>{
- console.log('Studio daily: KST midnight/year/week bounds, desktop account lanes, chronological view, untimed items, brand/filter isolation, monthly ICS, observed-only 24h baselines, next-draft handoff and read-only checks passed');
+calendar().then(studioBrand).then(baseline).then(()=>{
+ console.log('Studio daily: KST calendar, monthly ICS, workspace and growth brand isolation, per-brand draft recovery, observed-only 24h baselines, next-draft handoff and read-only checks passed');
 }).catch(error=>{console.error(error);process.exitCode=1;});
