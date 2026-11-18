@@ -62,8 +62,16 @@ test('SNS OAuth checks owner, origin, browser state, one-time consumption and en
      if(init?.method==='POST'){writes++;if(channel==='x')return Response.json({data:{id:invalidID}});const creating=url.endsWith(channel==='threads'?'/threads':'/media');return Response.json({id:(creating?stage==='container':stage==='publish')?invalidID:'123456'});}
      assert(url.includes('?fields=status_code'),'malformed IDs must not reach a permalink request');return Response.json({status_code:'FINISHED'});
     };
-    try{const app=await controller({}),result=await app.handle(req('/api/dashboard/content/publish',{}),'/api/content/publish',{id},owner.email);assert.equal(result.status,502,channel+' '+stage+' '+index);const saved=(await context('live')).get('content',id);assert.equal(saved.status,'review');assert.equal(saved.uncertain,true);assert(!saved.externalId&&!saved.publishedAt,'malformed 2xx must not record a published post');const before=writes;assert.equal((await app.handle(req('/api/dashboard/content/publish',{}),'/api/content/publish',{id},owner.email)).status,400);assert.equal(writes,before,'review posts must not be retried automatically');if(stage==='container')assert.equal(writes,1,'invalid container IDs must stop before another provider write');}
-    finally{globalThis.fetch=oauthFetch;}
+    const clock=Date.now;
+    try{
+     if(channel==='instagram'){
+      const at=new Date(clock()+60_000).toISOString();
+      const approval=await (await controller({})).handle(req('/api/dashboard/content/schedule',{}),'/api/content/schedule',{id,account:accountId,at,version:1,approved:true},owner.email);
+      assert.equal(approval.status,200);
+      Date.now=()=>Date.parse(at)+1;
+     }
+     const app=await controller({}),result=await app.handle(req('/api/dashboard/content/publish',{}),'/api/content/publish',{id},owner.email);assert.equal(result.status,502,channel+' '+stage+' '+index);const saved=(await context('live')).get('content',id);assert.equal(saved.status,'review');assert.equal(saved.uncertain,true);assert(!saved.externalId&&!saved.publishedAt,'malformed 2xx must not record a published post');const before=writes;assert.equal((await app.handle(req('/api/dashboard/content/publish',{}),'/api/content/publish',{id},owner.email)).status,400);assert.equal(writes,before,'review posts must not be retried automatically');if(stage==='container')assert.equal(writes,1,'invalid container IDs must stop before another provider write');}
+    finally{globalThis.fetch=oauthFetch;Date.now=clock;}
    }
   }
   await publishing.put('content','parallel-publish',{...post,account:'result-schema-x'});const concurrentA=await controller({}),concurrentB=await controller({});let parallelWrites=0,entered!:()=>void,release!:()=>void;const started=new Promise<void>(r=>entered=r),held=new Promise<void>(r=>release=r);

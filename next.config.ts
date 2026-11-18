@@ -13,7 +13,16 @@ const config: NextConfig = {
       {key:"Referrer-Policy",value:"strict-origin-when-cross-origin"},
       {key:"X-Frame-Options",value:"DENY"},
       {key:"Permissions-Policy",value:"camera=(), microphone=(), geolocation=()"}
-    ]}];
+    ]}, {
+      source: "/dashboard",
+      headers: [{key:"Permissions-Policy",value:"camera=(), microphone=(self), geolocation=()"}]
+    }, {
+      source: "/one/operator-sw.js",
+      headers: [
+        {key:"Service-Worker-Allowed",value:"/dashboard"},
+        {key:"Cache-Control",value:"no-cache"}
+      ]
+    }];
   }
 };
 export default config;

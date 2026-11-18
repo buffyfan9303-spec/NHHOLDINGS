@@ -1,0 +1,15 @@
+{
+ "id": "/dashboard",
+ "name": "NURI ONE 운영실",
+ "short_name": "누리원",
+ "lang": "ko",
+ "start_url": "/dashboard",
+ "scope": "/dashboard",
+ "display": "standalone",
+ "theme_color": "#101315",
+ "background_color": "#101315",
+ "icons": [
+  {"src":"/one/operator-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+  {"src":"/one/operator-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}
+ ]
+}
