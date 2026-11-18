@@ -61,7 +61,15 @@ publicationContext.webLink=value=>value;
 Object.assign(publicationContext.data.services[0],{
  url:'https://doto1.tistory.com',snapshot:{data:{posts:171,observedAt:'2026-10-09T00:00:00Z'}},
 });
+publicationContext.data.services.push(
+ {id:'mind',name:'NURI MIND',snapshot:{data:{users:15}}},
+ {id:'holdem',name:'NURI HOLDEM',snapshot:{data:{users:92,sourceBusinesses:4}}},
+);
 const websiteCards=vm.runInContext('siteCards()',publicationContext);
+assert(websiteCards.includes('<strong>15</strong><small>가입 유저'));
+assert(websiteCards.includes('<strong>92</strong><small>가입 유저'));
+assert(!websiteCards.includes('연결 매장'));
+assert(websiteCards.includes('>사이트 열기</a>'));
 assert(websiteCards.includes('<strong>171</strong><small>블로그 공개 글'));
 assert(websiteCards.includes('href="https://doto1.tistory.com"'));
 assert(websiteCards.includes('<time datetime="2026-10-09T00:00:00Z">'));
