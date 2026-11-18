@@ -65,6 +65,10 @@
             ${actionButton('새 초안','new','',true)}${actionButton('다시 조회','refresh')}
           </div>
         </header>
+        <div class="auto-first-connect" data-auto-first-connect hidden>
+          <p>${kind==='social'?'계정을 연결하면 게시 초안을 만들고 예약할 수 있습니다.':'Gmail을 연결하면 작성한 초안을 발송 예약할 수 있습니다.'}</p>
+          ${actionButton('계정 연결로 이동','setup-jump','',kind==='social')}
+        </div>
         <p class="auto-message" data-auto-message role="status">목록을 불러오고 있습니다.</p>
         <div data-auto-items aria-labelledby="${prefix}-list-title"></div>
       </div>
@@ -193,6 +197,9 @@
   function paint(view) {
     paintItems(view);
     view.root.querySelector('[data-auto-accounts]').innerHTML=view.data?accountsPanel(view):'';
+    const connectionReady=view.kind==='social'?view.data?.accounts.some(account=>account.ready):view.data?.connection?.connected;
+    view.root.querySelector('[data-auto-first-connect]').hidden=!view.data||connectionReady===true;
+    view.root.querySelector('[data-auto-action="new"]').hidden=view.kind==='social'&&!!view.data&&!view.data.accounts.length;
     setControls(view);
   }
 
@@ -539,6 +546,14 @@
     if(action==='close')return view.dialog.close();
     if(action==='refresh')return void load(view);
     if(action==='copy-callback')return void copyCallback(view);
+    if(action==='setup-jump'){
+      const control=view.root.querySelector('[data-auto-accounts] :is([data-auto-action="connect"],[data-auto-action="reconnect"],[data-auto-action="configure"],a.personal-link)');
+      if(control){
+        control.focus({preventScroll:true});
+        control.scrollIntoView({block:'center',behavior:'instant'});
+      }
+      return;
+    }
     if(action==='new'||action==='edit'&&item&&editAllowed(view,item))return draftEditor(view,item);
     if(action==='schedule'&&item&&approvalAvailable(view,item))return scheduleEditor(view,item);
     if(action==='configure')return setupEditor(view,id,view.kind==='mail'?view.data.connection.connected:view.data.accounts.some(p=>p.provider===id));

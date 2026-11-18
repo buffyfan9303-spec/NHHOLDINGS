@@ -5,8 +5,8 @@
   display:none;
 }
 #personal-ai-open[aria-expanded="true"] {
-  background:var(--teal-soft);
-  color:var(--teal);
+  background:var(--teal);
+  color:var(--accent-ink);
 }
 .personal-ai-dock {
   position:fixed;
@@ -42,7 +42,7 @@
   gap:5px 12px;
   flex-wrap:wrap;
   align-items:center;
-  min-height:51px;
+  min-height:47px;
   border-bottom:1px solid var(--line);
 }
 .personal-ai-top h2 {
@@ -109,7 +109,7 @@
   font-size:14px;
 }
 .personal-ai-answer {
-  padding:10px 2px 0;
+  padding:8px 2px 0;
   font-size:14px;
 }
 .personal-ai-turn :is(.personal-ai-question,.personal-ai-answer)>strong {
@@ -129,7 +129,7 @@
 .personal-ai-receipt,.personal-ai-card {
   display:grid;
   justify-items:start;
-  gap:5px;
+  gap:4px;
   min-width:0;
   margin:8px 0 4px;
   padding:7px 9px;
@@ -139,12 +139,15 @@
 }
 .personal-ai-card-image {
   display:block;
-  width:min(100%,250px);
-  aspect-ratio:1;
+  width:min(100%,208px);
+  aspect-ratio:4 / 5;
+  justify-self:center;
   object-fit:contain;
-  background:var(--bg);
+  background:var(--inset);
   border-radius:6px;
 }
+.personal-ai-card .personal-ai-actions {gap:3px 6px;justify-content:center;width:100%}
+.personal-ai-card [data-ai-action="attach"] {background:var(--teal-soft);color:var(--teal);font-weight:650;padding-inline:10px}
 .personal-ai-card-count {
   color:var(--muted);
   font-size:12px;
@@ -153,8 +156,9 @@
 .personal-ai-compose {
   grid-area:compose;
   min-width:0;
-  max-height:min(44dvh,300px);
-  padding:12px 4px 4px;
+  max-height:min(44dvh,267px);
+  gap:6px;
+  padding:9px 4px 3px;
   overflow:auto;
   overscroll-behavior:contain;
   border-top:1px solid var(--line);
@@ -162,7 +166,7 @@
 .personal-ai-options {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px;
+  gap:8px;
 }
 .personal-ai-dock label {
   display:grid;
@@ -170,7 +174,9 @@
   min-width:0;
 }
 .personal-ai-dock textarea {
-  min-height:68px;
+  min-height:64px;
+  padding:8px 10px;
+  line-height:1.4;
   font-size:16px;
 }
 .personal-ai-dock select {
@@ -222,17 +228,24 @@
 }
 @media(prefers-reduced-motion:no-preference) {
   .personal-ai-dock[open] {
-    animation:personal-ai-enter .28s var(--arrive) both;
+    animation:personal-ai-enter 230ms var(--arrive) both;
   }
   .personal-ai-dock::backdrop {
-    animation:personal-ai-veil .22s ease-out both;
+    animation:personal-ai-veil 180ms ease both;
   }
   @keyframes personal-ai-enter {
-    from {opacity:.5;transform:translateX(14px)}
+    from {opacity:.82;transform:translateX(12px)}
     to {opacity:1;transform:none}
   }
   @keyframes personal-ai-veil {
     from {opacity:0}
     to {opacity:1}
+  }
+}
+@media(max-width:1199px) and (prefers-reduced-motion:no-preference) {
+  .personal-ai-dock[open] {animation-name:personal-ai-sheet-enter}
+  @keyframes personal-ai-sheet-enter {
+    from {opacity:.86;transform:translateY(10px)}
+    to {opacity:1;transform:none}
   }
 }

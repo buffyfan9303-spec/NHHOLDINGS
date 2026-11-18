@@ -1,8 +1,8 @@
 .personal-file-panel {
   min-width: 0;
-  padding: clamp(14px, 3vw, 24px);
+  padding: clamp(15px, 2.1vw, 24px);
   border: 1px solid var(--line, #8c959f66);
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--surface, transparent);
 }
 
@@ -59,7 +59,16 @@
 .personal-file-credentials { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
 .personal-file-callback label,
 .personal-file-credentials label { display: grid; gap: 5px; min-width: 0; }
-.personal-file-setup input { width: 100%; min-width: 0; min-height: 42px; }
+.personal-file-setup input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--ink);
+}
 
 .personal-file-controls { margin-top: 10px; }
 
@@ -84,7 +93,11 @@
   cursor: pointer;
 }
 
-.personal-file-panel .btn { min-height: 42px; }
+.personal-file-panel .btn { min-height: 44px; }
+
+@media (max-width:680px) {
+  .personal-file-setup input,.personal-file-controls input {font-size:16px}
+}
 
 .personal-file-panel progress {
   display: block;

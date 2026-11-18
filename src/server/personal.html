@@ -41,29 +41,27 @@
    </div>
    <p id="personal-message" class="personal-message" role="status">내 업무를 불러오고 있습니다.</p>
    <section data-personal-view="home" class="personal-home" aria-labelledby="personal-home-title">
-    <div class="personal-sheet">
+    <section class="personal-sheet personal-quick-sheet" aria-labelledby="personal-quick-title">
+     <h2 id="personal-quick-title">빠른 기록</h2>
+     <form id="personal-quick" class="personal-quick">
+      <label for="personal-quick-title-input">할 일 또는 메모</label>
+      <input id="personal-quick-title-input" name="title" required maxlength="160" placeholder="기억할 일을 적어두세요">
+      <div class="personal-form-actions">
+       <button type="submit" name="kind" value="task" class="btn primary">할 일 추가</button>
+       <button type="submit" name="kind" value="note" class="btn">메모 추가</button>
+      </div>
+     </form>
+    </section>
+    <div class="personal-sheet personal-today-sheet">
      <div class="personal-section-head"><h2 id="personal-home-title" tabindex="-1">오늘 확인할 일</h2><a href="#tasks" class="personal-link">할 일 전체</a></div>
      <div id="personal-today"></div>
      <div class="personal-section-head personal-section-break"><h2>다가오는 일정</h2><a href="#schedule" class="personal-link">일정 전체</a></div>
      <div id="personal-upcoming"></div>
     </div>
-    <div class="personal-home-side">
-     <section class="personal-sheet" aria-labelledby="personal-quick-title">
-      <h2 id="personal-quick-title">빠른 기록</h2>
-      <form id="personal-quick" class="personal-quick">
-       <label for="personal-quick-title-input">할 일 또는 메모</label>
-       <input id="personal-quick-title-input" name="title" required maxlength="160" placeholder="기억할 일을 적어두세요">
-       <div class="personal-form-actions">
-        <button type="submit" name="kind" value="task" class="btn primary">할 일 추가</button>
-        <button type="submit" name="kind" value="note" class="btn">메모 추가</button>
-       </div>
-      </form>
-     </section>
-     <section class="personal-sheet" aria-labelledby="personal-pinned-title">
-      <div class="personal-section-head"><h2 id="personal-pinned-title">자주 여는 곳</h2><a href="#links" class="personal-link">바로가기 관리</a></div>
-      <div id="personal-pinned"></div>
-     </section>
-    </div>
+    <section class="personal-sheet personal-links-sheet" aria-labelledby="personal-pinned-title">
+     <div class="personal-section-head"><h2 id="personal-pinned-title">자주 여는 곳</h2><a href="#links" class="personal-link">바로가기 관리</a></div>
+     <div id="personal-pinned"></div>
+    </section>
    </section>
    <section data-personal-view="items" hidden class="personal-items">
     <div class="personal-sheet">

@@ -338,14 +338,17 @@ window.NuriOperator = (() => {
   const palette = document.getElementById('command-palette');
   const query = document.getElementById('command-query');
   const results = document.getElementById('command-results');
+  const commandTrigger = document.getElementById('command-open');
+  let paletteReturnFocus = null;
   const update = () => {
    const tokens = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
    const matches = pagesToOpen.filter(([page, label, aliases]) => (page!=='market-operations'||session?.owner)&&tokens.every(token => (label + ' ' + aliases).toLowerCase().includes(token)));
    results.innerHTML = matches.map(([page, label]) => `<li><button type="button" data-command="${page}">${label}</button></li>`).join('')
     || '<li class="caption" role="status">검색 결과가 없습니다.</li>';
   };
-  const open = () => {
+  const open = (from) => {
    if (palette.open || !data) return;
+   paletteReturnFocus = from && from !== document.body ? from : commandTrigger;
    query.value = '';
    update();
    palette.showModal();
@@ -365,6 +368,13 @@ window.NuriOperator = (() => {
    if (!button) return;
    palette.close();
    navigate(button.dataset.command);
+   if (state.page === button.dataset.command) paletteReturnFocus = document.getElementById('page-title');
+  });
+  palette.addEventListener('close', () => {
+   if (palette.open) return;
+   const target = paletteReturnFocus;
+   paletteReturnFocus = null;
+   (target?.isConnected && target.getClientRects().length ? target : commandTrigger).focus({preventScroll:true});
   });
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (typeof SpeechRecognition?.available === 'function' && 'processLocally' in SpeechRecognition.prototype) {
@@ -407,12 +417,12 @@ window.NuriOperator = (() => {
    });
    palette.addEventListener('close', () => recognition?.abort());
   }
-  document.getElementById('command-open').addEventListener('click', open);
+  commandTrigger.addEventListener('click', () => open(commandTrigger));
   document.getElementById('command-close').addEventListener('click', () => palette.close());
   document.addEventListener('keydown', e => {
-   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.getElementById('post-inspector').open && !document.getElementById('sidebar').classList.contains('open')) {
+   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open], #sidebar.open')) {
     e.preventDefault();
-    open();
+    open(document.activeElement);
    }
   });
 

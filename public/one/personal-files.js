@@ -27,7 +27,7 @@
   function render() {
     return `<section id="files" class="personal-file-panel" aria-labelledby="personal-files-title">
       <header class="personal-file-heading">
-        <div><h2 id="personal-files-title">개인 파일함</h2><p>내 Google Drive에 파일을 저장하고 다시 열 수 있어요.</p></div>
+        <div><h2 id="personal-files-title">Google Drive</h2><p>내 계정에 파일을 올리고 다시 열 수 있어요.</p></div>
         <div class="personal-file-actions">
           <button type="button" class="btn" data-files-refresh>새로고침</button>
           <button type="button" class="btn primary" data-files-connect hidden>Google Drive 연결</button>
