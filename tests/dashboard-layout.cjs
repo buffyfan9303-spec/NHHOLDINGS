@@ -48,6 +48,18 @@ async function main(){
     assert(layout.actions.every(gap=>gap>=0&&gap<=25),`${width} ${route.hash}: disconnected section action`);
     assert.equal(layout.activeMode,'샘플');
     if(route.hash==='overview'){
+     const controls=await page.locator('.topbar-actions .topbar-control:visible').evaluateAll(nodes=>nodes.map(node=>{
+      const rect=node.getBoundingClientRect();
+      const style=getComputedStyle(node);
+      return {id:node.id,width:rect.width,height:rect.height,y:rect.y,border:style.borderColor,radius:style.borderRadius};
+     }));
+     const command=controls.find(c=>c.id==='command-open'),refresh=controls.find(c=>c.id==='refresh');
+     assert(command&&refresh,`${width}: header actions are visible`);
+     assert.equal(command.width,refresh.width,`${width}: header buttons share a width`);
+     assert.equal(command.height,44);
+     assert(controls.every(c=>c.height===command.height&&c.y===command.y&&c.border===command.border&&c.radius===command.radius),`${width}: header controls share a frame and baseline`);
+    }
+    if(route.hash==='overview'){
      assert.equal(await page.locator('.dashboard-priority .priority-item').count(),3);
      const websiteRows=page.locator('.site-grid .site-card');
      assert.ok(await websiteRows.count());
