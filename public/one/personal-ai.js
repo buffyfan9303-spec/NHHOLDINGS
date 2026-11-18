@@ -31,6 +31,7 @@
           <label>API 키<input name="apiKey" type="password" minlength="6" maxlength="2000" autocomplete="new-password" spellcheck="false"></label>
           <div class="personal-ai-actions">
             <button type="submit" class="btn" data-ai-config-save>설정 저장</button>
+            <button type="button" class="personal-action" data-ai-action="verify" hidden>저장된 모델 확인</button>
             <button type="button" class="personal-action" data-ai-action="remove">키 삭제</button>
           </div>
         </form>
@@ -95,6 +96,7 @@
     key.value='';
     key.required=!data?.configured;
     key.placeholder=data?.configured?'새 키로 바꿀 때만 입력':'';
+    view.dock.querySelector('[data-ai-action="verify"]').hidden=!data?.configured;
     view.dock.querySelector('[data-ai-action="remove"]').hidden=!data?.configured;
   }
 
@@ -327,7 +329,7 @@
           view.messages=[...view.messages.filter(message=>message.id!==data.message.id),data.message];
           view.compose.elements.prompt.value='';
           status(view,data.message.action?'작업 결과를 저장했습니다.':'답변을 받았습니다.');
-          if(data.message.action)window.dispatchEvent(new Event('personal-automation-changed'));
+          if(data.message.action)window.dispatchEvent(new CustomEvent('personal-automation-changed',{detail:{kind:data.message.action.kind}}));
           return true;
         }
         return false;
@@ -348,23 +350,28 @@
     }
   }
 
-  async function changeProvider(view,remove=false){
+  async function changeProvider(view,action='save'){
     if(!current(view)||view.loading||view.configuring||view.stream)return;
     const values=Object.fromEntries(new FormData(view.setup));
-    if(remove&&!confirm('이 제공자의 저장된 API 키를 삭제할까요?'))return;
-    const body=remove?{action:'remove',provider:values.provider}:{action:'save',provider:values.provider,model:values.model.trim(),
-      ...(values.apiKey?{apiKey:values.apiKey}:{})};
-    view.setup.elements.apiKey.value='';
+    if(action==='remove'&&!confirm('이 제공자의 저장된 API 키를 삭제할까요?'))return;
+    const body={action,provider:values.provider,...(action==='save'?{model:values.model.trim(),
+      ...(values.apiKey?{apiKey:values.apiKey}:{})}:{})};
+    if(action!=='verify')view.setup.elements.apiKey.value='';
     const check=new AbortController();
     view.configCheck=check;
     view.configuring=true;
     setControls(view);
+    if(action==='verify')status(view,'저장된 모델을 확인하고 있습니다.');
     try {
       const result=await json(view,'providers',body,check.signal);
       if(!current(view)||view.configCheck!==check)return;
-      updateProviders(view,result);
-      if(!remove)view.compose.elements.provider.value=values.provider;
-      status(view,remove?'저장된 키를 삭제했습니다.':'모델 설정을 저장했습니다.');
+      if(action==='verify'){
+        status(view,(result.model||'저장된 모델')+' 조회에 성공했습니다. 답변은 채팅에서 확인할 수 있습니다.');
+      }else{
+        updateProviders(view,result);
+        if(action==='save')view.compose.elements.provider.value=values.provider;
+        status(view,action==='remove'?'저장된 키를 삭제했습니다.':'모델 설정을 저장했습니다.');
+      }
     }catch(error){
       if(current(view)&&view.configCheck===check)status(view,error.message,true);
     }finally{
@@ -431,11 +438,11 @@
         else view.setup.elements.apiKey.value='';
       }
       else if(action==='stop')view.stream?.abort();
-      else if(action==='remove')void changeProvider(view,true);
+      else if(action==='remove'||action==='verify')void changeProvider(view,action);
       else if(action==='prev'||action==='next')pageCard(control,action==='prev'?-1:1);
       else if(action==='attach'){
-        const id=control.closest('[data-ai-card-id]')?.dataset.aiCardId;
-        if(id){hide(view);window.NuriPersonalAutomation?.selectSocialCard?.(id);}
+        const card=control.closest('[data-ai-card-id]');
+        if(card){hide(view);window.NuriPersonalAutomation?.selectSocialCard?.(card.dataset.aiCardId,Number(card.dataset.aiPage));}
       }
     });
     view.compose.addEventListener('submit',event=>void send(view,event));

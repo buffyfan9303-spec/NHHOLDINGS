@@ -138,6 +138,8 @@ function postView({id, data}: RecordOf<Post>) {
     cardId: cardId ?? null, cardSlide: cardSlide ?? null, cardTitle: cardTitle ?? null, altText: altText ?? null};
 }
 
+const callback = (provider: PersonalProvider) => marketOrigin() + '/api/personal/social/' + provider;
+
 export async function personalSocialState(actor: Actor) {
   const store = socialStore(actor.id);
   const configured = new Map<PersonalProvider, App | null>(await Promise.all(
@@ -148,7 +150,12 @@ export async function personalSocialState(actor: Actor) {
   ));
   const [accounts, posts] = await Promise.all([store.list<Account>(kinds.account), store.list<Post>(kinds.post)]);
   return {
-    providers: personalProviders.map(id => ({id, name: providers[id].name, configured: !!configured.get(id), appSource: configured.get(id)?.source ?? null})),
+    providers: personalProviders.map(id => {
+      const saved = configured.get(id);
+      const own = saved?.source === 'personal' ? saved.config : null;
+      return {id, name: providers[id].name, configured: !!saved, appSource: saved?.source ?? null,
+        redirectUri: callback(id), ...(own ? {clientId: own.clientId, ...(own.version ? {version: own.version} : {})} : {})};
+    }),
     accounts: accounts.map(({id, data}) => {
       const {provider, label, username, connectedAt, paused, appFingerprint} = data;
       return {id, provider, label, username, connectedAt, paused, ready: configured.get(provider)?.fingerprint === appFingerprint};
@@ -160,8 +167,6 @@ export async function personalSocialState(actor: Actor) {
 export function personalSocialCookie(provider: PersonalProvider) {
   return 'nh_personal_sns_' + provider;
 }
-
-const callback = (provider: PersonalProvider) => marketOrigin() + '/api/personal/social/' + provider;
 
 function session(req: NextRequest) {
   const token = req.cookies.get('nh_access')?.value ?? '';

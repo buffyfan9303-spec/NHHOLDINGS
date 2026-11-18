@@ -14,13 +14,24 @@
     return `${number.format(bytes)} B`;
   }
 
+  function configuredCallback(value) {
+    try {
+      const url = new URL(value);
+      const local = url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      if ((url.protocol === 'https:' || local) && !url.username && !url.password && !url.search && !url.hash &&
+          url.pathname === endpoint + '/oauth') return url;
+    } catch {}
+    return null;
+  }
+
   function render() {
     return `<section id="files" class="personal-file-panel" aria-labelledby="personal-files-title">
       <header class="personal-file-heading">
-        <div><h2 id="personal-files-title">개인 파일함</h2><p>내 Google Drive에 파일을 저장하고 다시 열 수 있어요.</p></div>
+        <div><h2 id="personal-files-title">Google Drive</h2><p>내 계정에 파일을 올리고 다시 열 수 있어요.</p></div>
         <div class="personal-file-actions">
           <button type="button" class="btn" data-files-refresh>새로고침</button>
           <button type="button" class="btn primary" data-files-connect hidden>Google Drive 연결</button>
+          <a class="personal-link" data-files-canonical hidden>운영 사이트에서 연결</a>
         </div>
       </header>
       <details class="personal-file-setup" data-files-setup hidden>
@@ -29,6 +40,8 @@
         <div class="personal-file-callback">
           <label for="personal-drive-callback">승인된 리디렉션 주소</label>
           <input type="text" id="personal-drive-callback" readonly>
+          <div class="personal-file-actions"><button type="button" class="btn" data-files-copy disabled>주소 복사</button></div>
+          <p role="status" data-files-copy-status hidden></p>
         </div>
         <form data-files-config>
           <div class="personal-file-credentials">
@@ -108,10 +121,13 @@
     const list = root.querySelector('[data-files-list]');
     const refresh = root.querySelector('[data-files-refresh]');
     const connect = root.querySelector('[data-files-connect]');
+    const canonical = root.querySelector('[data-files-canonical]');
     const setup = root.querySelector('[data-files-setup]');
     const setupForm = root.querySelector('[data-files-config]');
     const disconnect = root.querySelector('[data-files-disconnect]');
     const callback = root.querySelector('#personal-drive-callback');
+    const copy = root.querySelector('[data-files-copy]');
+    const copyStatus = root.querySelector('[data-files-copy-status]');
     const more = root.querySelector('[data-files-more]');
     const progress = root.querySelector('[data-files-progress]');
     const rows = new Map();
@@ -128,7 +144,7 @@
       pageUrl.searchParams.delete('drive');
       history.replaceState(history.state, '', pageUrl.href);
     }
-    const hasCurrentAccess = version => version === accessVersion && window.NuriPersonalAccount === accountId;
+    const hasCurrentAccess = version => version === accessVersion && window.NuriPersonalAccount === accountId && root.dataset.filesMounted === accountId;
 
     function message(value, error = false) {
       status.textContent = value;
@@ -147,13 +163,19 @@
       form.hidden = true;
       more.hidden = true;
       connect.hidden = true;
+      canonical.hidden = true;
+      canonical.removeAttribute('href');
       setup.hidden = true;
       setupForm.reset();
+      callback.value = '';
+      copyStatus.textContent = '';
+      copyStatus.hidden = true;
     }
 
     function controls() {
       refresh.disabled = loading || busy;
       connect.disabled = loading || busy;
+      copy.disabled = loading || busy || !callback.value;
       more.disabled = loading || busy;
       button.disabled = loading || busy || !input.files.length || input.files[0].size > maxBytes;
       input.disabled = busy;
@@ -221,10 +243,17 @@
         setup.hidden = false;
         if (firstLoad && !data.configured) setup.open = true;
         if (!append) setupForm.elements.clientId.value = data.clientId ?? '';
-        callback.value = data.redirectUri ?? '';
+        const redirect = configuredCallback(data.redirectUri);
+        const otherOrigin = redirect && redirect.origin !== location.origin;
+        callback.value = redirect?.href ?? '';
+        copyStatus.textContent = '';
+        copyStatus.hidden = true;
+        canonical.hidden = !data.configured || !otherOrigin;
+        if (canonical.hidden) canonical.removeAttribute('href');
+        else canonical.href = new URL('/personal#files', redirect).href;
         disconnect.hidden = !data.connected;
         form.hidden = !data.connected;
-        connect.hidden = !data.configured;
+        connect.hidden = !data.configured || !redirect || !!otherOrigin;
         connect.textContent = data.connected ? 'Drive 다시 연결' : 'Google Drive 연결';
         connect.classList.toggle('primary', !data.connected);
         more.hidden = !nextPage;
@@ -233,7 +262,9 @@
           return;
         }
         if (!data.connected) {
-          message(connectionResult === 'failed' ? 'Google Drive 연결을 완료하지 못했습니다. 다시 시도하세요.' : 'Google Drive를 연결해 주세요.', connectionResult === 'failed');
+          const hint = otherOrigin ? 'Google Drive 계정 동의는 운영 사이트에서 시작해 주세요.' :
+            redirect ? 'Google Drive를 연결해 주세요.' : '등록 주소를 불러오지 못했습니다. 목록을 다시 조회해 주세요.';
+          message(connectionResult === 'failed' ? 'Google Drive 연결을 완료하지 못했습니다. 다시 시도하세요.' : hint, connectionResult === 'failed');
           return;
         }
         root.querySelector('[data-files-limit]').textContent = `파일당 최대 ${formatSize(maxBytes)}`;
@@ -324,6 +355,7 @@
     });
     connect.addEventListener('click', async () => {
       const version = accessVersion;
+      if (!hasCurrentAccess(version) || connect.hidden || busy || loading) return;
       busy = true;
       controls();
       try {
@@ -340,6 +372,22 @@
         busy = false;
         controls();
       }
+    });
+    copy.addEventListener('click', async () => {
+      const version = accessVersion;
+      const value = callback.value;
+      if (!hasCurrentAccess(version) || !value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        if (!hasCurrentAccess(version) || callback.value !== value) return;
+        copyStatus.textContent = '등록 주소를 복사했습니다.';
+      } catch {
+        if (!hasCurrentAccess(version) || callback.value !== value) return;
+        callback.focus();
+        callback.select();
+        copyStatus.textContent = '선택된 등록 주소를 복사해 주세요.';
+      }
+      copyStatus.hidden = false;
     });
     async function updateConnection(action, data = {}) {
       const version = accessVersion;

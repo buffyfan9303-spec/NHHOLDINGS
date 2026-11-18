@@ -6,6 +6,7 @@ import {pool} from '../server/postgres.cjs';
 
 const scope = 'https://www.googleapis.com/auth/gmail.send';
 const callbackPath = '/api/personal/mail/oauth';
+const redirectUri = () => marketOrigin() + callbackPath;
 const cookieName = 'nh_personal_mail';
 const flowLifetime = 600_000;
 const filter = "workspace='live' AND kind='personal-mail-auth' AND id=$1";
@@ -44,7 +45,8 @@ export async function mailConnection(actor: string) {
   const record = await readRecord(actor);
   const app = appOf(record);
   const connectionId = app && record.connection?.appHash === appHash(app) ? record.connection.id : null;
-  return {configured: !!app, connected: !!connectionId, connectionId, paused: record.paused === true, clientId: app?.clientId ?? ''};
+  return {configured: !!app, connected: !!connectionId, connectionId, paused: record.paused === true,
+    clientId: record.app ? app?.clientId ?? '' : '', redirectUri: redirectUri()};
 }
 
 export async function saveMailApp(actor: string, input: {clientId?: unknown; clientSecret?: unknown}) {
@@ -99,7 +101,7 @@ export async function startMailAuth(req: NextRequest, actor: string) {
 
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.search = new URLSearchParams({
-    client_id: app.clientId, redirect_uri: marketOrigin() + callbackPath, response_type: 'code', scope, state,
+    client_id: app.clientId, redirect_uri: redirectUri(), response_type: 'code', scope, state,
     access_type: 'offline', prompt: 'consent select_account', include_granted_scopes: 'false',
     code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256',
   }).toString();
@@ -146,7 +148,7 @@ async function finishMailAuth(req: NextRequest, actor: string) {
   const claimed = await pool().query("UPDATE nh_documents SET data=jsonb_set(data,'{flow,used}','true'::jsonb),updated=clock_timestamp() WHERE " +
     flowFilter + " AND data->'flow'->>'used' IS NULL RETURNING id", binds);
   if (!claimed.rowCount) throw new Error('Gmail OAuth attempt already used');
-  const token = await exchange(app, {grant_type: 'authorization_code', code, code_verifier: browser.verifier, redirect_uri: marketOrigin() + callbackPath});
+  const token = await exchange(app, {grant_type: 'authorization_code', code, code_verifier: browser.verifier, redirect_uri: redirectUri()});
   const connection = {id: randomUUID(), appHash: fingerprint, secret: seal(JSON.stringify(token))};
   const saved = await pool().query("UPDATE nh_documents SET data=(data - 'flow') || $6::jsonb,updated=clock_timestamp() WHERE " +
     flowFilter + " AND data->'flow'->>'used'='true' RETURNING id", [...binds, JSON.stringify({connection})]);

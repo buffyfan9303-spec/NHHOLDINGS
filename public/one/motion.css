@@ -377,20 +377,35 @@ td,.publishing-board td{padding:16px;font-size:13px;line-height:1.5}
  .main select:not([multiple],[size]){appearance:auto;background-image:none;padding-inline-end:12px}
 }
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #a6e0c9;outline-offset:3px}
-.post-inspector{transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out)}
 .post-inspector::backdrop{backdrop-filter:none;background:#080c10c9}
-@starting-style{.post-inspector[open]{opacity:0;transform:translateY(8px) scale(.985)}}
 @media(prefers-reduced-motion:no-preference){
+ .post-inspector[open],.youtube-upload-dialog[open]{animation:one-detail-enter 220ms var(--ease-out) both}
  .disclosure[open]>.panel-inner,
  .approval-preview[open]>.approval-caption,
- .approval-timeline[open]>[data-timeline-body]{animation:one-expand 190ms var(--ease-out) both}
+ .approval-timeline[open]>[data-timeline-body]{animation:one-expand 160ms var(--ease-out) both}
 }
-@keyframes one-expand{from{opacity:.45;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@supports(transition-behavior:allow-discrete){
+ @media(prefers-reduced-motion:no-preference){
+  .post-inspector,.youtube-upload-dialog{
+   opacity:0;transform:translateY(8px) scale(.992);pointer-events:none;
+   transition:opacity 180ms var(--ease-out),transform 200ms var(--ease-out),display 200ms allow-discrete,overlay 200ms allow-discrete;
+  }
+  .post-inspector[open],.youtube-upload-dialog[open]{opacity:1;transform:none;pointer-events:auto;animation:none}
+  @starting-style{.post-inspector[open],.youtube-upload-dialog[open]{opacity:0;transform:translateY(8px) scale(.992)}}
+  .post-inspector::backdrop,.youtube-upload-dialog::backdrop{
+   opacity:0;pointer-events:none;transition:opacity 180ms ease,display 200ms allow-discrete,overlay 200ms allow-discrete;
+  }
+  .post-inspector[open]::backdrop,.youtube-upload-dialog[open]::backdrop{opacity:1;pointer-events:auto}
+  @starting-style{.post-inspector[open]::backdrop,.youtube-upload-dialog[open]::backdrop{opacity:0}}
+ }
+}
+@keyframes one-detail-enter{from{opacity:.82;transform:translateY(8px) scale(.992)}to{opacity:1;transform:none}}
+@keyframes one-expand{from{opacity:.86;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media(max-width:900px) and (prefers-reduced-motion:no-preference){
- .sidebar.open{animation:one-drawer-enter 260ms var(--ease-out) both}
+ .sidebar.open{animation:one-drawer-enter 225ms var(--ease-out) both}
  .sidebar-scrim:not([hidden]){backdrop-filter:none;animation:one-scrim-enter 200ms ease-out both}
 }
-@keyframes one-drawer-enter{from{opacity:.65;transform:translateX(-24px)}to{opacity:1;transform:none}}
+@keyframes one-drawer-enter{from{opacity:.82;transform:translateX(-18px)}to{opacity:1;transform:none}}
 @keyframes one-scrim-enter{from{opacity:0}to{opacity:1}}
 @media(hover:hover) and (pointer:fine){
  .site-card:hover,.channel-tile:hover{transform:translateY(-2px);background:#1f292e;border-color:#527360;box-shadow:none}
@@ -403,16 +418,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 /* Root calls startViewTransition only for deliberate navigation. */
 ::view-transition-group(root){animation:none}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
-::view-transition-group(nuri-content){animation-duration:220ms;animation-timing-function:var(--ease-out)}
-::view-transition-old(nuri-content){animation:one-leave 110ms ease-in both;mix-blend-mode:normal}
-::view-transition-new(nuri-content){animation:one-enter 220ms var(--ease-out) both;mix-blend-mode:normal}
+::view-transition-group(nuri-content){animation-duration:200ms;animation-timing-function:var(--ease-out)}
+::view-transition-old(nuri-content){animation:one-leave 120ms var(--ease-out) both;mix-blend-mode:normal;pointer-events:none}
+::view-transition-new(nuri-content){animation:one-enter 200ms var(--ease-out) both;mix-blend-mode:normal}
 @keyframes one-leave{to{opacity:0;transform:translateY(-3px)}}
-@keyframes one-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes one-enter{from{opacity:.58;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
  .site-card:hover,.channel-tile:hover,.setup-shortcuts a:hover,.btn:active{transform:none!important}
  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
- @starting-style{.post-inspector[open]{opacity:1;transform:none}}
 }
 @media print{.panel,.kpi,.publishing-board{box-shadow:none;background:#fff;color:#111;border-color:#bbb}th,.publishing-board th{background:#eee;color:#111}}
 .manual-channel-strip{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}

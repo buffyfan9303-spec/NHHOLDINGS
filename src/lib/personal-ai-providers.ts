@@ -162,6 +162,46 @@ function statusError(status: number) {
   return upstreamFailure();
 }
 
+export async function verifyPersonalAIModel(actor: string, provider: PersonalAIProvider, caller: AbortSignal) {
+  const saved = await settings(actor, provider);
+  const {model, apiKey} = credential(saved);
+  const modelPath = encodeURIComponent(model);
+  const sources = {
+    openai: {url:'https://api.openai.com/v1/models/' + modelPath, headers:{Authorization:'Bearer ' + apiKey}},
+    anthropic: {url:'https://api.anthropic.com/v1/models/' + modelPath, headers:{'x-api-key':apiKey, 'anthropic-version':'2023-06-01'}},
+    gemini: {url:'https://generativelanguage.googleapis.com/v1beta/models/' + modelPath, headers:{'x-goog-api-key':apiKey}},
+  };
+  const timeout = AbortSignal.timeout(10_000);
+  const signal = AbortSignal.any([caller, timeout]);
+  let response: Response;
+  try {
+    const {url, headers} = sources[provider];
+    response = await fetch(url,{method:'GET',headers:new Headers(headers),signal,cache:'no-store',redirect:'error'});
+  } catch {
+    if (timeout.aborted) throw new MarketError('모델 확인 시간이 지났습니다. 다시 시도해 주세요.', 504);
+    throw upstreamFailure();
+  }
+  if (!response.ok) {
+    void response.body?.cancel().catch(() => undefined);
+    throw statusError(response.status);
+  }
+  const metadata = await boundedJson(response);
+  if (provider === 'gemini') {
+    if (typeof metadata.name !== 'string' || !metadata.name.startsWith('models/')) throw upstreamFailure();
+    const methods = metadata.supportedGenerationMethods;
+    if (Array.isArray(methods) && !methods.includes('generateContent')) {
+      throw new MarketError('채팅 응답을 생성할 수 있는 Gemini 모델을 선택해 주세요.', 422);
+    }
+  } else if (metadata.object !== 'model' && metadata.type !== 'model' || typeof metadata.id !== 'string') {
+    throw upstreamFailure();
+  }
+  const current = await settings(actor, provider);
+  if (!current || current.model !== model || current.version !== saved?.version || current.secret !== saved.secret) {
+    throw new MarketError('AI 연결이 변경됐습니다. 모델을 다시 확인해 주세요.', 409);
+  }
+  return {verified:true, model};
+}
+
 function abortError(signal: AbortSignal, caller?: AbortSignal) {
   if (caller?.aborted) return new DOMException('AI 응답 요청이 취소되었습니다.', 'AbortError');
   if (signal.aborted) return new MarketError('AI 응답 대기 시간이 지났습니다. 다시 시도해 주세요.', 504);

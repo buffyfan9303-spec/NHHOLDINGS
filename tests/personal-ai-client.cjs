@@ -32,6 +32,10 @@ async function run(page,width){
    return route.fulfill({json:{messages:owner===a?history:[]}});
   }
   if(endpoint==='providers'){
+   if(body.action==='verify'){
+    assert.deepEqual(body,{action:'verify',provider:'anthropic'});
+    return route.fulfill({json:{verified:true,model:'mock-claude'}});
+   }
    assert.equal(body.apiKey,'synthetic-test-only');
    providers=providers.map(p=>p.id===body.provider?{...p,configured:true,model:body.model}:p);
    return route.fulfill({json:{providers}});
@@ -51,9 +55,9 @@ async function run(page,width){
  for(const content of css)await page.addStyleTag({content});
  await page.evaluate(owner=>{
   window.NuriPersonalAccount=owner;
-  window.aiWrites=0;
-  window.NuriPersonalAutomation={selectSocialCard(id){window.aiSelectedCard=id;location.hash='social';}};
-  window.addEventListener('personal-automation-changed',()=>window.aiWrites++);
+  window.aiWrites=[];
+  window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';}};
+  window.addEventListener('personal-automation-changed',event=>window.aiWrites.push(event.detail?.kind));
   const network=window.fetch.bind(window);
   window.fetch=async (input,init)=>{
    const response=await network(input,init);
@@ -93,13 +97,19 @@ async function run(page,width){
  await button('제공자 설정').click();
  const setup=dock.locator('[data-ai-settings]');
  await setup.locator('[name="provider"]').selectOption('anthropic');
+ assert.equal(await button('저장된 모델 확인').isVisible(),false);
  await setup.getByLabel('모델 ID').fill('mock-claude');
  await setup.getByLabel('API 키').fill('synthetic-test-only');
  assert.equal(await setup.getByLabel('API 키').getAttribute('type'),'password');
  await button('설정 저장').click();
  await dock.getByText('모델 설정을 저장했습니다.',{exact:true}).waitFor();
  assert.equal(await setup.getByLabel('API 키').inputValue(),'');
+ await setup.getByLabel('API 키').fill('unsaved-fixture');
+ await button('저장된 모델 확인').click();
+ await dock.getByText('mock-claude 조회에 성공했습니다. 답변은 채팅에서 확인할 수 있습니다.',{exact:true}).waitFor();
+ assert.equal(await setup.getByLabel('API 키').inputValue(),'unsaved-fixture');
  await button('제공자 설정').click();
+ assert.equal(await setup.getByLabel('API 키').inputValue(),'');
  assert.equal(await field('provider').inputValue(),'anthropic');
  await field('mode').selectOption('task');
  await field('prompt').fill('분할 응답');
@@ -133,9 +143,9 @@ async function run(page,width){
  await card.getByRole('button',{name:'다음 장',exact:true}).click();
  assert.equal(await card.getByRole('link',{name:'PNG 저장'}).getAttribute('href'),'/api/personal/ai/cards/card-a?slide=1&download=1');
  assert.equal(await card.getByRole('button',{name:'다음 장',exact:true}).isDisabled(),true);
- assert.equal(await page.evaluate(()=>window.aiWrites),3);
+ assert.deepEqual(await page.evaluate(()=>window.aiWrites),['task','social','cards']);
  await card.getByRole('button',{name:'카드뉴스를 SNS에 첨부',exact:true}).click();
- assert.equal(await page.evaluate(()=>window.aiSelectedCard),'card-a');
+ assert.deepEqual(await page.evaluate(()=>window.aiSelectedCard),{id:'card-a',slide:1});
  assert.equal(new URL(page.url()).hash,'#social');
  await toggle.click();
 
