@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import {isRehearsalDatabase,type Database,type Queryable} from './db';
+import type {Database,Queryable} from './db';
 import type {Product,Settings,CatalogResponse,Order,OrderItem,Shipment,Claim,AdminResponse,Customer,PaymentMethod,Coupon,OrderPage,Inquiry,InquiryPage} from './types';
 import {paymentLabels,fulfillmentLabels} from './types';
 import {MarketError,hash,equal,orderToken,textValue,integer} from './security';
@@ -16,9 +16,7 @@ export async function products(tx:Queryable):Promise<Product[]>{
 }
 function saleReady(p:Product){return !p.sample&&p.safety.audience!=='unknown'&&p.safety.certification!=='pending'&&(p.safety.audience!=='child'||(p.safety.certification==='verified'&&!!p.safety.certificateNumber&&!!p.safety.certificateUrl))&&p.safety.license!=='pending'&&!!p.safety.licenseReference;}
 export async function catalog(tx:Queryable):Promise<CatalogResponse>{
- const all=await products(tx),s=await settings(tx);
- if(isRehearsalDatabase(tx))return {products:all,settings:s,mode:'preview',readiness:[],pgClientKey:null};
- const m=mode();
+ const all=await products(tx),s=await settings(tx),m=mode();
  const key=process.env.TOSS_CLIENT_KEY??'',sk=process.env.TOSS_SECRET_KEY??'';
  const pg=key.startsWith(m==='live'?'live_':'test_')&&sk.startsWith(m==='live'?'live_':'test_');
  const seller=Object.values(s.seller).every(x=>!!x.trim());
