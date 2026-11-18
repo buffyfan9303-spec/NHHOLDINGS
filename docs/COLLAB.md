@@ -1,5 +1,9 @@
 # 누리원 · Codex / Claude 협업 기준
 
+- 게시 승인함과 PWA · 2026-11-18 KST · Codex가 main f84573c에서 승인함 화면, Instagram 예약·캐러셀·감사, 명령 검색·모바일 이동, 오프라인 안내 구현과 검증 담당.
+- npm run typecheck, npm test, npm run build, git diff --check 통과. 로컬 PostgreSQL과 인증 응답 모의 환경에서 역할 구분, 320~1440px 화면, 승인·일시정지·재승인·취소, 오프라인 복귀, MARKET 상태값을 확인. Instagram API 모의 응답으로 3건 확인.
+- 판매자 정보: 필드 대조 진행. 고객센터 이메일·통신판매업 신고번호·구매안전서비스 URL 입력 미완료. 정책·배송·상품·PG 운영 확인과 Passkey/MFA·푸시·실계정 게시 검증 별도.
+
 - 계정 구현·설정 검증 · 2026-10-09 21:55 KST · 사용자가 zero를 수정·발행 운영자로 지정하고 서버 최소 길이를 만족하는 새 비밀번호를 명시적으로 선택했다. 지원 Supabase Admin API로 기존 확인된 운영자 비밀번호 변경·zero@accounts.nhholdings.xyz 내부 계정 생성/확인을 완료했다. 기존 nh_documents의 login-id/zero에 실제 UUID·이메일만 저장하고 운영 SQL 재조회로 대조했으며 로컬/Vercel의 SECOND_OPERATOR_EMAIL/SECOND_OPERATOR_USER_ID 신뢰 쌍을 설정했다. 비밀번호·토큰·비밀키는 파일/로그/커밋에 넣지 않았다. zero의 내부 이메일은 관리자 생성 식별자이며 이메일 수신함 연결을 주장하지 않는다. 스키마/마이그레이션 변경 없음.
 - root 소유 src/app/api/auth/route.ts·src/components/login.tsx·src/lib/auth.ts·tests/access-security.test.ts·.env.example은 누리 ONE 로그인에서만 등록 아이디를 허용하고 확인된 Supabase UUID/이메일과 매핑을 함께 대조한다. 두 번째 운영자는 서버 신뢰 ID/이메일이 모두 일치할 때 기존 운영 권한을 가지며 가입·복구·마켓의 이메일 입력 규칙은 유지된다. 별칭 실패는 일반 로그인 오류이며 바인딩 불일치 시 시험 세션을 종료하고 쿠키를 발급하지 않는다. account_auth_inventory(gpt-6-luna low, read-only)는 권한/호출부와 최종 변경을 좁게 독립 검토해 추가 우회 결함 없음으로 보고했고 root가 실제 diff와 실패 경계 테스트를 확인했다.
 - npm run typecheck·npm test 전체 통과(인증/승인/회수·별칭/일치 검사·보조 운영자 쌍·OAuth·SNS·상거래·성장·네이버 포함), git diff --check 통과. 형제 artifacts/operations/2026-10-09/nuri-account-provision.json에 자격증명 없는 실제 Auth/alias/env 저장 증거를 보존했다. 다음은 검토 PR→main 통합→Vercel READY/정확 SHA→nhholdings.xyz에서 두 계정 로그인·운영 권한·로그아웃 확인이다. 현재 기록 시점에는 새 코드 배포·zero 아이디 실도메인 성공을 아직 주장하지 않는다. 완료 검토자 종료·새 개발서버/Chrome 탭 없음이며 기존 멈춘 스킨 탭/사용자 원래 탭은 보존한다.
