@@ -111,10 +111,11 @@
    const videoId=editor.elements.youtubeVideoId;
    if(editor.isConnected){
     videoId.value=result.videoId;
+    editor.elements.youtubeCheckAccount.value=account;
     videoId.dispatchEvent(new Event('input',{bubbles:true}));
     videoId.dispatchEvent(new Event('change',{bubbles:true}));
    }
-   status.textContent='비공개 업로드 완료 · YouTube에서 영상 처리가 끝난 뒤 초안을 저장하고 승인하세요.';
+   status.textContent='비공개 업로드 완료 · 초안을 저장하면 승인함에서 영상 처리 상태를 확인할 수 있습니다.';
    const url=new URL(result.studioUrl);
    if(url.origin==='https://studio.youtube.com'){
     const link=document.createElement('a');

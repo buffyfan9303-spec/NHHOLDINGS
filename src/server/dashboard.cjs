@@ -5,6 +5,8 @@ const {context}=require('./context.cjs');
 const {providers,ensureFresh,identity:socialIdentity}=require('./social.cjs');
 const adsense=require('./adsense.cjs');
 const youtube=require('./youtube.cjs');
+const sourceTrend=require('./source-trend.cjs');
+const followup=require('./social-followup.cjs');
 const naver=require('./naver.cjs');
 const operatorPush=require('./operator-push.cjs');
 const {CHANNELS,CHANNEL_LIMITS,validateSEO,httpsURL,renderMarkdown,preview,repurpose,weight}=require('./content-tools.cjs');
@@ -197,14 +199,24 @@ async function controller(options){
   refreshPromise=Promise.all(SOURCES.filter(s=>s.ref||s.sitemap||s.localAPI).map(async s=>{
    try{let data;if(s.sitemap){const r=await fetch(s.sitemap,{signal:AbortSignal.timeout(20000),redirect:'error'});if(!r.ok)fail('사이트맵 조회 실패',502);const posts=parseSitemap(await r.text());data={observedAt:now(),posts:posts.length,publishedPosts:posts,monthly:[]};}
     else data=await options.collect(s);
-    await put('source',s.id,{data,error:null,checkedAt:now()});}
+    const history=['mind','holdem'].includes(s.id)?sourceTrend.update(get('source',s.id)?.history,data):undefined;
+    await put('source',s.id,{data,error:null,checkedAt:now(),...(history?{history}:{})});}
    catch(e){if(e.status===409)return;const old=get('source',s.id)||{};await put('source',s.id,{...old,error:'조회 실패. 기존 인증/네트워크를 확인하고 다시 시도하세요.',checkedAt:now()}).catch(e=>{if(e.status!==409)throw e;});}
   })).finally(()=>{refreshPromise=null;});return refreshPromise;
  }
  function view(){return {
-  services:allServices().map(s=>({...s,snapshot:get('source',s.id),installed:!!get('source',s.id)?.data,stale:!get('source',s.id)?.data||!!get('source',s.id)?.error||(!options.demo&&Date.now()-Date.parse(get('source',s.id).data.observedAt)>15*60000)})),
+  services:allServices().map(s=>{
+   const source=get('source',s.id),{history,...snapshot}=source||{};
+   return {...s,snapshot:source?snapshot:null,installed:!!source?.data,stale:!source?.data||!!source.error||(!options.demo&&Date.now()-Date.parse(source.data.observedAt)>15*60000),
+    ...(['mind','holdem'].includes(s.id)?{userTrend:sourceTrend.summarize(history)}:{})};
+  }),
+  snsFollowups:list('sns-followup').flatMap(({id,preparation,publication,metrics})=>{
+   const p=get('content',id);if(!followup.sns(p)||followup.excluded(p))return [];
+   return [{id,preparation:p.youtubeCheck?.key===preparation?.key?preparation:null,publication:publication?.reference===p.externalId?publication:null,
+    metrics:followup.windows(p,metrics?.reference===p.externalId?metrics:null).map(({hours,due,state,previous})=>({hours,due,state,sample:previous||null}))}];
+  }),
   businesses:businesses(),partners:list('partner'),money:ctx.money,tasks:list('task'),contents:list('content').map(({approval,...post})=>approval?{...post,approval:publicationApproved({...post,approval},get('channel',post.account))?{at:approval.at}:null}:post),contentRevisions:list('content-revision').slice(0,100),growthCampaigns:list('growth-campaign'),growthResults:list('growth-result'),postObservations:list('post-observation'),postPublications:list('post-publication'),postObservationRevisions:list('post-observation-revision'),postForecasts:list('post-forecast'),growthEvaluations:growthEvaluations(),growthCheckpoints:growthCheckpoints(),contentReviews:list('content-review'),reviewComparisons:reviewComparisons(),plans:list('plan'),prompts:list('prompt'),generations:list('generation'),coverage:list('coverage'),
-  accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2'};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics').map(r=>options.demo||r.gaHostName==='doto1.tistory.com'?r:{...r,ga:null})},audit:ctx.audits,
+  accounts:list('channel').map(({secret,...a})=>{const c=secret?decrypt(secret):{};return {...a,url:c.url||'',loginUsername:c.username||'',version:c.version||'',authType:c.authType||'manual',expiresAt:c.expiresAt||null,autoRefresh:c.authType==='oauth2',analytics:c.analytics===true};}),socialApps:Object.fromEntries(Object.keys(providers).map(id=>{const a=get('social-app',id),c=a?.secret?decrypt(a.secret):{};return [id,{configured:!!a?.secret,clientId:c.clientId||'',version:c.version||'v25.0',updatedAt:a?.updatedAt||null}];})),aiConfig:(()=>{const {secret,...c}=get('ai','config')||{};return {...c,configured:!!secret};})(),google:{...(get('google','config')?{propertyId:get('google','config').propertyId,siteUrl:get('google','config').siteUrl,configured:true}:{configured:false,siteUrl:'https://doto1.tistory.com/'}),reports:list('analytics').map(r=>options.demo||r.gaHostName==='doto1.tistory.com'?r:{...r,ga:null})},audit:ctx.audits,
   ai:{installed:options.demo||!!get('ai','config')?.enabled,provider:options.demo?'샘플 생성':get('ai','config')?.provider||'AI API 연결 필요',busy:aiBusy},
   publishingSettings:get('publishing-settings','tistory')||defaultPublishingSettings(),adsense:adsense.view(ctx),
   naver:(()=>{const c=get('naver','config'),r=get('naver-research','latest');return {configured:!!c?.secret,appName:c?.appName||'nurione',version:c?.version??1,updatedAt:c?.updatedAt||null,report:r?.mode?r:null};})(),
@@ -322,7 +334,7 @@ async function controller(options){
    if(!externalId||!['blog','youtube'].includes(post.channel)&&(typeof externalId!=='string'||!/^\d+$/.test(externalId)))fail('게시 결과 ID를 확인하지 못했습니다. 채널에서 직접 확인하세요.',502);
    if(base){const info=await remote(base+'/'+externalId+'?fields=permalink',{headers}).catch(()=>({}));link=socialPermalink(post.channel,info.permalink)?.href;}
    await transaction(async()=>{
-    await writeContent(id,{...get('content',id),status:'published',attempt:attempt('published'),externalId,link:link||'',publishedAt:now(),error:null});
+    await writeContent(id,{...get('content',id),status:'published',attempt:attempt('published'),externalId,publishedChannelId:a.userId,link:link||'',publishedAt:now(),error:null});
     await audit(email,'content.published',id);
    });
   }catch(e){
@@ -353,6 +365,141 @@ async function controller(options){
    }
    return {due:due.length,pending:due.filter(p=>get('content',p.id)?.status==='scheduled').length,review:due.filter(p=>['review','draft'].includes(get('content',p.id)?.status)).length};
   }finally{workerBusy=false;}
+ }
+
+ function youtubeTracking(p,videoId,reference){
+  const account=get('channel',reference);
+  if(typeof p.title!=='string'||typeof p.body!=='string'||!accountFits(account,{...p,channel:'youtube'})||!account.verifiedAt||!youtube.channelPattern.test(account.userId||'')){
+   fail('확인된 YouTube 채널을 선택하세요.',409);
+  }
+  return {account:reference,channelId:account.userId,key:hash(JSON.stringify([reference,account.userId,videoId,p.title.trim(),p.body.trim()]))};
+ }
+ async function reconcileYouTube(id,p,email,{automatic=false}={}){
+  const record=get('channel',p.account);
+  if(!publicationApproved({...p,id},record)||!record.verifiedAt||!accountFits(record,p))fail('승인했던 YouTube 채널을 확인하세요.',409);
+  const account=await ensureFresh(ctx,{...record,id:p.account}),config=decrypt(account.secret);
+  const video=await youtube.readVideo(p.youtubeVideoId,config.token);
+  if(video?.snippet?.channelId!==account.userId)fail('연결 채널의 영상이 아닙니다.',409);
+  if(video.status?.privacyStatus!=='public')fail('아직 공개되지 않았습니다. Studio 상태를 확인한 뒤 다시 승인하세요.',409);
+  const publishedAt=Date.parse(video.snippet.publishedAt);
+  const attemptAt=Date.parse(p.startedAt||p.attempt?.at);
+  if(!Number.isFinite(publishedAt)||publishedAt>Date.now()||automatic&&(!Number.isFinite(attemptAt)||publishedAt<attemptAt-120000)){
+   fail('YouTube의 공개 시각을 아직 확인할 수 없습니다.',409);
+  }
+  await transaction(async()=>{
+   await ctx.lockRow('channel',p.account);
+   await ctx.lockRow('content',id);
+   await ctx.reload();
+   if(!isDeepStrictEqual(get('content',id),p)||get('channel',p.account)?.secret!==account.secret)fail('계정 또는 예약이 변경됐습니다.',409);
+   await writeContent(id,{...p,status:'published',attempt:{code:'published',at:now()},externalId:video.id,publishedChannelId:account.userId,link:youtube.watchUrl(video.id),publishedAt:new Date(publishedAt).toISOString(),checkedAt:now(),checkStatus:'visible',uncertain:false,error:null});
+   await audit(email,'content.youtube_reconciled',id);
+  });
+ }
+ async function saveFollowup(id,post,key,value,action,previous){
+  await transaction(async()=>{
+   await ctx.lockRow('content',id);
+   await ctx.reload();
+   if(!isDeepStrictEqual(get('content',id),post))return;
+   const current=get('sns-followup',id)||{};
+   if(isDeepStrictEqual(current[key],value)||key!=='alert'&&!isDeepStrictEqual(current[key],previous))return;
+   await put('sns-followup',id,{...current,[key]:value});
+   if(key==='publication'&&post.status==='published'&&value.state==='visible'){
+    await writeContent(id,{...post,checkedAt:value.checkedAt,checkStatus:'visible',link:value.link||post.link});
+   }
+   if(action)await audit('예약 실행',action,id);
+  });
+ }
+ async function runFollowup(){
+  if(options.demo)return {checked:0,alerts:0};
+  const stamp=Date.now(),posts=list('content').filter(p=>followup.sns(p)&&!followup.excluded(p));
+  const rows=posts.map(({id,...post})=>({id,post,record:get('sns-followup',id)||{}}));
+  const candidates={preparation:[],publication:[],metrics:[]};
+  for(const row of rows){
+   const {id,post:p,record:r}=row;
+   const prep=p.youtubeCheck;
+   if(prep&&p.youtubeVideoId&&p.channel==='youtube'&&['draft','paused','approved'].includes(p.status)&&
+      (prep.key!==r.preparation?.key||['processing','unavailable'].includes(r.preparation?.state)&&(!r.preparation?.retryAt||r.preparation.retryAt<=stamp))){
+    candidates.preparation.push(row);
+   }
+   const published=p.status==='published'&&!p.manual&&p.externalId;
+   const uncertain=p.status==='review'&&p.uncertain&&p.channel==='youtube'&&stamp-Date.parse(p.startedAt||p.attempt?.at)<=2*86400000;
+   if((published&&stamp-Date.parse(p.publishedAt)<=2*86400000||uncertain)&&(r.publication?.reference!==(p.externalId||p.youtubeVideoId)||r.publication.state!=='visible'&&r.publication.retryAt<=stamp)){
+    candidates.publication.push(row);
+   }
+   const due=followup.windows(p,r.metrics?.reference===p.externalId?r.metrics:null,stamp).find(w=>
+    (w.state==='due'&&!w.previous?.observedAt||p.channel==='youtube'&&w.previous?.reason==='watch-pending'&&stamp<=w.until+72*3600000)&&
+    (!w.previous?.retryAt||w.previous.retryAt<=stamp));
+   if(published&&due)candidates.metrics.push({...row,due});
+  }
+  let checked=0;
+  for(const [key,jobs] of Object.entries(candidates)){
+   // One job per lane gives new uploads, read-backs and time-sensitive samples independent capacity.
+   jobs.sort((a,b)=>(a.record[key]?.checkedAt||'').localeCompare(b.record[key]?.checkedAt||'')||((a.due?.until??0)-(b.due?.until??0)));
+   const job=jobs[0];
+   if(!job)continue;
+   const {id,post,record:r,due}=job;
+   const p=get('content',id);
+   if(!p||followup.excluded(p))continue;
+   if(key==='metrics'&&(p.status!=='published'||p.externalId!==post.externalId||p.publishedAt!==post.publishedAt))continue;
+   if(key!=='metrics'&&!isDeepStrictEqual(p,post))continue;
+   const reference=key==='preparation'?p.youtubeCheck.account:p.account;
+   const initial=get('channel',reference);
+   const base={checkedAt:now(),retryAt:stamp+15*60000,reference:p.externalId||p.youtubeVideoId};
+   let value;
+   try{
+    if(key==='publication'&&p.status==='review'){
+     await reconcileYouTube(id,p,'예약 실행',{automatic:true});
+     checked++;
+     continue;
+    }
+    const approved=publicationApproved({...p,id},initial);
+    const expected=key==='preparation'?p.youtubeCheck.channelId:p.publishedChannelId;
+    if(!initial?.verifiedAt||!accountFits(initial,p)||expected&&expected!==initial.userId||
+      key!=='preparation'&&!expected&&!approved)fail('연결 계정을 확인하세요.',409);
+    const account=await ensureFresh(ctx,{...initial,id:reference}),config=decrypt(account.secret);
+    if(key==='preparation'){
+     const result=await youtube.preparation(p,account,config);
+     value={...base,key:p.youtubeCheck.key,state:result.state,message:result.message||null};
+    }else if(key==='publication'){
+     const result=await inspectPublication(p,config);
+     const link=p.channel==='youtube'?result.link:socialPermalink(p.channel,result.link)?.href;
+     value={...base,state:result.checkStatus,...(link?{link}:{})};
+    }else{
+     const result=await followup.metrics(p,account,config);
+     if(due.previous?.observedAt){
+      const watch=result?.averageWatchSeconds;
+      value=watch!=null?{...due.previous,watchDay:result.watchDay,averageWatchSeconds:watch,reason:null,retryAt:null}:
+       {...due.previous,retryAt:stamp+6*3600000};
+     }else if(result&&(result.views!=null||result.reach!=null||result.averageWatchSeconds!=null)){
+      value={...result,observedAt:now(),retryAt:result.reason==='watch-pending'?stamp+6*3600000:null};
+     }else value={reason:result?.reason||'unavailable',retryAt:stamp+(result?.reason==='permission'?6*3600000:30*60000)};
+    }
+   }catch{
+    if(key==='preparation')value={...base,key:p.youtubeCheck.key,state:'unavailable',message:'채널 응답을 확인할 수 없습니다.'};
+    if(key==='publication')value={...base,state:'unavailable'};
+    if(key==='metrics')value={reason:'unavailable',retryAt:stamp+30*60000};
+   }
+   if(key==='metrics'){
+    const samples=r.metrics?.reference===p.externalId?r.metrics.samples:{};
+    value={...base,samples:{...samples,[due.hours]:value}};
+   }
+   await saveFollowup(id,p,key,value,null,r[key]).catch(e=>{if(e.status!==409)throw e;});
+   checked++;
+  }
+  // Only open issues are notified, once per uninterrupted occurrence.
+  let alerts=0;
+  for(const {id} of rows){
+   const p=get('content',id);
+   if(!p)continue;
+   const account=get('channel',p.account),reason=followup.issue(p,account,stamp);
+   const key=reason?JSON.stringify([reason,p.scheduledAt||null,p.account||null]):null;
+   const prior=get('sns-followup',id)?.alert;
+   if((prior?.key||null)===key)continue;
+   await saveFollowup(id,p,'alert',{key},key?'sns.attention.'+reason:null).catch(e=>{if(e.status!==409)throw e;});
+   if(key)alerts++;
+  }
+  if(operatorPush.config()){await ctx.reload();await operatorPush.dispatch(ctx);}
+  return {checked,alerts};
  }
 
  async function handle(req,route,v,email){const reply=(value,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store'}});try{
@@ -569,7 +716,9 @@ async function controller(options){
      extras.youtubeMadeForKids=optionalChoice(v.youtubeMadeForKids??prior.youtubeMadeForKids,'아동용');
      extras.youtubeSynthetic=optionalChoice(v.youtubeSynthetic??prior.youtubeSynthetic,'변경·합성 콘텐츠');
     }
-    const uncertain=!!old?.uncertain||old?.status==='review'&&!['preflight','connection'].includes(old.attempt?.code);await saveContent(id,old,{...old,service:v.service,business:v.business||'platform',channel:v.channel,...(v.channel==='blog'?{blogTarget:['tistory','wordpress'].includes(v.blogTarget)?v.blogTarget:old?.blogTarget||(v.service==='tistory'?'tistory':'wordpress')}:{}),campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),growthCampaign:growthCampaign(v.growthCampaign??old?.growthCampaign,v.service),title:text(v.title,'제목',300),body:text(v.body,'본문',Object.hasOwn(MANUAL_HOSTS,v.channel)?CHANNEL_LIMITS[v.channel]:20000),seo:validateSEO(v.seo??old?.seo),media,slides,...extras,status:uncertain?'review':'draft',uncertain,attempt:null,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,account:null,container:null,scheduledAt:null},email);
+    const reference=extras.youtubeVideoId&&(v.youtubeCheckAccount??(extras.youtubeVideoId===prior.youtubeVideoId?old?.youtubeCheck?.account:null));
+    const youtubeCheck=reference?youtubeTracking(v,extras.youtubeVideoId,reference):null;
+    const uncertain=!!old?.uncertain||old?.status==='review'&&!['preflight','connection'].includes(old.attempt?.code);await saveContent(id,old,{...old,service:v.service,business:v.business||'platform',channel:v.channel,...(v.channel==='blog'?{blogTarget:['tistory','wordpress'].includes(v.blogTarget)?v.blogTarget:old?.blogTarget||(v.service==='tistory'?'tistory':'wordpress')}:{}),campaignId:text(v.campaignId||old?.campaignId||id,'콘텐츠 묶음',200),growthCampaign:growthCampaign(v.growthCampaign??old?.growthCampaign,v.service),title:text(v.title,'제목',300),body:text(v.body,'본문',Object.hasOwn(MANUAL_HOSTS,v.channel)?CHANNEL_LIMITS[v.channel]:20000),seo:validateSEO(v.seo??old?.seo),media,slides,...extras,youtubeCheck,status:uncertain?'review':'draft',uncertain,attempt:null,error:uncertain?'이전 게시 여부를 채널에서 확인한 뒤 다시 예약하세요.':null,approval:null,account:null,container:null,scheduledAt:null},email);
    }else if(route==='/api/content/schedule'){
     const p=get('content',v.id);let a=get('channel',v.account);
     if(!p||!['draft','review','approved','scheduled','paused'].includes(p.status)||p.externalId)fail('예약할 초안을 확인하세요.');
@@ -608,27 +757,20 @@ async function controller(options){
     });
    }
    else if(route==='/api/content/publish'){await publish(text(v.id,'콘텐츠',80),email);}
+   else if(route==='/api/content/youtube-track'){
+    if(options.demo)fail('샘플에서는 YouTube를 조회하지 않습니다.',404);
+    const id=text(v.id,'콘텐츠',80),p=get('content',id);
+    if(!snsRecord(p)||p.channel!=='youtube'||!p.youtubeVideoId||!['draft','paused','approved'].includes(p.status))fail('비공개 영상이 등록된 YouTube 초안을 선택하세요.');
+    checkVersion(v.version,p,true);
+    const youtubeCheck=youtubeTracking(p,p.youtubeVideoId,text(v.account,'계정',120));
+    await writeContent(id,{...p,youtubeCheck});
+   }
    else if(route==='/api/content/reconcile'){
     if(options.demo)fail('샘플에서 YouTube 공개 결과를 조회할 수 없습니다.',404);
     const id=text(v.id,'콘텐츠',80),p=get('content',id);
     if(p?.channel!=='youtube'||p.status!=='review'||!p.uncertain)fail('확인이 필요한 YouTube 예약을 선택하세요.');
     checkVersion(v.version,p,true);
-    const record=get('channel',p.account);
-    if(!publicationApproved({...p,id},record)||!record.verifiedAt||!accountFits(record,p))fail('승인했던 YouTube 채널을 확인하세요.',409);
-    const account=await ensureFresh(ctx,{...record,id:p.account}),config=decrypt(account.secret);
-    const video=await youtube.readVideo(p.youtubeVideoId,config.token);
-    if(video?.snippet?.channelId!==account.userId)fail('연결 채널의 영상이 아닙니다.',409);
-    if(video.status?.privacyStatus!=='public')fail('아직 공개되지 않았습니다. Studio 상태를 확인한 뒤 다시 승인하세요.',409);
-    const publishedAt=Date.parse(video.snippet.publishedAt);
-    if(!Number.isFinite(publishedAt)||publishedAt>Date.now())fail('YouTube의 공개 시각을 아직 확인할 수 없습니다.',409);
-    await transaction(async()=>{
-     await ctx.lockRow('channel',p.account);
-     await ctx.lockRow('content',id);
-     await ctx.reload();
-     if(!isDeepStrictEqual(get('content',id),p)||get('channel',p.account)?.secret!==account.secret)fail('계정 또는 예약이 변경됐습니다.',409);
-     await writeContent(id,{...p,status:'published',attempt:{code:'published',at:now()},externalId:video.id,link:youtube.watchUrl(video.id),publishedAt:new Date(publishedAt).toISOString(),checkedAt:now(),checkStatus:'visible',uncertain:false,error:null});
-     await audit(email,'content.youtube_reconciled',id);
-    });
+    await reconcileYouTube(id,p,email);
    }
    else if(route==='/api/content/check'){
     const p=get('content',text(v.id,'콘텐츠',80));if(!p||p.status!=='published')fail('게시 완료된 콘텐츠를 선택하세요.');
@@ -645,9 +787,8 @@ async function controller(options){
    await ctx.reload();return reply(view());
 
  }catch(e){return reply({error:e.code==='23505'?'이미 등록된 거래 고유번호입니다.':e.status?e.message:'작업을 완료하지 못했습니다. 연결과 입력값을 확인해주세요.'},e.code==='23505'?409:e.status||500);}}
- return {handle,view,refresh,tick:async()=>{
+ return {handle,view,refresh,followup:runFollowup,tick:async()=>{
   const result=await tick();
-  if(!options.demo&&operatorPush.config()){await ctx.reload();await operatorPush.dispatch(ctx);}
   return result;
  }};
 }

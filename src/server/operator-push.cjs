@@ -4,6 +4,8 @@ const {createHash} = require('node:crypto');
 const {sendNotification} = require('web-push');
 const keyPattern = /^[A-Za-z0-9_-]+$/;
 const acceptedHosts = new Set(['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com']);
+const attentionActions=new Set(['sns.attention.connection','sns.attention.delay','sns.attention.result']);
+const postId=/^[A-Za-z0-9_-]{1,80}$/;
 const eventActions = new Set(['content.saved','content.generated','content.published','content.publish_review']);
 const digest = value => createHash('sha256').update(value).digest('hex');
 
@@ -49,7 +51,7 @@ async function update(ctx,input,email) {
  const {p256dh,auth} = input.subscription.keys || {};
  if (!key(p256dh,65) || !key(auth,16)) throw invalid();
  await ctx.put('push-device',id,{
-  active:true,email,cursor:old?.active ? old.cursor : ctx.audits[0]?.id ?? 0,
+  active:true,email,activity:input.activity===undefined?(old?.activity??true):input.activity===true,cursor:old?.active ? old.cursor : ctx.audits[0]?.id ?? 0,
   subscription:ctx.encrypt({endpoint:address,keys:{p256dh,auth}}),
  });
 }
@@ -61,6 +63,12 @@ function instagramActivity(ctx,event) {
   return post?.service==='tistory' && (post.business||'platform')==='platform' && post.channel==='instagram' &&
    ['draft','review','published'].includes(post.status);
  });
+}
+
+function eventIsCurrent(ctx,event){
+ const {issue}=require('./social-followup.cjs');
+ const post=ctx.get('content',event.target);
+ return !!post&&'sns.attention.'+issue(post,ctx.get('channel',post.account))===event.action;
 }
 
 async function dispatch(ctx,send=sendNotification) {
@@ -75,14 +83,17 @@ async function dispatch(ctx,send=sendNotification) {
    await ctx.put('push-device',device.id,{active:false}).catch(()=>{});
    continue;
   }
-  const activity = events.some(event => event.id > device.cursor && instagramActivity(ctx,event));
+  const unseen=events.filter(event=>event.id>device.cursor);
+  const attention=unseen.find(event=>attentionActions.has(event.action)&&postId.test(event.target)&&eventIsCurrent(ctx,event));
+  const activity=device.activity!==false&&unseen.some(event=>instagramActivity(ctx,event));
+  const message=attention?{type:'sns-attention',id:attention.target,reason:attention.action.split('.').at(-1)}:activity?{type:'instagram-activity'}:null;
   // Claim before sending so an ambiguous push response cannot cause duplicate notifications.
   try {await ctx.put('push-device',device.id,{...device,cursor});} catch {continue;}
-  if (!activity) continue;
+  if (!message) continue;
   try {
    const subscription = ctx.decrypt(device.subscription);
    if (!endpoint(subscription.endpoint)) continue;
-   await send(subscription,JSON.stringify({type:'instagram-activity'}),{vapidDetails,TTL:300,timeout:5000});
+   await send(subscription,JSON.stringify(message),{vapidDetails,TTL:300,timeout:5000});
   } catch (error) {
    if ([404,410].includes(error.statusCode)) await ctx.put('push-device',device.id,{active:false}).catch(()=>{});
   }
