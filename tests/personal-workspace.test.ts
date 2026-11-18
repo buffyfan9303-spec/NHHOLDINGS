@@ -222,7 +222,7 @@ test('personal scope is explicit, account data stays private, and a revoke stops
     assert.equal(revoked.status, 200);
     assert.equal((await personalGet('first')).status, 403);
     assert.equal((await personalSave('first', {action: 'remove', id: itemId, version: 2})).status, 403);
-    assert.equal((await dashboard(req('/dashboard', 'first'))).headers.get('Location'), origin + '/access-pending');
+    assert.equal((await dashboard(req('/dashboard', 'first'))).headers.get('Location'), '/access-pending');
     assert.equal((await moderate('approve', 'first', {scope: 'business'})).status, 200);
     assert.equal((await personalGet('first')).status, 403, 'switching to a business-only grant does not activate personal data');
     assert.equal((await business(req('/api/dashboard/session', 'first'), route('session'))).status, 200);
