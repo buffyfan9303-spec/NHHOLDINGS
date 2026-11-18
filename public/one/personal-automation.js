@@ -441,6 +441,7 @@
           (buttons.find(button=>button.dataset.id===focus.id&&button.dataset.autoAction===focus.autoAction)||
            buttons.find(button=>button.dataset.autoAction==='refresh'))?.focus({preventScroll:true});
         }
+        openSelectedCard(view);
       }
     }
   }
@@ -589,6 +590,7 @@
     });
     view.dialog.addEventListener('cancel',event=>{if(view.busy)event.preventDefault();});
     view.dialog.addEventListener('close',()=>{
+      if(view.dialog.open)return;
       view.cardRead?.abort();
       const secret=view.form.elements.clientSecret;
       if(secret)secret.value='';
