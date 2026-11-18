@@ -65,16 +65,17 @@ function overviewPriority(){
  return `<section class="panel dashboard-priority" aria-labelledby="dashboard-priority-title">
   <header><h2 id="dashboard-priority-title">오늘의 운영</h2><time datetime="${today()}">${today().replaceAll('-', '. ')} KST</time></header>
   <div class="dashboard-priority-grid">${rows.map(([ico,label,value,note,attrs])=>`<button type="button" class="priority-item" ${attrs}>
-   <span class="priority-icon">${icon(ico)}</span><span class="priority-copy"><span>${label}</span><strong>${value}</strong><small>${note}</small></span>${icon('arrow')}
+   <span class="priority-icon" aria-hidden="true">${icon(ico)}</span><span class="priority-copy"><span>${label}</span><small>${note}</small></span><strong class="priority-value">${value}</strong>
   </button>`).join('')}</div>
  </section>`;
 }
 function overview(){
- return overviewPriority()
-  +'<section class="dashboard-section" aria-label="웹사이트별 현황">'+sectionHeading('웹사이트별 현황','',button('연결 설정','go','connections','text'))+siteCards()+'</section>'
-  +'<section class="dashboard-section" aria-label="매출과 비용">'+sectionHeading('매출과 비용','',button('재무 관리','go','finance','text'))+kpis()+'<div class="two-col">'+monthlyChart()+costBreakdown()+'</div></section>'
-  +'<section class="dashboard-section" aria-label="SNS 업로드 현황">'+sectionHeading('SNS 업로드 현황','',button('전체 업로드 보기 ↗','go','publish','text'))+publicationPulse()+(compactViewport()?mobilePostCards(campaigns().slice(0,4),Object.keys(labels)):publishingBoard(4))+'</section>'
-  +'<section class="dashboard-section" aria-label="운영 업무">'+sectionHeading('지금 처리할 업무','',button('업무 전체 보기 ↗','go','tasks','text'))+taskBrief()+'</section>';
+ return '<div class="operational-overview"><div class="overview-top">'
+  +'<section class="panel dashboard-sites" aria-label="웹사이트별 현황">'+sectionHeading('웹사이트별 현황','',button('연결 설정','go','connections','text'))+siteCards()+'</section>'
+  +'<div class="overview-aside">'+overviewPriority()
+  +'<section class="dashboard-section overview-work" aria-label="운영 업무">'+sectionHeading('처리할 업무','',button('전체 업무','go','tasks','text'))+taskBrief()+'</section></div></div>'
+  +'<section class="dashboard-section dashboard-finance" aria-label="매출과 비용">'+sectionHeading('매출과 비용','',button('재무 관리','go','finance','text'))+kpis()+'<div class="two-col">'+monthlyChart()+costBreakdown()+'</div></section>'
+  +'<section class="dashboard-section" aria-label="SNS 업로드 현황">'+sectionHeading('SNS 업로드 현황','',button('업로드 기록','go','publish','text'))+publicationPulse()+(compactViewport()?mobilePostCards(campaigns().slice(0,4),Object.keys(labels)):publishingBoard(4))+'</section></div>';
 }
 function businessPage(){const bs=data.businesses.filter(b=>inScope(b.service));return `<section class="panel section-gap"><div class="table-head"><h2>사업장 목록 <span class="pill gray">${bs.length}개</span></h2><p class="panel-desc">테스트·체험 사업장은 집계에서 제외합니다. 같은 이름의 사업장도 원천 ID로 구분합니다.</p></div>${bs.length?table(['사업장','서비스 / 업종','활동 상태','실적 포함','관리'],bs.map(b=>row([`<b>${esc(b.name)}</b><small class="row-note">${esc(b.id.slice(0,8))}</small>`,`${esc(serviceName(b.service))}<small class="row-note">${esc(({building:'건물관리',factory:'맞춤제작',rental:'렌탈',salon:'미용',academy:'학원',unmanned:'무인매장'})[b.industry]||'홀덤 매장')}</small>`,b.excluded?'<span class="pill gray">테스트 / 체험</span>':`<span class="pill ${b.active?'':'gray'}">${b.active?'활동 중':'비활성'}</span>`,`<label class="check-label"><input type="checkbox" data-own="${esc(b.key)}" ${b.owned?'checked':''} ${b.excluded?'disabled':''}>직영 포함</label>`,button('상세 보기','business',b.key)]))):empty('이 서비스에는 연결된 사업장이 없습니다.')}</section>`+businessDetail();}
 function businessDetail(){const b=data.businesses.find(b=>b.key===state.business);if(!b)return `<p class="caption">상세 보기에서 원천 실적, 비용 항목, 연결 업무를 확인할 수 있습니다.</p>`;const d=service(b.service).snapshot?.data,op=d?.operations?.find(x=>x.businessId===b.id),monthly=(d?.monthly||[]).filter(r=>r.businessId===b.id&&r.month===state.month);const expenses=(d?.expenseDetails||[]).filter(r=>r.businessId===b.id&&r.month===state.month);return `<section class="panel panel-inner section-gap"><div class="panel-head"><div><h2>${esc(b.name)}</h2><p class="panel-desc">${esc(serviceName(b.service))} · ${b.owned?'직영 사업장':'직영 미지정'} · ${state.month}</p></div>${service(b.service).url?`<a class="btn" href="${esc(service(b.service).url)}" target="_blank" rel="noopener noreferrer">원본 서비스 열기 ↗</a>`:''}</div>${op?`<div class="metric-grid" style="margin-top:20px">${[['고객',op.customers],['건물',op.buildings],['활성 호실',op.units],['현재 계약',op.activeContracts],['미완료 작업',op.openWorkOrders],['미완료 제작 주문',op.pendingFactoryOrders]].map(([l,v])=>`<div class="metric-tile"><strong>${money(v)}</strong><span class="caption">${l}</span></div>`).join('')}</div><div class="pl-row"><span>관리비 미수 원장 잔액 · 현재 상태</span><strong>${won(op.outstanding)}</strong></div>`:''}${monthly.map(r=>`<div class="pl-row"><span>${esc(metricsLabels[r.metric]||'매장 수납 스냅샷')}</span><strong>${won(b.service==='holdem'?r.storedReceipts+r.storedAddonReceipts:r.amount)}</strong></div>`).join('')}${b.service==='holdem'?monthly.map(r=>`<p class="source-note">수납 ${r.records}건 · 저장 미수 ${won(r.storedUnpaid)} · 과거 산식 재확인 ${r.legacyRecords}건 · VAT 구분 미확인</p>`).join(''):''}${!monthly.length?empty('선택 월의 원천 금액이 없습니다.'):''}<p class="source-note">원본의 주문·계약·수납 변경은 해당 서비스에서 처리합니다. NURI ONE의 업무와 비용 기록은 아래 통합 관리에서 저장됩니다.</p></section>${expenses.length?`<section class="panel section-gap"><div class="table-head"><h2>건물 비용 상세 · 발생/입력 기준</h2></div>${table(['분류','거래처','공급가액','VAT','원천 ID'],expenses.map(e=>row([esc(e.category),esc(e.vendor||'미입력'),won(e.supply),won(e.vat),esc(e.id.slice(0,8))])))}</section>`:''}`;}
@@ -231,25 +232,34 @@ function platformExclusionControls(p){if(!snsPost(p)||p.status!=='published'||!p
 const inspectContentBase=inspectContent;
 inspectContent=function(id){inspectContentBase(id);const p=data.contents.find(p=>p.id===id),dialog=$('post-inspector');if(dialog.open)dialog.insertAdjacentHTML('beforeend',platformExclusionControls(p));};
 function siteCards(){
- const metrics={mind:['users','회원 기록'],holdem:['sourceBusinesses','연결 매장'],crm:['customers','등록 고객'],market:['orders','등록 주문'],tistory:['posts','블로그 공개 글']};
- return `<div class="site-grid">${data.services.map(site=>{
-  const snapshot=site.snapshot?.data,field=metrics[site.id]||['posts','공개 게시물'];
-  const status=snapshot?(site.stale?'이전 조회':'조회 완료'):'연결 확인 필요';
-  const observedAt=snapshot?.observedAt;
-  const tasks=data.tasks.filter(t=>t.service===site.id&&t.status!=='done').length;
-  const scheduled=data.contents.filter(p=>p.service===site.id&&p.status==='scheduled'&&(site.id!=='tistory'||supportedChannel(p.channel))).length;
-  const url=site.id==='market'?'/nurimarket':webLink(site.url);
-  const name=site.id==='tistory'?'티스토리 · SNS':site.name;
-  return `<article class="site-card">
-   <button type="button" class="site-card-detail" data-service="${esc(site.id)}">
-    ${mark(site)}<span class="site-card-copy"><strong>${esc(name)}</strong>
-     <small><span class="site-status ${site.stale?'stale':''}"></span>${status}${observedAt?` · <time datetime="${esc(observedAt)}">${esc(dt(observedAt))}</time>`:''}</small>
-     <small>업무 ${money(tasks)} · 예약 ${money(scheduled)}</small>
-    </span><span class="site-card-value"><strong>${money(snapshot?.[field[0]])}</strong><small>${field[1]}</small></span>
-   </button>
-   ${url?`<a class="site-card-source" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(name)} 운영 사이트 열기" title="운영 사이트 열기">${icon('external')}</a>`:''}
-  </article>`;
- }).join('')}</div>`;
+ const metrics={mind:['users','가입 유저'],holdem:['users','가입 유저'],crm:['customers','등록 고객'],market:['orders','등록 주문'],tistory:['posts','블로그 공개 글']};
+ return `<div class="site-grid">
+  <div class="site-column-labels" aria-hidden="true"><span>서비스</span><span>집계</span><span>데이터 조회</span><span>운영 사이트</span></div>
+  ${data.services.map(site=>{
+   const snapshot=site.snapshot?.data,[field,label]=metrics[site.id]||['posts','공개 게시물'];
+   const status=snapshot?(site.stale?'이전 조회':'조회 완료'):'연결 확인 필요';
+   const observedAt=snapshot?.observedAt;
+   const tasks=data.tasks.filter(t=>t.service===site.id&&t.status!=='done').length;
+   const scheduled=data.contents.filter(p=>p.service===site.id&&p.status==='scheduled'&&(site.id!=='tistory'||supportedChannel(p.channel))).length;
+   const url=site.id==='market'?'/nurimarket':webLink(site.url);
+   const name=site.id==='tistory'?'티스토리 · SNS':site.name;
+   return `<article class="site-card">
+    <div class="site-card-identity">
+     <div class="site-card-mark" aria-hidden="true">${mark(site)}</div>
+     <div class="site-card-copy">
+      <button type="button" class="site-card-detail" data-service="${esc(site.id)}" aria-label="${esc(name)} 상세 보기">${esc(name)}</button>
+      <small>업무 ${money(tasks)} · 예약 ${money(scheduled)}</small>
+     </div>
+    </div>
+    <span class="site-card-value"><strong>${money(snapshot?.[field])}</strong><small>${label}</small></span>
+    <div class="site-card-observation">
+     <span><span class="site-status ${!snapshot||site.stale?'stale':''}" aria-hidden="true"></span>${status}</span>
+     ${observedAt?`<time datetime="${esc(observedAt)}">${esc(dt(observedAt))}</time>`:''}
+    </div>
+    ${url?`<a class="site-card-source" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(name)} 운영 사이트 열기 (새 탭)">사이트 열기</a>`:''}
+   </article>`;
+  }).join('')}
+ </div>`;
 }
 function costBreakdown(){const rs=filteredMoney(),categories=new Map();for(const r of rs.filter(r=>['expense','expense_refund'].includes(r.kind)))categories.set(r.category,(categories.get(r.category)||0)+(r.kind==='expense'?r.amount:-r.amount));const rows=[...categories].sort((a,b)=>b[1]-a[1]),total=financeTotals().cost,colors=['#65d6a5','#4c9ca1','#779baa','#657b8a','#465762'];return `<section class="panel panel-inner"><div class="panel-head"><div><h2>비용 구성</h2><p class="panel-desc">${state.month} · 기록한 운영 비용</p></div>${icon('file')}</div><div class="chart-stat">${won(total)}</div><p class="caption">${financeTotals().complete?'월별 비용 입력 확인 완료':'입력한 비용만 · 누락 항목 확인 필요'}</p>${total>0?`<div class="cost-track">${rows.filter(r=>r[1]>0).map(([l,v],i)=>`<span style="--c:${colors[i%5]};flex:${v}" title="${esc(l)} ${won(v)}"></span>`).join('')}</div>`:''}<div class="cost-list">${rows.slice(0,5).map(([l,v],i)=>`<div class="cost-item"><i style="--c:${colors[i%5]}"></i><span>${esc(l)}</span><strong>${won(v)}</strong></div>`).join('')||empty('아직 기록한 비용이 없습니다.')}</div></section>`;}
 function taskBrief(){const ts=data.tasks.filter(t=>inScope(t.service)&&t.status!=='done').sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,4);return `<div class="three-col">${ts.slice(0,3).map(t=>`<section class="panel panel-inner"><div class="status-row"><span class="pill ${t.priority==='high'?'amber':'gray'}">${t.status==='doing'?'진행 중':t.status==='hold'?'보류':'할 일'}</span><span class="caption">${t.due||'기한 미정'}</span></div><h3 style="margin-top:16px">${esc(t.title)}</h3><p class="caption" style="margin-top:9px">${esc(serviceName(t.service))} · ${esc(t.assignee||'담당 미지정')}</p><div class="toolbar" style="margin-bottom:0">${button('업무 보기','task-edit',t.id,'text')}</div></section>`).join('')||'<section class="panel">'+empty('진행할 업무가 없습니다.')+'</section>'}</div>`;}
