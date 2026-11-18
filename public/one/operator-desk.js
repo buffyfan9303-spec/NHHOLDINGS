@@ -1,11 +1,11 @@
 'use strict';
 
 window.NuriDesk=(()=>{
- const sections=[['schedule','예약 관리'],['brand','브랜드·소재'],['inbox','댓글·문의'],['traffic','링크 유입'],['weekly','주간 보고'],['rehearsal','판매 리허설']];
+ const sections=[['schedule','예약 관리'],['brand','브랜드·소재'],['inbox','댓글·문의'],['traffic','링크 유입'],['weekly','주간 보고']];
  const brands=[['mind','누리마인드'],['holdem','누리홀덤']];
  const stateLabels={open:'대기',working:'처리 중',done:'정리 완료'};
  const websiteLabels={up:'공개 접속 정상',http:'공개 HTTP 오류',timeout:'공개 응답 지연',network:'공개 접속 실패'};
- const ui={tab:'schedule',inbox:null,inboxPage:1,loadingInbox:false,inboxError:'',rehearsal:null,rehearsing:false};
+ const ui={tab:'schedule',inbox:null,inboxPage:1,loadingInbox:false,inboxError:''};
  const props=()=>data.desk||{holds:[],brands:[],links:[],traffic:[],approved:[]};
  const accountTitle=a=>(labels[a.channel]||a.channel)+' · '+a.label;
  const nameOf=id=>brands.find(b=>b[0]===id)?.[1]||id;
@@ -250,17 +250,9 @@ window.NuriDesk=(()=>{
    ${table(['서비스·채널','항목','확인 결과'],weeklyRows().map(values=>row(values.map(v=>esc(v)))))}</section>`;
  }
 
- function rehearsal(){
-  const r=ui.rehearsal,checklist=data.services.find(s=>s.id==='market')?.snapshot?.data?.readiness||[];
-  return `<section class="panel panel-inner"><h2>누리마켓 판매 리허설</h2><p class="caption">격리한 샘플 데이터로 주문·문의·배송과 미결제 취소를 실행합니다.</p>
-   <div class="toolbar"><button class="btn primary" type="button" data-desk-action="rehearse" ${ui.rehearsing?'disabled':''}>${ui.rehearsing?'실행 중':'리허설 실행'}</button></div>
-   ${r?`<p class="caption" role="status">${esc(dt(r.checkedAt))} KST 검사</p><ul class="desk-list">${r.checks.map(c=>`<li><span>${esc(c.label)}</span><strong>${c.ok?'통과':'확인 필요'}</strong></li>`).join('')}</ul>`:''}
-   </section><section class="panel panel-inner section-gap"><h2>운영 판매 준비</h2>${checklist.length?`<ul class="desk-list">${checklist.map(x=>`<li><span>${esc(x.label)}</span><strong>${x.ready?'완료':'확인 필요'}</strong></li>`).join('')}</ul>`:message('운영 준비 상태를 조회할 수 없습니다.')}</section>`;
- }
-
  function renderDesk(){
   if(session.readOnly)return empty('운영 도구는 운영자 계정에서 사용할 수 있습니다.');
-  const views={schedule,brand,inbox,traffic,weekly,rehearsal};
+  const views={schedule,brand,inbox,traffic,weekly};
   return `<nav class="site-tabs desk-tabs" aria-label="운영 도구">
    ${sections.map(([id,l])=>`<button type="button" id="desk-tab-${id}" data-desk-tab="${id}" ${ui.tab===id?'aria-current="page"':''}>${l}</button>`).join('')}
    </nav>${views[ui.tab]()}`;
@@ -305,10 +297,6 @@ window.NuriDesk=(()=>{
     download('누리원-주간-운영-'+today()+'.csv','\ufeff'+cells.map(line=>line.map(cell=>{
      const value=String(cell);return '"'+(/^[\s]*[=+@-]/.test(value)?"'":"")+value.replaceAll('"','""')+'"';
     }).join(',')).join('\n'),'text/csv;charset=utf-8');
-   }else if(action==='rehearse'&&!ui.rehearsing){
-    ui.rehearsing=true;render();
-    try{ui.rehearsal=await api('desk/rehearsal',{});}
-    finally{ui.rehearsing=false;if(state.page==='desk')render();}
    }
   }catch(error){toast(error.message);}
  });

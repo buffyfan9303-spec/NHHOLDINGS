@@ -32,7 +32,7 @@ window.NuriOperator = (() => {
  const accountName = account => account?.username ? account.label + ' · ' + (account.channel==='youtube'?'':'@') + account.username : account?.label;
  const pagesToOpen = [
   ['approval', '게시 승인함', '승인 예약 일시정지 인스타그램 유튜브 게시'],
-  ['desk','운영 도구','예약 중지 브랜드 문의 유입 주간 보고 리허설'],
+  ['desk','운영 도구','예약 중지 브랜드 문의 유입 주간 보고'],
   ['studio', '콘텐츠 작업실', '새 카드뉴스 생성 작성 초안 만들기'],
   ['calendar', '게시 캘린더', '일정 달력 스케줄'],
   ['overview', '전체 현황', '대시보드 홈 요약'],
