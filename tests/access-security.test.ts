@@ -70,7 +70,7 @@ test('portal separation, owner approvals, read-only access and immediate revocat
   const pending=await attempt('one');assert.equal(pending.status,200);assert.equal((await pending.json()).destination,'/access-pending');assert.match(pending.headers.get('set-cookie')??'',/HttpOnly/);assert.equal(await accessStatus(viewer),'pending');
   assert.equal((await dashboard(req('/api/dashboard/state','viewer-token'),ctx)).status,403);
   const list=await (await accessList(req('/api/access','owner-token'))).json(),initial=list.requests[0];assert.equal(initial.email,viewer.email);
-  const approval=await review(req('/api/access','owner-token',{id:viewer.id,action:'approve',version:initial.version}));assert.equal(approval.status,200);const approved=(await approval.json()).request;
+  const approval=await review(req('/api/access','owner-token',{id:viewer.id,action:'approve',version:initial.version,scope:'business'}));assert.equal(approval.status,200);const approved=(await approval.json()).request;
   assert.equal((await review(req('/api/access','owner-token',{id:viewer.id,action:'deny',version:initial.version}))).status,409);
   assert.equal((await (await attempt('one')).json()).destination,'/dashboard');assert.equal((await (await attempt('market')).json()).destination,'/nurimarket');
   await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','login-id','zero',$1)",[JSON.stringify({userId:viewer.id,email:viewer.email})]);

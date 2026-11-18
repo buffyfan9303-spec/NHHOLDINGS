@@ -40,7 +40,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
       if (recovery) setMessage({text: data.message, error: false});
       else if (data.confirmation) setMessage({text: data.message, error: false});
       else if (!signup && marketAdminEntry && data.owner === true && data.destination === '/dashboard') location.assign('/nurimarket/admin');
-      else if (['/dashboard', '/nurimarket', '/access-pending'].includes(data.destination)) location.assign(data.destination);
+      else if (['/dashboard', '/personal', '/nurimarket', '/access-pending'].includes(data.destination)) location.assign(data.destination);
       else throw new Error('이동할 화면을 확인하지 못했습니다. 다시 로그인해주세요.');
     } catch (error) {
       setMessage({text: error instanceof Error ? error.message : '연결을 확인하고 다시 시도해주세요.', error: true});

@@ -1,0 +1,132 @@
+.personal-file-panel {
+  min-width: 0;
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid var(--line, #8c959f66);
+  border-radius: 12px;
+  background: var(--surface, transparent);
+}
+
+.personal-file-panel [hidden] { display: none; }
+
+.personal-file-heading,
+.personal-file-actions,
+.personal-file-controls,
+.personal-file-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.personal-file-heading,
+.personal-file-list li { justify-content: space-between; }
+
+.personal-file-heading h2 { margin: 0; font-size: 1.125rem; }
+
+.personal-file-heading p,
+.personal-file-limit,
+.personal-file-list li span {
+  margin: 4px 0 0;
+  color: var(--muted, inherit);
+  font-size: .875rem;
+}
+
+.personal-file-form {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #8c959f66);
+}
+
+.personal-file-form label { font-weight: 650; }
+
+.personal-file-setup {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #8c959f66);
+}
+
+.personal-file-setup summary {
+  width: fit-content;
+  min-height: 42px;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.personal-file-setup p { margin: 2px 0 10px; font-size: .875rem; color: var(--muted, inherit); }
+.personal-file-callback,
+.personal-file-credentials { display: grid; gap: 10px; min-width: 0; margin-bottom: 10px; }
+.personal-file-credentials { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.personal-file-callback label,
+.personal-file-credentials label { display: grid; gap: 5px; min-width: 0; }
+.personal-file-setup input { width: 100%; min-width: 0; min-height: 42px; }
+
+.personal-file-controls { margin-top: 10px; }
+
+.personal-file-controls input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 42px;
+  font: inherit;
+  color: inherit;
+}
+
+.personal-file-controls input::file-selector-button {
+  min-height: 40px;
+  margin-inline-end: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line, #8c959f66);
+  border-radius: 8px;
+  background: var(--surface, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.personal-file-panel .btn { min-height: 42px; }
+
+.personal-file-panel progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin: 12px 0 0;
+  accent-color: var(--accent, #278776);
+}
+
+.personal-file-panel progress::-webkit-progress-value { transition: width 160ms ease-out; }
+
+.personal-file-status { margin: 12px 0 0; font-size: .875rem; }
+.personal-file-status:empty { margin: 0; }
+.personal-file-status.is-error { color: var(--danger, #b52f39); }
+
+.personal-file-list {
+  display: grid;
+  gap: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personal-file-list:empty { margin: 0; }
+
+.personal-file-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line, #8c959f66);
+}
+
+.personal-file-list li > div { flex: 1 1 13rem; min-width: 0; }
+.personal-file-list strong { display: block; overflow-wrap: anywhere; }
+.personal-file-more { margin-top: 8px; }
+
+.personal-file-list li.just-uploaded { animation: personal-file-arrive 220ms ease-out both; }
+
+@keyframes personal-file-arrive {
+  from { opacity: .25; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-file-list li.just-uploaded { animation: none; }
+  .personal-file-panel progress::-webkit-progress-value { transition: none; }
+}

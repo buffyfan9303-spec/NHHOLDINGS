@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="color-scheme" content="dark light">
+ <meta name="robots" content="noindex, nofollow">
+ <title>내 업무 | NURI ONE</title>
+ <link rel="icon" href="/icon.svg">
+ <link rel="stylesheet" href="/one/fonts/pretendard.css">
+ <link rel="stylesheet" href="/one/personal.css">
+ <link rel="stylesheet" href="/one/personal-files.css">
+ <link rel="stylesheet" href="/one/personal-automation.css">
+ <link rel="stylesheet" href="/one/personal-ai.css">
+</head>
+<body class="personal-app">
+ <a class="personal-skip" href="#personal-main">본문으로 이동</a>
+ <header class="personal-top">
+  <a class="personal-brand" href="/personal" aria-label="누리원 내 업무 홈">NURI <span>ONE</span></a>
+  <div class="personal-account">
+   <button type="button" id="personal-ai-open" aria-expanded="false" aria-controls="personal-ai-root">AI 비서</button>
+   <span id="personal-account"></span>
+   <a href="/dashboard" id="personal-owner" hidden>운영 대시보드</a>
+   <button type="button" id="personal-logout">로그아웃</button>
+  </div>
+ </header>
+ <div class="personal-workspace">
+  <nav class="personal-nav" aria-label="내 업무 메뉴">
+   <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
+   <a href="#tasks" data-personal-link="tasks">할 일</a>
+   <a href="#schedule" data-personal-link="schedule">일정</a>
+   <a href="#notes" data-personal-link="notes">메모</a>
+   <a href="#links" data-personal-link="links">바로가기</a>
+   <a href="#social" data-personal-link="social">내 SNS</a>
+   <a href="#mail" data-personal-link="mail">메일 예약</a>
+   <a href="#files" data-personal-link="files">비공개 저장소</a>
+  </nav>
+  <main id="personal-main" tabindex="-1" class="personal-main" aria-busy="true">
+   <div class="personal-title"><div><time id="personal-date"></time><h1 id="personal-title" tabindex="-1">오늘의 업무</h1></div>
+    <button id="personal-reload" type="button" class="btn" hidden>다시 조회</button>
+   </div>
+   <p id="personal-message" class="personal-message" role="status">내 업무를 불러오고 있습니다.</p>
+   <section data-personal-view="home" class="personal-home" aria-labelledby="personal-home-title">
+    <div class="personal-sheet">
+     <div class="personal-section-head"><h2 id="personal-home-title" tabindex="-1">오늘 확인할 일</h2><a href="#tasks" class="personal-link">할 일 전체</a></div>
+     <div id="personal-today"></div>
+     <div class="personal-section-head personal-section-break"><h2>다가오는 일정</h2><a href="#schedule" class="personal-link">일정 전체</a></div>
+     <div id="personal-upcoming"></div>
+    </div>
+    <div class="personal-home-side">
+     <section class="personal-sheet" aria-labelledby="personal-quick-title">
+      <h2 id="personal-quick-title">빠른 기록</h2>
+      <form id="personal-quick" class="personal-quick">
+       <label for="personal-quick-title-input">할 일 또는 메모</label>
+       <input id="personal-quick-title-input" name="title" required maxlength="160" placeholder="기억할 일을 적어두세요">
+       <div class="personal-form-actions">
+        <button type="submit" name="kind" value="task" class="btn primary">할 일 추가</button>
+        <button type="submit" name="kind" value="note" class="btn">메모 추가</button>
+       </div>
+      </form>
+     </section>
+     <section class="personal-sheet" aria-labelledby="personal-pinned-title">
+      <div class="personal-section-head"><h2 id="personal-pinned-title">자주 여는 곳</h2><a href="#links" class="personal-link">바로가기 관리</a></div>
+      <div id="personal-pinned"></div>
+     </section>
+    </div>
+   </section>
+   <section data-personal-view="items" hidden class="personal-items">
+    <div class="personal-sheet">
+     <div class="personal-section-head"><h2 id="personal-list-title"></h2>
+      <button type="button" id="personal-add" class="btn primary">추가</button>
+     </div>
+     <div id="personal-list"></div>
+     <section id="personal-automation-agenda" hidden class="personal-section-break"><h2>예약된 게시와 메일</h2><div id="personal-automation-events"></div></section>
+    </div>
+   </section>
+   <section data-personal-view="social" hidden aria-label="내 SNS"><div id="personal-social-root"></div></section>
+   <section data-personal-view="mail" hidden aria-label="메일 예약"><div id="personal-mail-root"></div></section>
+   <section data-personal-view="files" hidden aria-label="비공개 저장소"><div id="personal-files-root"></div></section>
+  </main>
+  <aside id="personal-ai-root" aria-label="AI 비서"></aside>
+ </div>
+ <dialog id="personal-editor" aria-labelledby="personal-editor-title">
+  <form id="personal-form" class="personal-form">
+   <h2 id="personal-editor-title"></h2>
+   <label for="personal-item-title">제목</label>
+   <input id="personal-item-title" name="title" maxlength="160" required>
+   <div id="personal-item-dates" class="personal-date-fields">
+    <label>날짜<input name="dueOn" type="date"></label>
+    <label id="personal-item-hour">시간 <small>한국 시간</small><input name="dueTime" type="time"></label>
+   </div>
+   <label id="personal-detail-label" for="personal-item-detail">내용</label>
+   <textarea id="personal-item-detail" name="detail" rows="4" maxlength="4000"></textarea>
+   <input id="personal-item-url" name="url" type="url" placeholder="https://" hidden maxlength="2000">
+   <p id="personal-editor-message" class="personal-message" role="status"></p>
+   <div class="personal-form-actions">
+    <button type="button" class="btn" id="personal-editor-close">닫기</button>
+    <button type="submit" class="btn primary">저장</button>
+   </div>
+  </form>
+ </dialog>
+ <script src="/one/personal-files.js" defer></script>
+ <script src="/one/personal-automation.js" defer></script>
+ <script src="/one/personal-ai.js" defer></script>
+ <script src="/one/personal.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+.personal-automation {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(210px,.5fr);
+  align-items:start;
+  gap:18px;
+}
+.auto-work,.auto-connections,.auto-fields>* {
+  min-width:0;
+}
+.auto-message {
+  margin:12px 0 0;
+  color:var(--muted);
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.auto-message:empty {
+  display:none;
+}
+.auto-message.is-error,.auto-review,.auto-state[data-state="review"] {
+  color:var(--danger);
+}
+.auto-actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 8px;
+}
+.auto-actions .btn,.auto-row-actions .btn {
+  min-height:44px;
+  font-size:13px;
+  line-height:1.45;
+}
+.auto-list {
+  margin-top:12px;
+}
+.auto-row {
+  align-items:center;
+  gap:10px 16px;
+}
+.auto-row .personal-row-text {
+  padding-top:0;
+}
+.auto-row-heading {
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:3px 10px;
+}
+.auto-state {
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+}
+.auto-state:is([data-state="scheduled"],[data-state="sent"],[data-state="published"]) {
+  color:var(--teal);
+}
+.auto-meta {
+  display:flex;
+  flex-wrap:wrap;
+  gap:2px 10px;
+}
+.auto-account {
+  padding:14px 0 0;
+  overflow-wrap:anywhere;
+}
+.auto-account+.auto-account {
+  margin-top:14px;
+  border-top:1px solid var(--line);
+}
+.auto-account>p,.auto-account small,.auto-caption {
+  display:block;
+  margin:4px 0 9px;
+  color:var(--muted);
+  font-size:13px;
+}
+.auto-account-list {
+  display:grid;
+  gap:10px;
+  margin:0 0 9px;
+  padding:0;
+  list-style:none;
+}
+.auto-account-list>li {
+  padding-inline-start:10px;
+  border-inline-start:2px solid var(--line);
+}
+.auto-account-list small:empty {
+  display:none;
+}
+.auto-dialog {
+  width:min(570px,calc(100% - 28px));
+  max-height:calc(100dvh - 28px);
+  padding:clamp(17px,4vw,26px);
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--surface);
+  color:var(--ink);
+  overflow:auto;
+}
+.auto-dialog::backdrop {
+  background:rgb(11 18 16 / .52);
+}
+.auto-fields {
+  display:grid;
+  min-width:0;
+  gap:12px;
+  margin-top:8px;
+}
+.auto-fields label :is(input,select,textarea):not([type="checkbox"]) {
+  margin-top:4px;
+}
+.auto-fields input:is([type="date"],[type="time"]) {
+  box-sizing:border-box;
+  max-width:100%;
+}
+.auto-fields input::-webkit-date-and-time-value {
+  text-align:start;
+}
+.auto-fields label select {
+  appearance:none;
+  overflow:hidden;
+  padding-inline:12px 38px;
+  font:inherit;
+  text-overflow:ellipsis;
+  background-image:linear-gradient(45deg,transparent 42%,var(--muted) 43% 59%,transparent 60%),
+                   linear-gradient(-45deg,transparent 42%,var(--muted) 43% 59%,transparent 60%);
+  background-position:right 20px center,right 15px center;
+  background-repeat:no-repeat;
+  background-size:6px 6px;
+}
+.auto-fields select:focus-visible {
+  outline:2px solid var(--teal);
+  outline-offset:3px;
+}
+.auto-field-pair {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  min-width:0;
+  gap:10px;
+}
+.auto-field-pair label {
+  min-width:0;
+}
+.auto-approval {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  min-height:44px;
+}
+.personal-form .auto-approval input[type="checkbox"] {
+  width:18px;
+  min-height:auto;
+  height:18px;
+  flex:none;
+  padding:0;
+  accent-color:var(--teal);
+}
+.auto-approval-preview {
+  max-height:220px;
+  padding:10px 14px;
+  border-inline-start:2px solid var(--teal);
+  overflow:auto;
+  overflow-wrap:anywhere;
+  overscroll-behavior:contain;
+}
+.auto-approval-preview p {
+  margin:3px 0;
+  white-space:pre-wrap;
+}
+.auto-callback {
+  display:block;
+  padding:9px 10px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  font-size:12px;
+  overflow-wrap:anywhere;
+}
+@media (max-width:960px) {
+  .personal-automation {
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+@media (max-width:600px) {
+  .auto-row {
+    display:grid;
+    gap:4px;
+  }
+  .auto-row-actions {
+    justify-content:flex-start;
+  }
+}
+@media (forced-colors:active) {
+  .auto-fields label select {
+    appearance:auto;
+    background-image:none;
+    padding-inline-end:12px;
+  }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .auto-dialog[open] {
+    animation:auto-editor-enter .27s var(--arrive) both;
+  }
+  .auto-dialog[open]::backdrop {
+    animation:auto-backdrop-enter .2s ease-out both;
+  }
+  @keyframes auto-editor-enter {
+    from {opacity:0;transform:translateY(9px)}
+    to {opacity:1;transform:none}
+  }
+  @keyframes auto-backdrop-enter {
+    from {opacity:0}
+    to {opacity:1}
+  }
+}
+.auto-card-description {grid-column:1 / -1;overflow-wrap:anywhere}

@@ -1,0 +1,56 @@
+.heading-controls[hidden], .heading-controls label[hidden],
+#personal-shortcut[hidden], #personal-mobile[hidden], #mobile-studio[hidden] {display:none!important}
+.assistant-dashboard .sample-line {display:none}
+.assistant-dashboard .heading-row {margin-bottom:24px}
+#personal-shortcut {text-decoration:none;margin:3px 0 9px}
+.assistant-home-grid {display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.82fr);gap:18px;align-items:start}
+.assistant-home-main {display:grid;gap:18px;min-width:0}
+.assistant-panel {padding:19px 22px;min-width:0}
+.assistant-heading {display:flex;align-items:center;justify-content:space-between;gap:8px 15px;flex-wrap:wrap}
+.assistant-heading .link {display:inline-flex;align-items:center;min-height:44px}
+.assistant-heading h2 {margin:0}
+.assistant-shortcuts {
+  display:flex;flex-wrap:wrap;gap:2px 6px;min-width:0;margin:0 0 20px;padding:0 2px 10px;border-bottom:1px solid var(--line);
+}
+.assistant-shortcuts a,.assistant-shortcuts button {
+  min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:7px 12px;color:var(--ink);
+  border:0;border-radius:8px;background:none;text-decoration:none;font:inherit;font-weight:580;
+}
+.assistant-shortcuts a:hover,.assistant-shortcuts button:hover {background:#20332a;color:var(--teal)}
+.assistant-shortcuts .icon,.assistant-operation-list .icon {width:17px;height:17px;color:var(--teal);flex-shrink:0}
+.assistant-figures {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px}
+.assistant-figures a {display:grid;gap:5px;padding:7px 12px;color:var(--muted);text-decoration:none;border-left:1px solid var(--line);font-size:13px;min-width:0}
+.assistant-figures a:first-child {border-left:0;padding-inline-start:0}
+.assistant-figures strong {color:var(--ink);font-size:clamp(22px,4vw,29px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.assistant-operation-list,.assistant-sources {list-style:none;margin:6px 0 0;padding:0}
+.assistant-operation-list li+li,.assistant-sources li+li {border-top:1px solid var(--line)}
+.assistant-operation-list button,.assistant-sources button {
+  display:flex;align-items:center;gap:10px;min-height:51px;width:100%;padding:7px 3px;
+  border:0;background:none;border-radius:6px;color:var(--ink);font:inherit;text-align:left;
+}
+.assistant-operation-list button:hover,.assistant-sources button:hover {color:var(--teal)}
+.assistant-operation-list strong {margin-inline-start:auto;font-weight:590;text-align:end;white-space:nowrap}
+.assistant-source-name {display:flex;align-items:center;min-width:0;gap:9px;flex:1 1 auto;overflow-wrap:anywhere}
+.assistant-source-name small {display:block;color:var(--muted);font-size:12px}
+.assistant-source-name .service-logo {width:27px;height:27px;min-width:27px;font-size:12px;flex:none}
+.assistant-source-status {display:flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:12px;padding-inline-end:2px}
+#operator-mobile .mobile-personal {display:grid;justify-items:center;align-content:center;text-decoration:none;color:var(--muted);min-height:50px;font-size:11px}
+#operator-mobile .mobile-personal .icon {width:20px;height:20px}
+.setup-health small {overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:no-preference) {
+  .assistant-shortcuts a,.assistant-shortcuts button {transition:transform 160ms ease-out}
+  .assistant-shortcuts a:active,.assistant-shortcuts button:active {transform:scale(.97)}
+}
+@media (max-width:900px) {
+  .assistant-home-grid {grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:480px) {
+  .assistant-panel {padding-inline:15px}
+  .assistant-shortcuts {gap:0 4px}
+  .assistant-shortcuts a,.assistant-shortcuts button {padding-inline:9px;font-size:13px}
+  .assistant-figures a {padding-inline:7px}
+}
+.personal-nav-icon {display:grid;place-items:center;width:20px;height:20px}
+.website-overview {display:grid;gap:18px}
+.website-overview .daily-queue {margin-bottom:0}
+.assistant-heading button.link {background:none;border:0;padding:0 4px}

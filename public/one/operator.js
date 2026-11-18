@@ -39,7 +39,9 @@ window.NuriOperator = (() => {
   ['desk','운영 도구','예약 중지 브랜드 문의 유입 주간 보고'],
   ['studio', '콘텐츠 작업실', '새 카드뉴스 생성 작성 초안 만들기'],
   ['calendar', '게시 캘린더', '일정 달력 스케줄'],
-  ['overview', '전체 현황', '대시보드 홈 요약'],
+  ['overview', '업무 대시보드', '전체 현황 홈 요약'],
+  ['websites', '웹사이트별 현황', '사이트 연결 갱신 유저'],
+  ['market-operations', '쇼핑몰 운영', '누리마켓 주문 배송 환불'],
   ['connections', '설정 · 계정 연결', '연동 계정 설정'],
   ['partners', '거래처', '거래처 이름 검색'],
  ];
@@ -338,7 +340,7 @@ window.NuriOperator = (() => {
   const results = document.getElementById('command-results');
   const update = () => {
    const tokens = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-   const matches = pagesToOpen.filter(([, label, aliases]) => tokens.every(token => (label + ' ' + aliases).toLowerCase().includes(token)));
+   const matches = pagesToOpen.filter(([page, label, aliases]) => (page!=='market-operations'||session?.owner)&&tokens.every(token => (label + ' ' + aliases).toLowerCase().includes(token)));
    results.innerHTML = matches.map(([page, label]) => `<li><button type="button" data-command="${page}">${label}</button></li>`).join('')
     || '<li class="caption" role="status">검색 결과가 없습니다.</li>';
   };

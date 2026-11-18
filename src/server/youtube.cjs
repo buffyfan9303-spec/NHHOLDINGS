@@ -80,7 +80,7 @@ async function publish(post, account, config, request = fetch, beforeWrite = ()=
  const {license,embeddable,publicStatsViewable} = video.status;
  const status = {privacyStatus:'public',license,embeddable,publicStatsViewable,
   selfDeclaredMadeForKids:post.youtubeMadeForKids,containsSyntheticMedia:post.youtubeSynthetic};
- beforeWrite();
+ await beforeWrite();
  const result = await requestVideo(config.token,{part:'status'},request,{id:video.id,status});
  if (result.id !== video.id || result.status?.privacyStatus !== 'public') fail('YouTube 공개 응답을 확인하지 못했습니다. Studio에서 확인하세요.',502);
  return {externalId:video.id,link:watchUrl(video.id)};
