@@ -148,3 +148,11 @@
 .personal-drive-filter :is(input,select) {min-width:0;max-width:100%;min-height:44px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;color:var(--ink);background:var(--inset)}
 .personal-drive-filter input {flex:1 1 130px}
 @media(max-width:680px) {.personal-drive-filter :is(input,select) {font-size:16px}}
+
+@media(max-width:680px) {
+ .personal-file-panel {padding:var(--personal-panel-pad);border-radius:9px}
+ .personal-file-heading,.personal-file-actions,.personal-file-controls,.personal-file-list li {gap:4px 8px}
+ .personal-file-panel :is(.personal-file-setup,.personal-file-form) {margin-top:9px;padding-top:6px}
+ .personal-file-list li {padding-block:4px}
+ .personal-drive-filter {gap:5px;margin-block:8px}
+}
