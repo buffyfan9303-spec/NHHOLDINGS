@@ -33,8 +33,8 @@ function officialLogo(brand, name, variant, alt) {
 }
 
 const officialAssets = [
-  officialLogo('one', 'NURI ONE 로고 · 밝은 배경', 'light', 'NURI ONE'),
-  officialLogo('one', 'NURI ONE 로고 · 어두운 배경', 'dark', 'NURI ONE'),
+  officialLogo('one', 'ONE PIECE 워드마크 · 밝은 배경', 'light', 'ONE PIECE'),
+  officialLogo('one', 'ONE PIECE 워드마크 · 어두운 배경', 'dark', 'ONE PIECE'),
   officialLogo('market', 'NURI MARKET 로고 · 밝은 배경', 'light', 'NURI MARKET'),
   officialLogo('market', 'NURI MARKET 로고 · 어두운 배경', 'dark', 'NURI MARKET'),
   {id: 'official-holdem-light', brand: 'holdem', name: 'NURI HOLDEM 로고', kind: 'logo',
