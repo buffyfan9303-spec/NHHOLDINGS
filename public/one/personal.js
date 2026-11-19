@@ -16,6 +16,28 @@
   const form = el('personal-form');
   const tabs = [...document.querySelectorAll('[data-personal-link]')];
   const screens = [...document.querySelectorAll('[data-personal-view]')];
+  const more = el('personal-more'), menu = el('personal-menu'), menuLinks = el('personal-menu-links');
+  const quickViews = new Set(['home','tasks','schedule']);
+
+  more.addEventListener('click', () => {
+    const links = [...document.querySelectorAll('.personal-nav [data-personal-link]')]
+      .filter(link => !quickViews.has(link.dataset.personalLink))
+      .map(link => link.cloneNode(true));
+    menuLinks.replaceChildren(...links);
+    menu.showModal();
+    more.setAttribute('aria-expanded','true');
+  });
+  el('personal-menu-close').addEventListener('click', () => menu.close());
+  menu.addEventListener('close', () => more.setAttribute('aria-expanded',String(menu.open)));
+  menuLinks.addEventListener('click', event => {
+    const link = event.target.closest('a');
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    menu.close();
+    if (link.hash === location.hash) el('personal-title').focus({preventScroll:true});
+  });
+  window.matchMedia?.('(max-width:680px)').addEventListener('change', event => {
+    if (!event.matches && menu.open) menu.close();
+  });
 
   const dateOrder = (a,b) => (a.dueOn||'9999').localeCompare(b.dueOn||'9999') ||
     (a.dueTime||'').localeCompare(b.dueTime||'') || a.createdAt.localeCompare(b.createdAt);
@@ -99,7 +121,10 @@
     view = target;
     el('personal-title').textContent = names[view];
     const guide = view==='website-guide';
-    for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===(guide?'sites':view)?'page':'false');
+    const active = guide ? 'sites' : view;
+    for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===active?'page':'false');
+    more.setAttribute('aria-current',String(!quickViews.has(active)));
+    if (changed && menu.open) menu.close();
     const visible = kinds[view]?'items':guide?'sites':view;
     window.NuriPersonalSites?.select?.(guide);
     for(const section of screens) {

@@ -32,6 +32,12 @@
   <a class="personal-link" href="/dashboard#connections/integrations">기존 운영 연동</a>
  </nav>
  <div class="personal-workspace">
+  <nav class="personal-mobile-nav" aria-label="내 업무 빠른 메뉴">
+   <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
+   <a href="#tasks" data-personal-link="tasks">할 일</a>
+   <a href="#schedule" data-personal-link="schedule">일정</a>
+   <button type="button" id="personal-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="personal-menu">더보기</button>
+  </nav>
   <nav class="personal-nav" aria-label="내 업무 메뉴">
    <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
    <a href="#tasks" data-personal-link="tasks">할 일</a>
@@ -221,6 +227,13 @@
   </main>
   <aside id="personal-ai-root" aria-label="AI 비서"></aside>
  </div>
+ <dialog id="personal-menu" aria-labelledby="personal-menu-title">
+  <header class="personal-menu-head">
+   <h2 id="personal-menu-title">더보기</h2>
+   <button type="button" id="personal-menu-close" class="btn" autofocus>닫기</button>
+  </header>
+  <nav id="personal-menu-links" aria-label="내 업무 추가 메뉴"></nav>
+ </dialog>
  <dialog id="personal-editor" aria-labelledby="personal-editor-title">
   <form id="personal-form" class="personal-form">
    <h2 id="personal-editor-title"></h2>
