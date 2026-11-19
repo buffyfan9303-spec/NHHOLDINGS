@@ -228,3 +228,11 @@
   }
 }
 .auto-card-description {grid-column:1 / -1;overflow-wrap:anywhere}
+
+@media(max-width:680px) {
+ .personal-automation {gap:9px}
+ .auto-first-connect {gap:4px 8px;margin-top:6px;padding:6px 8px}
+ .auto-message {margin-top:6px}
+ .auto-row {padding-block:5px}
+ .auto-callback {padding:6px 8px}
+}

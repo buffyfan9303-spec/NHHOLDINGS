@@ -249,3 +249,9 @@
     to {opacity:1;transform:none}
   }
 }
+
+@media(max-width:680px) {
+ .personal-ai-dock {padding:9px var(--personal-panel-pad)}
+ .personal-ai-compose {padding:5px 0 2px}
+ .personal-ai-options {gap:6px}
+}

@@ -185,12 +185,23 @@ h2 {font-size:17px}
   .personal-workspace {grid-template-columns:140px minmax(0,1fr);gap:20px}
 }
 @media(max-width:680px) {
-  .personal-top {gap:7px;padding-inline:14px}
+  .personal-app {--personal-panel-pad:12px;font-size:14px;line-height:1.5}
+  .personal-top {gap:7px;min-height:52px;padding:3px 12px}
   .personal-wordmark {width:102px}
   .personal-account {gap:0 4px}
   .personal-account button {padding-inline:6px}
   .personal-account span {display:none}
-  .personal-workspace {grid-template-columns:minmax(0,1fr);gap:16px;padding-top:12px}
+  .personal-workspace {grid-template-columns:minmax(0,1fr);gap:9px;padding:5px 12px 32px}
+  .personal-title {gap:8px;margin-bottom:11px}
+  .personal-title time {font-size:12px}
+  .personal-title h1 {margin-top:2px;font-size:24px;line-height:1.25}
+  .personal-app h2 {font-size:15px}
+  .personal-sheet {padding:var(--personal-panel-pad);border-radius:9px}
+  .personal-section-head {gap:4px 9px}
+  .personal-section-break {margin-top:9px;padding-top:5px}
+  .personal-empty {margin-top:3px;font-size:13px}
+  .personal-list {margin-top:4px}
+  .personal-message {margin:5px 0 8px}
   .personal-nav {display:none}
   .personal-mobile-nav {
     display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;
@@ -205,11 +216,25 @@ h2 {font-size:17px}
   .personal-mobile-nav :is([aria-current=page],[aria-current=true]) {
     box-shadow:inset 0 -2px var(--teal);color:var(--teal);font-weight:700;
   }
-  .personal-home {grid-template-areas:'quick' 'today' 'links';grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(3,auto)}
+  .personal-home {grid-template-areas:'quick' 'today' 'links';grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:9px}
+  .personal-home :is(.personal-today-sheet,.personal-links-sheet) {
+    padding:3px var(--personal-panel-pad) 7px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;
+  }
+  .personal-quick {gap:4px;margin-top:6px}
+  .personal-form {gap:6px}
+  .personal-form-actions {gap:6px;margin-top:2px}
+  .personal-app .btn {padding:5px 10px;min-width:44px}
+  .personal-form :is(input,textarea,select),.personal-quick input {padding-block:6px}
+  #personal-editor {padding:var(--personal-panel-pad)}
+  #personal-menu {padding:10px 12px calc(12px + env(safe-area-inset-bottom))}
+  .personal-menu-head {margin-bottom:4px}
+  #personal-menu-links {gap:1px 6px}
   .personal-form :is(input:not([type="checkbox"]),textarea,select),.personal-quick input {font-size:16px}
-  .personal-row {gap:5px}
+  .personal-row {gap:5px;padding-block:3px}
+  .personal-row-text {padding-top:6px}
+  .personal-row-text strong {font-size:14px}
   .personal-row-actions {gap:0}
-  .personal-action {padding-inline:6px}
+  .personal-action {padding-inline:6px;min-width:44px}
 }
 .personal-revalidating [data-personal-view],
 .personal-revalidating #personal-editor,
