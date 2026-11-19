@@ -70,7 +70,7 @@ export default function Login({portal = 'one'}: {portal?: 'one' | 'market'}) {
     <link rel="stylesheet" href="/one/fonts/pretendard.css" precedence="login"/>
     <main className={`nh-login${market ? " nh-login-market" : ""}`}>
       <div className="nh-login-card">
-        <a href={market ? '/nurimarket' : '/login'} className="nh-wordmark" aria-label={market ? 'NURI MARKET 홈' : 'NURI ONE 로그인'}><img src={`/brand/nuri-${market ? 'market' : 'one'}.svg`} alt={market ? 'NURI MARKET' : 'NURI ONE'} width={market ? 7906 : 8541} height={market ? 1120 : 1600}/></a>
+        <a href={market ? '/nurimarket' : '/login'} className="nh-wordmark" aria-label={market ? 'NURI MARKET 홈' : 'NURI ONE 로그인'}><img src={`/brand/nuri-${market ? 'market' : 'one'}.svg`} alt={market ? 'NURI MARKET' : 'ONE PIECE'} width={market ? 7906 : 8541} height={market ? 1120 : 1600}/></a>
         <header className="nh-login-heading">
           <h1>{verify ? '인증메일 다시 요청' : recovery ? '비밀번호 찾기' : signup ? market ? '회원가입' : '계정 신청' : marketAdminEntry ? '쇼핑몰 관리자 로그인' : '로그인'}</h1>
           {marketAdminEntry && view === 'login' && <p>누리원 운영자 계정으로 로그인하세요.</p>}
