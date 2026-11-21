@@ -121,3 +121,20 @@
 }
 #workbench .workbench-channel-filters span {font-variant-numeric: tabular-nums}
 #workbench .workbench-channel-empty {margin-block: .75rem .25rem}
+
+#personal-resume[hidden]{display:none}
+#personal-resume a{display:inline-flex;align-items:center;min-height:44px;overflow-wrap:anywhere;word-break:keep-all}
+#personal-resume .workbench-list li{padding:.15rem 0 .35rem}
+#personal-resume small,.workbench-activity small{color:var(--muted,inherit);overflow-wrap:anywhere}
+#workbench .workbench-narrow+.workbench-body{margin-top:1.5rem}
+#workbench .workbench-narrow+.workbench-narrow{margin-top:1rem}
+#workbench .workbench-activity li{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.625rem}
+#workbench .workbench-activity li>div{min-width:0}
+#workbench .workbench-activity small{display:block}
+#workbench .workbench-activity button{max-width:8rem}
+[data-auto-item]:focus{outline:2px solid var(--accent,currentColor);outline-offset:2px}
+@media(max-width:480px){
+  .workbench-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 .375rem}
+  .workbench-nav button{min-width:0;white-space:normal;word-break:keep-all}
+  .workbench-nav button[data-action="refresh"]{margin:0;justify-self:end}
+}

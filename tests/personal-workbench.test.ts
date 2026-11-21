@@ -10,6 +10,8 @@ import {GET as connect,POST as connectPost} from '../src/app/api/one/connect/[st
 import {POST as call} from '../src/app/api/one/mcp/route';
 import {saveMailApp} from '../src/lib/personal-mail-auth';
 import {getPersonalCard} from '../src/lib/personal-cards';
+import {personalAIHistory,aiRecord,savePersonalAIMessage,applyPersonalAI} from '../src/lib/personal-ai-work';
+import {GET as aiHistory} from '../src/app/api/personal/ai/chat/route';
 import {proposeMoves} from '../src/lib/personal-workbench';
 
 const origin='https://one.example.invalid';
@@ -167,6 +169,50 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     assert.equal(imported.category,'cards');
     assert.equal(imported.status,'pending');
     assert.equal((await post('first',{action:'approve',id:imported.id})).status,404);
+    const resumePath='/api/personal/workbench?view=resume';
+    const activityPath='/api/personal/workbench?view=activity';
+    const content={action:'content-pack',projectId:project.id,title:'한 주의 콘텐츠',topic:'원본 메모',short:'숏폼 대본',blog:'블로그 초안',social:'짧은 글',
+      card:{title:'묶음 카드',slides:[{headline:'카드 한 장'}]}};
+    assert.equal((await post('second',content)).status,404);
+    const {decisions:variants}=await (await post('first',content)).json();
+    assert.equal(variants.length,4);
+    assert.equal(new Set(variants.map((row:{pack:{id:string}})=>row.pack.id)).size,1);
+    const packTool=await (await rpc(a.access,'propose_content_pack',{projectId:project.id,title:'AI 원고',topic:'AI용 원본',blog:'AI 블로그'})).json();
+    assert.match(packTool.result.structuredContent.drafts[0].url,/\?review=[a-f0-9-]+#workbench$/);
+    const edited=await post('first',{action:'revise',id:variants[0].id,revision:1,text:'수정 대본'});
+    assert.equal((await edited.json()).decision.originalText,'숏폼 대본');
+    assert.equal((await post('first',{action:'approve',id:variants[0].id,revision:1})).status,409);
+    assert.equal((await post('first',{action:'approve',id:variants[0].id,revision:2})).status,200);
+    const starter={action:'start-project',starter:'personal',name:'내 첫 업무',rules:'업무 원칙',firstStep:'할 일 확인'};
+    const before=await (await workbench(req(resumePath,'second'))).json();
+    assert.equal(before.firstRun,true);
+    const enrolled=await (await post('second',starter)).json();
+    assert.equal((await (await post('second',starter)).json()).projectId,enrolled.projectId);
+    const after=await (await workbench(req(resumePath,'second'))).json();
+    assert.equal(after.firstRun,false);
+    assert.ok(after.latest.some((row:{project:string})=>row.project===starter.name));
+    assert.doesNotMatch(JSON.stringify(after),/한 주의 콘텐츠|원본 메모|비공개 업무 원칙/);
+    const historyPath='/api/personal/ai/chat?project='+project.id;
+    await savePersonalAIMessage(first.id,aiRecord('openai','chat','일반 질문','일반 대답'));
+    await savePersonalAIMessage(first.id,aiRecord('openai','chat','프로젝트 질문','프로젝트 대답',undefined,project.id));
+    assert.equal((await personalAIHistory(first.id))[0].prompt,'일반 질문');
+    assert.equal((await aiHistory(req(historyPath,'second'))).status,404);
+    assert.equal((await (await aiHistory(req(historyPath,'first'))).json()).messages[0].prompt,'프로젝트 질문');
+    const queue=await applyPersonalAI(first,'cards','','instagram',JSON.stringify(content.card),project.id);
+    assert.equal(queue.action.kind,'approval');
+    const aiPack=await applyPersonalAI(first,'content-pack','사용자가 입력한 원본','instagram',JSON.stringify({title:'AI 묶음',topic:'추정 원본',blog:'블로그'}),project.id);
+    assert.equal(aiPack.action.kind,'approval');
+    const savedPack=(await snapshot('first')).decisions.find((row:{id:string})=>row.id===aiPack.action.id);
+    assert.equal(savedPack.pack.topic,'사용자가 입력한 원본');
+    assert.equal((await snapshot('first')).decisions.find((row:{id:string})=>row.id===queue.action.id).status,'pending');
+    for(const [owner,kind,value] of [[first,'personal-mail-item',{subject:'보낸메일 결과 확인',reason:'응답 유실',body:'비공개 본문'}],[second,'personal-social-post',{title:'다른 계정 게시',error:'다시 확인',body:'비공개 게시 본문'}]] as const){
+      await query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live',$1,$2,$3)",[kind,owner.id+':activity',JSON.stringify({...value,ownerId:owner.id,status:'review'})]);
+    }
+    const log=await (await workbench(req(activityPath,'first'))).json();
+    assert.equal(log.activity.length,1);
+    assert.equal(log.activity[0].title,'보낸메일 결과 확인');
+    assert.equal(log.activity[0].unconfirmed,true);
+    assert.doesNotMatch(JSON.stringify(log),/다른 계정|비공개 본문/);
     const refreshRequest=new URLSearchParams({grant_type:'refresh_token',client_id:client,refresh_token:a.refresh,resource:origin+'/api/one/mcp'});
     const escalated=new URLSearchParams(refreshRequest);
     escalated.set('scope','nuri.workbench offline_access nuri.social.read');

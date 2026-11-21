@@ -79,5 +79,8 @@ test('personal Gmail scheduling isolates principal, claims once, and demands rev
   assert.equal(my.find(d=>d.id===ok)?.status,'sent');
   assert.equal(my.find(d=>d.id===lost)?.status,'review');
   assert.equal(their.find(d=>d.id===denied)?.status,'review');
+  assert.equal(my.find(d=>d.id===lost)?.retryable,false);
+  assert.equal(their.find(d=>d.id===denied)?.retryable,true);
+  assert.equal(await editPersonalMail(owner,{action:'schedule',id:lost,version:3,approved:true,at:new Date(Date.now()+60_000).toISOString()},ownerEmail).catch(error=>error.message),'현재 상태에서 예약할 수 없습니다.');
   assert.equal(JSON.stringify(my).includes('synthetic-provider-id'),false);
 });

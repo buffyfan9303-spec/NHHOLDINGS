@@ -15,7 +15,7 @@
     draft:['초안 작성','대상과 목적에 맞는 초안을 작성하고 확인이 필요한 사실을 표시하세요.'],
   };
 
-  const modes={chat:'대화',brief:'업무 요약',task:'할 일 추가',schedule:'일정 추가',note:'메모 작성',social:'SNS 초안',mail:'메일 초안',cards:'카드뉴스'};
+  const modes={chat:'대화',brief:'업무 요약',task:'할 일 추가',schedule:'일정 추가',note:'메모 작성',social:'SNS 초안',mail:'메일 초안',cards:'카드뉴스','content-pack':'콘텐츠 묶음'};
   const socialProviders={instagram:'Instagram',threads:'Threads',youtube:'YouTube',x:'X'};
   const destinations={task:['할 일 열기','#tasks'],schedule:['일정 열기','#schedule'],note:['메모 열기','#notes'],social:['SNS 초안 열기','#social'],mail:['메일 초안 열기','#mail']};
   const formatTime=new Intl.DateTimeFormat('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'});
@@ -65,7 +65,8 @@
             <label>사용할 AI<select name="provider">${selectOptions(Object.fromEntries(Object.entries(subscriptionSites).map(([key,value])=>[key,value.label])))}</select></label>
             <label>목적<select name="kind">${selectOptions(Object.fromEntries(Object.entries(requestTypes).map(([key,value])=>[key,value[0]])))}</select></label>
           </div>
-          <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
+          <div data-ai-project hidden><div class="personal-ai-actions"><strong></strong><button type="button" class="btn" data-ai-action="leave-project">일반 대화</button></div></div>
+        <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
           <fieldset class="personal-ai-context"><legend>요청에 포함할 자료</legend>
           <label class="personal-ai-check"><input type="checkbox" name="today"> 오늘 할 일과 일정 포함</label>
           <label class="personal-ai-check"><input type="checkbox" name="profile" disabled> 저장된 일하는 방식 포함</label>
@@ -113,6 +114,7 @@
         </div>
         <label data-ai-social-field hidden>SNS 채널<select name="socialProvider">${selectOptions(socialProviders)}</select></label>
         <p class="personal-ai-mode-note" data-ai-mode-note hidden></p>
+        <div data-ai-project hidden><div class="personal-ai-actions"><strong></strong><button type="button" class="btn" data-ai-action="leave-project">일반 대화</button></div></div>
         <label>요청<textarea name="prompt" rows="3" maxlength="6000" required placeholder="할 일이나 정리할 내용을 입력하세요."></textarea></label>
         <div class="personal-ai-actions">
           <button type="submit" class="btn primary" data-ai-send>보내기</button>
@@ -150,7 +152,9 @@
     social.hidden=mode!=='social';
     social.querySelector('select').disabled=social.hidden;
     const note=view.dock.querySelector('[data-ai-mode-note]');
-    note.textContent=mode==='mail'?'받는 사람 이메일 주소 한 개와 메일 목적을 입력하세요.':mode==='social'?(
+    const pack=view.compose.elements.mode.querySelector('[value="content-pack"]');
+    pack.hidden=!view.project;pack.disabled=!view.project;
+    note.textContent=mode==='content-pack'?'주제와 원본 자료를 입력하면 프로젝트 승인함에 콘텐츠 초안을 만듭니다.':mode==='mail'?'받는 사람 이메일 주소 한 개와 메일 목적을 입력하세요.':mode==='social'?(
       view.compose.elements.socialProvider.value==='youtube'?'작성한 YouTube 원고를 메모에서 확인할 수 있어요.':'초안은 내 SNS에서 검토하고 예약할 수 있어요.'
     ):'';
     note.hidden=!note.textContent;
@@ -247,6 +251,12 @@
   function receipt(action){
     if(!action)return null;
     if(action.kind==='cards')return cardReceipt(action);
+    if(action.kind==='approval'&&/^[\w-]{1,80}$/.test(action.id||'')){
+      const link=node('a','personal-link','프로젝트 승인함 열기');
+      link.href='/personal?review='+encodeURIComponent(action.id)+'#workbench';
+      link.dataset.aiGo='';
+      return link;
+    }
     if(!Object.hasOwn(destinations,action.kind))return null;
     const [label,path]=destinations[action.kind];
     const wrap=node('div','personal-ai-receipt');
@@ -306,7 +316,7 @@
     status(view,'내 모델과 대화를 불러오고 있습니다.');
     setControls(view);
     const [providers,messages]=await Promise.allSettled([
-      json(view,'providers',undefined,check.signal),json(view,'chat',undefined,check.signal),
+      json(view,'providers',undefined,check.signal),json(view,'chat'+(view.project?'?project='+encodeURIComponent(view.project.id):''),undefined,check.signal),
     ]);
     if(!current(view)||view.loadingCheck!==check)return;
     view.loadingCheck=null;
@@ -552,7 +562,7 @@
     const values=Object.fromEntries(new FormData(view.compose)),prompt=values.prompt?.trim()||'';
     if(!prompt||!view.providers.some(provider=>provider.id===values.provider&&provider.configured))return;
     const mode=Object.hasOwn(modes,values.mode)?values.mode:'chat';
-    const request={provider:values.provider,prompt,mode,...(mode==='social'?{socialProvider:values.socialProvider}:{})};
+    const request={provider:values.provider,prompt,mode,...(view.project?{projectId:view.project.id}:{}),...(mode==='social'?{socialProvider:values.socialProvider}:{})};
     const check=new AbortController();
     view.stream=check;
     view.pending={provider:values.provider,prompt,response:''};
@@ -684,6 +694,7 @@
       if(!control||!current(view))return;
       const action=control.dataset.aiAction;
       if(action==='close')hide(view,true);
+      else if(action==='leave-project')selectProject(view,null);
       else if(action==='handoff')setHandoff(view,view.handoff.hidden);
       else if(action==='handoff-pane')setHandoffPane(view,control.dataset.pane);
       else if(action==='edit-handoff'){
@@ -755,18 +766,41 @@
     modeChanged(view);
     setControls(view);
     if(resume?.owner===owner){
-      show(view);
+      if(resume.project)selectProject(view,resume.project);else show(view);
       if(resume.pane)setHandoff(view,true,resume.pane);
     }
     resume=null;
   }
 
+  function selectProject(view,project){
+    if(view.stream){status(view,'답변이 끝난 뒤 대화를 바꿔 주세요.');return false;}
+    if(view.project?.id!==project?.id){
+      view.loadingCheck?.abort();
+      view.loadingCheck=null;view.loading=false;view.ready=false;
+      view.messages=[];view.project=project;
+      const label=view.dock.querySelector('[data-ai-project]');
+      label.hidden=!project;
+      label.querySelector('strong').textContent=project?.name??'';
+      view.compose.elements.prompt.value='';
+      view.compose.elements.mode.value='chat';
+      modeChanged(view);paintHistory(view);
+    }
+    show(view,true);
+    return true;
+  }
+
+  function openProject(id,name){
+    mount();
+    if(!active||!current(active))return false;
+    return selectProject(active,{id,name});
+  }
+
   function suspend(){
     if(!active)return;
-    resume=active.dock.open?{owner:active.owner,pane:active.handoff.hidden?null:active.externalAI?'import':active.handoffPane}:null;
+    resume=active.dock.open?{owner:active.owner,project:active.project,pane:active.handoff.hidden?null:active.externalAI?'import':active.handoffPane}:null;
     dispose(active);
   }
 
   media.addEventListener('change',()=>{if(active?.dock.open&&current(active))show(active);});
-  window.NuriPersonalAI={mount,suspend};
+  window.NuriPersonalAI={mount,suspend,openProject};
 })();

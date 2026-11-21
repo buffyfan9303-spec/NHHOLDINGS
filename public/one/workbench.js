@@ -3,7 +3,7 @@
   const root=document.getElementById('workbench');
   if(!root)return;
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',connect:'연결 관리'};
+  const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',activity:'실행 내역',connect:'연결 관리'};
   const categories={business:'사업 운영',content:'콘텐츠',seller:'판매 준비',mail:'메일',drive:'Drive',schedule:'일정',cards:'카드뉴스'};
   const providers={chatgpt:['ChatGPT','플러그인 → 추가 → 사용자 지정 MCP 서버에서 이 주소를 등록하세요. Business·Enterprise·Edu에서 작성 기능을 지원합니다. Pro는 조회 권한으로 연결할 수 있습니다.','https://chatgpt.com/'],claude:['Claude','커넥터에서 사용자 지정 연결을 추가하고 OAuth 클라이언트는 자동 등록을 선택하세요.','https://claude.ai/'],gemini:['Gemini','사용자 지정 연결은 현재 미국의 개인 Google 계정에서 영어로 지원됩니다. 한국에서는 구독 AI의 요청 복사 기능을 사용하세요.','https://gemini.google.com/']};
   const templates={
@@ -13,17 +13,30 @@
     personal:{label:'개인 업무',name:'내 일과 자료 정리',rules:'마감이 가까운 일부터 정리한다. 문서는 제목, 정리 위치, 다음 할 일만 간단히 적는다. 가족이나 지인의 정보를 별도 승인 없이 공유하지 않는다.',step:'오늘 할 일 → 집중 시간 → 자료 정리 → 확인',prompt:'오늘 업무와 프로젝트 기억을 읽고, 중요한 일 세 가지와 자료 정리 순서를 제안해서 누리원 승인함에 넣어줘.'},
   };
   let pane='projects', owner=null, controller=null, data=null, projectId=null, detailId=null, selectedTemplate=null, showHistory=false;
+  const home=document.getElementById('personal-resume');
+  let homeRead=null,activityData=null,profileData=null,projectFilter='';
   let running=false, resume=null, channels=null, checkingChannels=false, channelError=false, channelFilter='all';
   const now=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'});
   function today(){return now.format(new Date());}
   function connectionURL(){return location.origin+'/api/one/mcp';}
   function status(message){const el=root.querySelector('[data-workbench-status]');if(el)el.textContent=message;}
   function action(label,key,id=''){return '<button type="button" class="btn" data-action="'+key+'" data-id="'+esc(id)+'">'+label+'</button>';}
-  const selectProject=()=>'<option value="">선택 안 함</option>'+data.projects.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('');
+  const selectProject=(selected=projectId)=>'<option value="">선택 안 함</option>'+data.projects.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===selected?' selected':'')+'>'+esc(p.name)+'</option>').join('');
   function projects(){
     const project=data.projects.find(p=>p.id===projectId);
     const template=templates[selectedTemplate];
-    return '<div class="workbench-body">'+
+    const related=project?data.decisions.filter(row=>row.projectId===project.id):[];
+    const starter=!data.projects.length||!!template;
+    const firstRun=starter?'<section class="workbench-narrow"><h2>첫 업무 시작</h2><p>자주 할 일을 선택하면 업무 원칙과 첫 검토 항목을 준비합니다.</p>'+
+      '<div class="workbench-actions">'+Object.entries(templates).map(([id,value])=>action(value.label,'template',id)).join('')+'</div>'+
+      (template?'<p>'+esc(template.step)+'</p>'+action('프로젝트와 첫 업무 만들기','start',selectedTemplate):'')+'</section>':'';
+    const next=project?'<section class="workbench-narrow"><div class="workbench-heading"><h2>이 프로젝트 이어서 하기</h2>'+
+      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+'</div>'+'</div>'+
+      (related.length?'<ul class="workbench-list">'+related.slice(0,6).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+
+      '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>':'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
+      contentForm(project.id)+'</section>':'';
+
+    return firstRun+next+'<div class="workbench-body">'+
       '<section><h2>프로젝트 기억</h2><p class="workbench-muted">프로젝트마다 말투, 기준, 확인할 사실을 저장합니다. 연결된 AI는 선택한 프로젝트의 기억을 읽습니다.</p>'+
       '<ul class="workbench-list">'+data.projects.map(p=>'<li>'+action(esc(p.name),'edit',p.id)+'</li>').join('')+'</ul>'+
       '<form data-form="project" class="personal-form"><label>프로젝트 이름<input name="name" maxlength="80" required value="'+esc(project?.name??template?.name)+'"></label>'+
@@ -38,24 +51,41 @@
   function schedule(){
     return '<section class="workbench-narrow"><h2>빈 시간에 할 일 배치</h2><p class="workbench-muted">선택한 날의 빈 시간에 마감이 가까운 할 일을 30분씩 배치합니다. 날짜가 없는 할 일은 제외합니다. 기존 마감과 일정을 유지하고 제안은 승인함에서 확인합니다.</p>'+
       '<form class="personal-form" data-form="plan"><label>배치할 날짜<input type="date" name="day" min="'+today()+'" value="'+today()+'" required></label>'+
+      '<label>관련 프로젝트<select name="projectId">'+selectProject()+'</select></label>'+
       '<div class="workbench-time"><label>시작 시간<input type="time" name="start" value="09:00" required></label><label>끝 시간<input type="time" name="end" value="18:00" required></label></div>'+
       '<small>한국 시간 기준. 시간이 있는 일정과 예약은 시작부터 30분을 비워 둡니다.</small>'+
       '<div><button class="btn primary" type="submit">일정 제안 만들기</button></div></form><a class="personal-link" href="#schedule">내 일정 보기</a></section>';
   }
+  const decisionLabel=row=>({pending:'검토 대기',applied:'승인 완료',declined:'반려',undone:'되돌림'})[row.status]||'';
+  function contentForm(id){
+    return '<details><summary>콘텐츠 묶음 만들기</summary><form class="personal-form" data-form="content-pack">'+
+      '<input type="hidden" name="projectId" value="'+esc(id)+'">'+
+      '<label>묶음 제목<input name="title" maxlength="80" required></label><label>주제와 원본 자료<textarea name="topic" rows="3" maxlength="2000" required></textarea></label>'+
+      '<label>숏폼 대본<textarea name="short" rows="3" maxlength="4000"></textarea></label><label>블로그 초안<textarea name="blog" rows="3" maxlength="4000"></textarea></label>'+
+      '<label>SNS 문구<textarea name="social" rows="3" maxlength="4000"></textarea></label>'+
+      '<label>카드뉴스 JSON<textarea name="card" rows="3" maxlength="18000"></textarea></label>'+
+      '<div class="workbench-actions"><button class="btn primary" type="submit">초안을 승인함에 추가</button>'+
+      action('AI 요청 예시 복사','copy-pack',id)+'</div></form></details>';
+  }
   function approvals(){
     const decision=data.decisions.find(item=>item.id===detailId);
-    const rows=data.decisions.filter(item=>showHistory?item.status!=='pending':item.status==='pending');
+    const rows=data.decisions.filter(item=>(!projectFilter||item.projectId===projectFilter)&&(showHistory?item.status!=='pending':item.status==='pending'));
     const statusText={pending:'검토 대기',applied:'승인 완료',declined:'반려',undone:'되돌림'};
     let details='<p class="personal-empty">목록에서 검토할 항목을 고르세요.</p>';
     if(decision) {
       const project=data.projects.find(item=>item.id===decision.projectId);
-      const stale=decision.projectId&&(!project||project.version!==decision.projectVersion);
+      const stale=decision.projectId&&(!project||decision.projectVersion&&project.version!==decision.projectVersion);
       const destination={mail:'메일 초안 열기',content:'게시 초안 열기',drive:'정리 메모 열기',business:'업무 메모 열기',seller:'판매 준비 메모 열기'};
-      const link=destination[decision.category];
+      const link=decision.pack&&['blog','short'].includes(decision.pack.format)?null:destination[decision.category];
       const cardList=decision.card?.slides.map((slide,index)=>'<li><small>'+(index+1)+'장</small><strong>'+esc(slide.headline)+'</strong><p>'+esc(slide.body)+'</p>'+
         (decision.status==='applied'&&decision.cardId?'<a class="btn" href="/api/personal/ai/cards/'+esc(decision.cardId)+'?slide='+index+'" target="_blank" rel="noopener">이미지 확인</a>':'')+'</li>').join('');
-      details='<section class="workbench-detail">'+action('목록으로','close-review')+'<h3>'+esc(decision.title)+'</h3><p class="workbench-muted">'+esc(statusText[decision.status])+' · '+esc(decision.source)+(project?' · '+esc(project.name)+' (기억 v'+esc(decision.projectVersion)+')':'')+'</p>'+
+      details='<section class="workbench-detail">'+action('목록으로','close-review')+'<h3>'+esc(decision.title)+'</h3><p class="workbench-muted">'+esc([statusText[decision.status],decision.source,project?.name].filter(Boolean).join(' · '))+(project&&decision.projectVersion?' (기억 v'+esc(decision.projectVersion)+')':'')+'</p>'+
         '<p>'+esc(decision.text)+'</p>'+
+        (decision.pack?'<details><summary>원본 자료와 이 묶음의 다른 초안</summary><p>'+esc(decision.pack.topic)+'</p><ul class="workbench-list">'+
+          data.decisions.filter(row=>row.pack?.id===decision.pack.id&&row.id!==decision.id).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+'</li>').join('')+'</ul></details>':'')+
+        (decision.originalText?'<details open><summary>수정 전 초안</summary><p>'+esc(decision.originalText)+'</p></details>':'')+
+        (decision.status==='pending'&&!decision.card&&!decision.moves?'<details><summary>초안 수정</summary><form class="personal-form" data-form="revise">'+
+          '<label>수정안<textarea name="text" maxlength="4000" rows="4" required>'+esc(decision.text)+'</textarea></label><div><button class="btn" type="submit">수정안 저장</button></div></form></details>':'')+
         (stale?'<p>초안 제안 이후 프로젝트 기억이 바뀌었습니다. 최신 기준과 대조해 주세요.</p>':'')+
         (decision.moves?'<ul class="workbench-list">'+decision.moves.map(move=>'<li><time>'+esc(move.day+' '+move.time)+'</time><strong>'+esc(move.title)+'</strong></li>').join('')+'</ul>':'')+
         (cardList?'<ol class="workbench-list">'+cardList+'</ol>':'')+
@@ -63,6 +93,7 @@
         (decision.status==='applied'&&!cardList?action('되돌리기','undo',decision.id)+(!['schedule','cards'].includes(decision.category)?action('초안 복사','copy-draft',decision.id)+(link?action(link,'open-draft',decision.id):'')+(decision.category==='drive'?'<a href="#files">비공개 저장소</a>':''):''):'')+'</div></section>';
     }
     return '<div class="workbench-body workbench-review"'+(decision?' data-detail-open':'')+'><section class="workbench-queue"><div class="workbench-heading"><h2>검토할 제안</h2>'+action(showHistory?'대기 항목':'처리 내역','history')+'</div>'+
+      (projectFilter?'<div class="workbench-actions"><small>'+esc(data.projects.find(row=>row.id===projectFilter)?.name)+'</small>'+action('모든 프로젝트','all-projects')+'</div>':'')+
       (rows.length?'<ul class="workbench-list">'+rows.map(row=>'<li>'+action(esc(row.title),'review',row.id)+'<small>'+esc(categories[row.category])+' · '+statusText[row.status]+'</small></li>').join('')+'</ul>':'<p class="personal-empty">'+(showHistory?'처리한 제안이 없습니다.':'대기 중인 제안이 없습니다.')+'</p>')+
       '<details><summary>직접 초안 추가</summary><form class="personal-form" data-form="draft"><label>업무 종류<select name="category">'+Object.entries(categories).filter(([id])=>!['schedule','cards'].includes(id)).map(([id,label])=>'<option value="'+id+'">'+label+'</option>').join('')+'</select></label>'+
       '<label>관련 프로젝트<select name="projectId">'+selectProject()+'</select></label><label>제목<input name="title" maxlength="160" required></label>'+
@@ -141,9 +172,29 @@
           (active?action('연결 끊기','disconnect',id):'')+'</div></li>';
       }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p></section></div>';
   }
-  const renderers={projects,schedule,approvals,connect};
+  function activity(){
+    const labels={review:'확인 필요',scheduled:'예약됨',sent:'발송 완료',published:'게시 완료',sending:'발송 중',publishing:'게시 중',cancelled:'취소'};
+    return '<section class="workbench-narrow"><div class="workbench-heading"><h2>최근 게시·발송 내역</h2>'+action('내역 갱신','refresh-activity')+'</div>'+
+      (activityData?.error?'<p role="status">실행 내역을 불러오지 못했습니다.</p>':!activityData?'<p>내역을 불러오고 있습니다.</p>':
+       activityData.length?'<ul class="workbench-list workbench-activity">'+activityData.map(item=>'<li><div><strong>'+esc(item.title)+'</strong><small>'+
+       esc(item.kind==='mail'?'Gmail':serviceNames[item.provider]||'SNS')+' · '+labels[item.status]+'</small>'+
+       (item.reason?'<p>'+esc(item.reason)+'</p>':'')+'</div>'+
+       action(item.status==='review'?(item.unconfirmed?'결과 확인':'작업 복구'):'작업 보기','open-activity',item.id)+'</li>').join('')+'</ul>':
+       '<p class="personal-empty">아직 처리할 게시·발송 내역이 없습니다.</p>')+'</section>';
+  }
+  function preferences(){
+    return '<section class="workbench-narrow"><h2>내 업무 선호</h2>'+
+      '<p class="workbench-muted">누리원 AI 비서에 적용됩니다. 외부 구독 AI에서 쓰려면 직접 복사해 요청에 추가하세요.</p>'+
+      (!profileData||profileData.error?'<p>'+(!profileData?'선호를 불러오는 중입니다.':'선호를 불러오지 못했습니다.')+'</p>'+
+        (profileData?.error?action('다시 불러오기','refresh-profile'):''):
+        '<form class="personal-form" data-form="profile"><label>업무 시간·글쓰기 톤·검토 기준<textarea name="instructions" rows="5" maxlength="1200" placeholder="예: 오전에는 집중 업무를 먼저 배치">'+
+        esc(profileData.instructions)+'</textarea></label><div class="workbench-actions"><button class="btn primary" type="submit">선호 저장</button>'+
+        (profileData.instructions?action('저장한 선호 복사','copy-profile'):'')+'</div></form>')+'</section>';
+  }
+  const renderers={projects,schedule,approvals,activity,connect,preferences};
+
   function render(message=''){
-    root.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries(sections).map(([id,label])=>
+    root.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries({...sections,preferences:'내 선호'}).map(([id,label])=>
       '<button type="button" data-pane="'+id+'"'+(id===pane?' aria-current="page"':'')+'>'+label+'</button>').join('')+
       (data?action('새로고침','refresh'):'')+'</nav><p class="personal-message" data-workbench-status role="status">'+esc(message)+'</p>'+
       (data?renderers[pane]():'<p class="workbench-muted">업무 작업대를 불러오는 중입니다.</p>');
@@ -172,27 +223,101 @@
       }
     }
   }
+  async function loadPane(target,force=false){
+    if(!controller)return;
+    if(target==='connect'){void loadChannels();return;}
+    if(target!=='activity'&&target!=='preferences')return;
+    const signal=controller.signal;
+    try{
+      if(target==='activity'&&(force||!activityData)){
+        activityData=(await api(undefined,'?view=activity')).activity;
+      }
+      if(target==='preferences'&&(force||!profileData)){
+        profileData=await profileRequest();
+      }
+    }catch{if(signal.aborted)return;if(target==='activity')activityData={error:true};else profileData={error:true};}
+    if(!signal.aborted&&pane===target){
+      const focus=root.contains(document.activeElement)?document.activeElement.dataset:null;
+      if(focus&&document.activeElement.matches('input,textarea,select'))return;
+      render();
+      if(focus?.pane)root.querySelector('[aria-current="page"]')?.focus({preventScroll:true});
+      else if(focus?.action)root.querySelector('[data-action="'+focus.action+'"]')?.focus({preventScroll:true});
+    }
+  }
+  async function profileRequest(input){
+    const signal=controller.signal;
+    const response=await fetch('/api/personal/ai/profile',{signal,cache:'no-store',headers:{'X-Personal-Account':owner,
+      ...(input?{'Content-Type':'application/json'}:{})},...(input?{method:'POST',body:JSON.stringify(input)}:{})});
+    const result=await response.json();
+    signal.throwIfAborted();
+    if(!response.ok)throw Error(result.error||'선호를 저장하지 못했습니다.');
+    return result;
+  }
+  function review(id){
+    const row=data.decisions.find(item=>item.id===id);
+    if(!row)return false;
+    detailId=id;showHistory=row.status!=='pending';pane='approvals';
+    return true;
+  }
   async function mount(){
     if(!window.NuriPersonalAccount)return;
+    const incoming=new URL(location.href);
+    const requested=incoming.searchParams.get('workbench'), requestedReview=incoming.searchParams.get('review');
     if(controller){
-      if(data&&pane==='connect')void loadChannels();
+      if(data&&(requested||requestedReview)){
+        acceptRoute(incoming,requested,requestedReview);
+        render();focusCurrent();
+      }
+      if(data)void loadPane(pane,pane!=='preferences');
       return;
     }
     owner=window.NuriPersonalAccount;
     pane=resume?.owner===owner?resume.pane:'projects';
-    channelFilter=resume?.owner===owner?resume.channelFilter:'all';
+    const previous=resume?.owner===owner?resume:null;
+    channelFilter=previous?.channelFilter??'all';
+    projectId=previous?.projectId??null;detailId=previous?.detailId??null;
+    projectFilter=previous?.projectFilter??'';showHistory=previous?.showHistory??false;
     resume=null;
     controller=new AbortController();
     const signal=controller.signal;
-    if(new URLSearchParams(location.search).get('workbench')==='connect'){
-      pane='connect';
-      const url=new URL(location.href);
-      url.searchParams.delete('workbench');
+    render();
+    try{
+      data=await api();
+      acceptRoute(incoming,requested,requestedReview);
+      render();void loadPane(pane);
+      if(requestedReview)focusCurrent();
+    }
+    catch(error){if(!signal.aborted){controller=null;root.innerHTML='<p role="status">'+esc(error.message)+'</p>'+action('다시 불러오기','retry');}}
+  }
+  function acceptRoute(url,requested,id){
+    if(requested==='connect'||requested==='activity')pane=requested;
+    if(id){
+      projectFilter='';
+      if(!review(id)){pane='approvals';detailId=null;}
+    }
+    if(requested||id){
+      url.searchParams.delete('workbench');url.searchParams.delete('review');
       history.replaceState(history.state,'',url.href);
     }
-    render();
-    try{data=await api();render();if(pane==='connect')void loadChannels();}
-    catch(error){if(!signal.aborted){controller=null;root.innerHTML='<p role="status">'+esc(error.message)+'</p>'+action('다시 불러오기','retry');}}
+  }
+  async function loadHome(){
+    const account=window.NuriPersonalAccount;
+    if(!home||!account)return;
+    homeRead?.abort();
+    const read=new AbortController();
+    homeRead=read;
+    try{
+      const response=await fetch('/api/personal/workbench?view=resume',{signal:read.signal,cache:'no-store',headers:{'X-Personal-Account':account}});
+      if(!response.ok)return;
+      const {pending,reviews,latest,firstRun}=await response.json();
+      if(read.signal.aborted||window.NuriPersonalAccount!==account)return;
+      home.hidden=!pending&&!reviews&&!firstRun;
+      home.innerHTML='<div class="personal-section-head"><h2>이어서 할 일</h2></div>'+
+        (latest.length?'<ul class="workbench-list">'+latest.map(row=>'<li><a class="personal-link" href="?review='+encodeURIComponent(row.id)+'#workbench">'+
+           esc(row.title)+'</a>'+(row.project?'<small>'+esc(row.project)+'</small>':'')+'</li>').join('')+'</ul>':'')+
+        (reviews?'<a class="personal-link" href="?workbench=activity#workbench">게시·발송 확인 '+reviews+'건</a>':'')+
+        (firstRun?'<a class="personal-link" href="#workbench">첫 프로젝트 시작</a>':'');
+    }catch{}
   }
   async function mutate(input,message){
     if(running||!data||!controller)return;
@@ -201,7 +326,12 @@
     root.setAttribute('aria-busy','true');
     root.querySelectorAll('button').forEach(button=>{button.disabled=true;});
     try {
-      const result=await api(input);
+      const result=input.action==='profile'?{profile:await profileRequest({instructions:input.instructions,version:profileData.version})}:await api(input);
+      if(result.profile)profileData=result.profile;
+      if(result.decisions&&!result.projects){
+        data.decisions=[...result.decisions,...data.decisions];
+        projectFilter=projectId;review(result.decisions[0].id);
+      }
       if(result.connections)data=result;
       else if(result.projects){data.projects=result.projects;data.decisions=result.decisions;}
       else if(result.decision){
@@ -211,7 +341,8 @@
         showHistory=decision.status!=='pending';
         pane='approvals';
       }
-      if(input.action==='project-remove')projectId=null;
+      if(result.projectId){projectId=result.projectId;selectedTemplate=null;}
+      if(input.action==='project-remove'){projectId=null;projectFilter='';}
       if(input.action==='project') {
         projectId=input.id??result.projects.at(-1)?.id??null;
       }
@@ -232,7 +363,7 @@
   }
   function switchPane(next){
     pane=next;render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
-    if(next==='connect')void loadChannels();
+    void loadPane(next);
   }
   root.addEventListener('click',async event=>{
     const channel=event.target.closest('[data-connect-service]');
@@ -253,20 +384,43 @@
     if(key==='retry'){void mount();return;}
     if(!data)return;
     if(next){switchPane(next);return;}
+    if(key==='refresh-activity'||key==='refresh-profile'){void loadPane(pane,true);return;}
+    if(key==='open-activity'){
+      const item=Array.isArray(activityData)&&activityData.find(row=>row.id===id);
+      if(item)window.NuriPersonalAutomation?.focusActivity(item.kind,item.id);
+      return;
+    }
+    if(key==='all-projects'||key==='project-queue'){
+      projectFilter=key==='project-queue'?id:'';showHistory=false;detailId=null;switchPane('approvals');return;
+    }
+    if(key==='go-review'&&review(id)){render();focusCurrent();return;}
+    if(key==='start'&&templates[id]){
+      const {name,rules,step}=templates[id];
+      void mutate({action:'start-project',starter:id,name,rules,firstStep:step},'프로젝트와 첫 업무를 준비했습니다.');
+      return;
+    }
+    if(key==='copy-profile'||key==='copy-pack'){
+      const value=key==='copy-profile'?profileData?.instructions:
+        '프로젝트 기억을 읽고, 아래 주제와 원본 자료를 바탕으로 숏폼 대본·블로그·SNS 문구를 따로 작성해 줘. 연결된 SNS 목록 조회 권한이 있으면 내 채널에 맞춰 줘. 카드뉴스 초안도 함께 만들고 propose_content_pack 도구로 원본 자료와 모든 초안을 묶어 승인함에 추가해 줘. 도구 연결이 없으면 결과를 각각 복사할 수 있게 제공해 줘.\n주제와 자료: '+(trigger.closest('form')?.elements.topic.value||'[여기에 입력]');
+      try{if(value)await navigator.clipboard.writeText(value);status('복사했습니다.');}catch{status('자동 복사가 안 됩니다.');}
+      return;
+    }
     if(key==='retry-channels'){void loadChannels();return;}
     if(key==='refresh'){
       const signal=controller.signal;
       running=true;
-      try{data=await api();render('최신 상태를 불러왔습니다.');if(pane==='connect')void loadChannels();root.querySelector('[data-action="refresh"]').focus({preventScroll:true});}
+      try{data=await api();render('최신 상태를 불러왔습니다.');void loadPane(pane,true);root.querySelector('[data-action="refresh"]').focus({preventScroll:true});}
       catch(error){if(!signal.aborted)status(error.message);}
       finally{if(!signal.aborted)running=false;}
       return;
     }
     const project=data.projects.find(row=>row.id===id),decision=data.decisions.find(row=>row.id===id);
+    if(key==='project-chat'&&project){window.NuriPersonalAI?.openProject(project.id,project.name);return;}
     if(key==='connect-pane'){event.preventDefault();switchPane('connect');return;}
     if(key==='edit'||key==='new'||key==='template'){
       projectId=key==='edit'?id:null;selectedTemplate=key==='template'?id:null;
-      render();root.querySelector('input[name="name"]').focus();return;
+      render();
+      (key==='template'?root.querySelector('[data-action="start"]'):root.querySelector('input[name="name"]'))?.focus();return;
     }
     if(key==='review'||key==='history'||key==='close-review'){
       detailId=key==='review'?id:null;
@@ -293,7 +447,18 @@
     if(key==='remove-project'&&project&&window.confirm('이 프로젝트 기억을 삭제할까요?')){
       void mutate({action:'project-remove',id,version:project.version},'기억을 삭제했습니다.');
     }
-    if(['approve','decline','undo'].includes(key)) void mutate({action:key,id},key==='approve'?'승인했습니다.':key==='decline'?'반려했습니다.':'되돌렸습니다.');
+    if(['approve','decline','undo'].includes(key)) void mutate({action:key,id,revision:decision?.revision??1},key==='approve'?'승인했습니다.':key==='decline'?'반려했습니다.':'되돌렸습니다.');
+  });
+  home?.addEventListener('click',event=>{
+    const link=event.target.closest('a[href]');
+    if(!link||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    const url=new URL(link.href);
+    if(url.pathname!==location.pathname||url.hash!=='#workbench')return;
+    event.preventDefault();
+    const current=new URL(location.href);
+    current.search=url.search;
+    history.replaceState(history.state,'',current.href);
+    if(location.hash==='#workbench')void mount();else location.hash='workbench';
   });
   root.addEventListener('submit',event=>{
     event.preventDefault();
@@ -303,10 +468,17 @@
     if(action==='project'&&projectId){
       payload.id=projectId;payload.version=data.projects.find(row=>row.id===projectId)?.version;
     }
-    void mutate({action,...payload},action==='project'?'프로젝트 기억을 저장했습니다.':'승인함에 제안을 추가했습니다.');
+    if(action==='revise'){payload.id=detailId;payload.revision=data.decisions.find(row=>row.id===detailId)?.revision??1;}
+    if(action==='content-pack'&&payload.card){
+      try{payload.card=JSON.parse(payload.card);if(!payload.card||typeof payload.card!=='object'||Array.isArray(payload.card))throw Error();}catch{status('카드뉴스 JSON 형식을 확인해 주세요.');return;}
+    }
+    void mutate({action,...payload},action==='profile'?'업무 선호를 저장했습니다.':action==='revise'?'수정안을 저장했습니다.':action==='project'?'프로젝트 기억을 저장했습니다.':'승인함에 제안을 추가했습니다.');
   });
-  window.NuriWorkbench={mount,suspend(){
-    if(owner)resume={owner,pane,channelFilter};
+  window.NuriWorkbench={mount,loadHome,suspend(){
+    homeRead?.abort();homeRead=null;
+    if(home){home.hidden=true;home.replaceChildren();}
+    activityData=null;profileData=null;projectFilter='';
+    if(owner)resume={owner,pane,channelFilter,projectId,detailId,projectFilter,showHistory};
     controller?.abort();controller=null;owner=null;data=null;channels=null;checkingChannels=false;channelError=false;channelFilter='all';pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
     root.removeAttribute('aria-busy');root.replaceChildren();
   }};

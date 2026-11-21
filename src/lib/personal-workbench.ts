@@ -5,12 +5,13 @@ import {personalAgenda} from '@/lib/personal-agenda';
 import {createPersonalCard,validatePersonalCard,type PersonalCardBlueprint} from '@/lib/personal-cards';
 import {integer, MarketError, textValue} from '@/lib/security';
 
-type Project = {id:string; name:string; rules:string; version:number};
+type Project = {id:string; name:string; rules:string; version:number; starter?:string};
 const categories = ['content','seller','business','mail','drive'] as const;
 type Category = typeof categories[number];
 type Move = {id:string; title:string; version:number; day:string; time:string};
 type Decision = {
   id:string; title:string; text:string; category:Category|'schedule'|'cards'; projectId:string|null;
+  pack?:{id:string; topic:string; format:string}; revision?:number; originalText?:string;
   card?:PersonalCardBlueprint; cardId?:string; projectVersion?:number; moves?:Move[]; start?:string; end?:string; source:string;
   status:'pending'|'applied'|'declined'|'undone'; created:string; decided?:string;
 };
@@ -37,6 +38,10 @@ function publicState(state:Workbench) {
 export async function readWorkbench(owner:string) {
   const {rows} = await pool().query<{data:Workbench}>('SELECT data FROM nh_documents WHERE '+workspaceKind,[owner]);
   return publicState(rows[0]?.data??blank());
+}
+
+export async function workbenchProject(owner:string,id:unknown){
+  return ownedProject(await readWorkbench(owner),id);
 }
 
 async function change<T>(owner:string, fn:(state:Workbench, client:PoolClient)=>Promise<T>) {
@@ -107,6 +112,32 @@ export function proposeMoves(all:Item[], events:Agenda, day:string, start:string
   return moves;
 }
 
+const productionFormats={short:'숏폼 대본',blog:'블로그',social:'SNS 문구'} as const;
+const starterNames={business:'고객 제안 준비',content:'첫 콘텐츠 기획',seller:'상품 소개 준비',personal:'이번 주 업무 정리'};
+
+export async function submitContentPack(owner:string,input:Record<string,unknown>,source:string) {
+  const topic=textValue(input.topic,'주제와 원본 자료',2000);
+  const title=textValue(input.title,'콘텐츠 묶음 제목',80);
+  const variants=Object.entries(productionFormats).flatMap(([key,label])=>
+    input[key]?[{format:key,label,text:textValue(input[key],label,4000)}]:[]);
+  const card=input.card ? validatePersonalCard(input.card) : null;
+  if(!variants.length&&!card)throw new MarketError('검토할 콘텐츠 초안을 하나 이상 입력해 주세요.');
+  return change(owner,async state=>{
+    const project=ownedProject(state,input.projectId);
+    const id=randomUUID();
+    const common={projectId:project.id,projectVersion:project.version,source};
+    const decisions=variants.map(({format,label,text})=>putDecision(state,{
+      ...common,title:title+' · '+label,text,category:'content',
+      pack:{id,topic,format},
+    }));
+    if(card)decisions.push(putDecision(state,{
+      ...common,title:card.title,text:card.slides.length+'장 카드뉴스',category:'cards',card,
+      pack:{id,topic,format:'cards'},
+    }));
+    return {decisions};
+  });
+}
+
 function putDecision(state:Workbench, draft:Omit<Decision,'id'|'status'|'created'>) {
   if (state.decisions.filter(row=>row.status==='pending').length>=40) throw new MarketError('대기 중인 제안을 먼저 검토해 주세요.',409);
   const row:Decision = {...draft,id:randomUUID(),status:'pending',created:new Date().toISOString()};
@@ -159,6 +190,36 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
     if (!card||typeof card!=='object'||Array.isArray(card)) throw new MarketError('카드뉴스 초안 형식을 확인해 주세요.');
     return {decision:await submitCardDraft(owner,{...card,projectId:input.projectId},'구독 AI 답변 가져오기')};
   }
+  if (input.action==='content-pack') return submitContentPack(owner,input,'콘텐츠 제작');
+  if (input.action==='start-project') {
+    const kind=String(input.starter);
+    if (!Object.hasOwn(starterNames,kind)) throw new MarketError('시작할 업무를 선택해 주세요.');
+    const name=textValue(input.name,'프로젝트 이름',80),rules=textValue(input.rules,'프로젝트 기억',1600);
+    const firstStep=textValue(input.firstStep,'첫 업무',400);
+    return change(owner,async state=>{
+      const starter=kind as keyof typeof starterNames;
+      const existing=state.projects.find(project=>project.starter===starter);
+      if(existing)return {...publicState(state),projectId:existing.id};
+      if(state.projects.length>=30)throw new MarketError('프로젝트는 최대 30개까지 저장할 수 있습니다.');
+      const project={id:randomUUID(),name,rules,version:1,starter};
+      state.projects.push(project);
+      putDecision(state,{title:starterNames[starter],text:firstStep,category:starter==='personal'?'business':starter,
+        projectId:project.id,projectVersion:project.version,source:'첫 업무 안내'});
+      return {...publicState(state),projectId:project.id};
+    });
+  }
+  if (input.action==='revise') return change(owner,async state=>{
+    const row=state.decisions.find(item=>item.id===input.id);
+    if(!row)throw missing();
+    if(row.status!=='pending'||row.card||row.moves||(row.revision??1)!==input.revision)throw conflict();
+    const text=textValue(input.text,'수정할 초안',4000);
+    if(text!==row.text){
+      row.originalText??=row.text;
+      row.text=text;
+      row.revision=(row.revision??1)+1;
+    }
+    return {decision:row};
+  });
   if (input.action==='draft') return {decision:await submitDraft(owner,input,'내가 작성')};
   if (input.action==='project') {
     const name=textValue(input.name,'프로젝트 이름',80),rules=textValue(input.rules,'프로젝트 기억',1600);
@@ -187,10 +248,11 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
     }
     const start=input.start as string,end=input.end as string;
     return change(owner,async(state,client)=>{
+      const project=input.projectId?ownedProject(state,input.projectId):null;
       const events=await agendaOn(client,owner,day);
       const moves=proposeMoves(await items(client,owner),events,day,start,end);
       if (!moves.length) throw new MarketError('배치할 할 일이나 빈 30분이 없습니다.',422);
-      return {decision:putDecision(state,{title:day+' 집중 시간',text:'기한이 이른 순서대로 기존 일정과 예약을 피해 30분씩 배치합니다.',category:'schedule',projectId:null,moves,start,end,source:'일정 재계획'})};
+      return {decision:putDecision(state,{title:day+' 집중 시간',text:'기한이 이른 순서대로 기존 일정과 예약을 피해 30분씩 배치합니다.',category:'schedule',projectId:project?.id??null,projectVersion:project?.version,moves,start,end,source:'일정 재계획'})};
     });
   }
   if (!['approve','decline','undo'].includes(String(input.action))) throw new MarketError('실행할 작업을 확인해 주세요.');
@@ -199,6 +261,7 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
     if (!row) throw missing();
     const undo=input.action==='undo';
     if (row.status!==(undo?'applied':'pending')) throw new MarketError('이미 처리된 제안입니다.',409);
+    if (input.action==='approve'&&(row.revision??1)!==(input.revision??1))throw conflict();
     if (input.action==='decline') row.status='declined';
     else if (row.category==='schedule') {
       const all=await items(client,owner);
@@ -223,4 +286,21 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
     row.decided=new Date().toISOString();
     return {decision:row};
   });
+}
+
+export async function readDeliveryActivity(owner:string) {
+  type Activity = {id:string; kind:string; status:string; title:string; provider:string|null;
+    accountId:string|null; reason:string|null; at:string; unconfirmed:boolean};
+  const {rows}=await pool().query<Activity>(
+    "SELECT substr(id,length($2)+2) AS id, CASE WHEN kind='personal-mail-item' THEN 'mail' ELSE 'social' END AS kind,"+
+    " data->>'status' AS status, left(COALESCE(data->>'subject',data->>'title','예약'),160) AS title,"+
+    " data->>'provider' AS provider, data->>'accountId' AS \"accountId\", left(COALESCE(data->>'reason',data->>'error'),220) AS reason,"+
+    " updated::text AS at, CASE WHEN kind='personal-mail-item' THEN COALESCE(data->>'retryable','false')<>'true'"+
+    " ELSE COALESCE(data->>'uncertain','true')<>'false' END AS unconfirmed"+
+    " FROM nh_documents WHERE workspace='live' AND kind IN ('personal-mail-item','personal-social-post')"+
+    " AND id LIKE $1 AND data->>'ownerId'=$2 AND data->>'status' IN ('review','scheduled','sent','published','sending','publishing','cancelled')"+
+    " ORDER BY CASE WHEN data->>'status'='review' THEN 0 ELSE 1 END,updated DESC,id LIMIT 30",
+    [owner+':%',owner],
+  );
+  return rows;
 }
