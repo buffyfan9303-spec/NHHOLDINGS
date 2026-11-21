@@ -5,7 +5,7 @@ const icons={"grid":"<rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\" />\
 const icon=n=>`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${icons[n]||icons.grid}</svg>`;
 const money=v=>v==null?'—':new Intl.NumberFormat('ko-KR').format(v),won=v=>v==null?'미확인':money(v)+'원';
 const dt=v=>v?new Date(v).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'조회 전';
-const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
+const today=(instant=new Date())=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(instant);
 const styles={mind:['#83bde4','#1c2c39','M'],holdem:['#e6bd78','#302a20','H'],crm:['#65d6a5','#1b3028','C'],market:['#eca48e','#342721','K']};
 const labels={blog:'블로그',instagram:'인스타그램',threads:'Threads',x:'X',bluesky:'Bluesky',youtube:'YouTube'};
 const requiresApproval=p=>['instagram','youtube'].includes(p.channel);
@@ -110,10 +110,14 @@ function personalRollup(){
  if(!assistantData)return '<p class="caption">개인 업무를 확인하고 있습니다.</p>';
  if(assistantData.error)return '<p class="caption">개인 업무를 불러오지 못했습니다. <a class="link" href="/personal">내 업무 열기</a></p>';
  const date=today();
+ const automatedToday=(assistantData.agenda||[]).filter(event=>{
+  const time=Date.parse(event.scheduledAt);
+  return Number.isFinite(time)&&today(time)===date;
+ }).length;
  const rows=[
   ['오늘 마감',assistantData.items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn===date).length,'tasks'],
   ['기한 지난 일',assistantData.items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn&&x.dueOn<date).length,'tasks'],
-  ['오늘 일정',assistantData.items.filter(x=>x.kind==='schedule'&&x.dueOn===date).length,'schedule'],
+  ['오늘 일정',assistantData.items.filter(x=>x.kind==='schedule'&&x.dueOn===date).length+automatedToday,'schedule'],
  ];
  return '<div class="assistant-figures">'+rows.map(([label,count,tab])=>'<a href="/personal#'+tab+'"><span>'+label+'</span><strong>'+money(count)+'</strong></a>').join('')+'</div>';
 }
@@ -137,10 +141,13 @@ async function loadPersonalRollup(){
 function overview(){
  const owner=session?.owner&&!data.demo, now=today();
  const dateLabel=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'}).format(new Date(now+'T12:00:00+09:00'));
+ const sourcesCurrent=data.services.filter(site=>!!site.snapshot?.data&&!site.stale).length;
  const states=data.services.map(s=>{
   const link=s.id==='market'&&owner?'data-page="market-operations"':'data-service="'+esc(s.id)+'"';
   const snapshot=s.snapshot?.data;
-  const value=s.id==='mind'||s.id==='holdem'?(snapshot?.users==null?'가입 유저 조회 전':'가입 유저 '+money(snapshot.users)+'명'):'';
+  const [field,label,unit]=({mind:['users','가입 유저','명'],holdem:['users','가입 유저','명'],crm:['customers','등록 고객','명'],tistory:['posts','블로그 공개 글','개']})[s.id]||[];
+  const value=field?(snapshot?.[field]==null?label+' 조회 전':label+' '+money(snapshot[field])+unit):
+   s.id==='market'&&snapshot?.readiness?.length?(snapshot.readiness.every(item=>item.ready)?'판매 가능':'판매 개시 전'):'';
   const status=!snapshot?'연결 확인 필요':s.stale?'이전 조회':'조회 완료';
   return '<li><button type="button" '+link+'><span class="assistant-source-name">'+mark(s)+'<span>'+esc(s.name)+(value?'<small>'+value+'</small>':'')+'</span></span>'+
    '<span class="assistant-source-status"><span class="site-status '+(!snapshot||s.stale?'stale':'')+'" aria-hidden="true"></span>'+status+'</span></button></li>';
@@ -152,17 +159,18 @@ function overview(){
   ['clock','마감 확인 업무',money(data.tasks.filter(t=>t.status!=='done'&&t.due&&t.due<=now).length)+'건','data-page="tasks"'],
   ['channels','다음 게시',next?dt(next.scheduledAt)+' KST':'예약 없음',next?'data-action="inspect-content" data-id="'+esc(next.id)+'"':'data-page="calendar"'],
  ];
- return '<div class="assistant-overview"><div class="assistant-home-grid"><div class="assistant-home-main">'+
+ return '<div class="assistant-overview"><div class="assistant-home-grid">'+
   '<section class="assistant-panel assistant-priority" aria-labelledby="assistant-operations-title"><div class="assistant-heading"><h2 id="assistant-operations-title">오늘 확인할 일</h2><time datetime="'+now+'" class="caption">'+dateLabel+'</time></div>'+
   '<ul class="assistant-operation-list">'+operational.map(([ico,label,value,attrs])=>'<li><button type="button" '+attrs+'>'+icon(ico)+'<span>'+label+'</span><strong>'+value+'</strong></button></li>').join('')+'</ul>'+
-  '<nav aria-label="업무 바로가기" class="assistant-shortcuts">'+
+  '</section>'+
+  (owner?'<section class="assistant-panel assistant-personal" aria-labelledby="assistant-personal-title"><div class="assistant-heading"><h2 id="assistant-personal-title">내 업무</h2><a href="/personal" class="link">업무 공간 열기</a></div><div id="assistant-personal-rollup">'+personalRollup()+'</div></section>':'')+
+  '<section class="assistant-panel assistant-connections" aria-labelledby="assistant-sources-title"><div class="assistant-heading"><div><h2 id="assistant-sources-title">웹사이트 연결</h2><p class="caption assistant-source-count">'+money(data.services.length)+'곳 중 '+money(sourcesCurrent)+'곳 조회 완료</p></div>'+
+  '<div class="assistant-connection-links"><button type="button" class="link" data-page="websites">상세 현황</button>'+
+  (owner?'<a class="link" href="#connections/integrations">운영 설정 · 연결</a>':'')+'</div></div><ul class="assistant-sources">'+states+'</ul></section>'+
+  '<nav aria-label="업무 바로가기" class="assistant-panel assistant-shortcuts">'+
   (owner?assistantLinks.map(([ico,label,href])=>'<a href="'+href+'">'+icon(ico)+'<span>'+label+'</span></a>').join(''):
    '<button type="button" data-page="websites">'+icon('server')+'<span>웹사이트별 현황</span></button>')+
-  '<button type="button" data-page="studio">'+icon('content')+'<span>콘텐츠 작업실</span></button></nav></section>'+
-  (owner?'<section class="assistant-panel assistant-personal" aria-labelledby="assistant-personal-title"><div class="assistant-heading"><h2 id="assistant-personal-title">내 업무</h2><a href="/personal" class="link">업무 공간 열기</a></div><div id="assistant-personal-rollup">'+personalRollup()+'</div></section>':'')+
-  '</div><section class="assistant-panel assistant-connections" aria-labelledby="assistant-sources-title"><div class="assistant-heading"><h2 id="assistant-sources-title">웹사이트 연결</h2>'+
-  '<div class="assistant-connection-links"><button type="button" class="link" data-page="websites">상세 현황</button>'+
-  (owner?'<a class="link" href="#connections/integrations">운영 설정 · 연결</a>':'')+'</div></div><ul class="assistant-sources">'+states+'</ul></section></div></div>';
+  '<button type="button" data-page="studio">'+icon('content')+'<span>콘텐츠 작업실</span></button></nav></div></div>';
 }
 function businessPage(){const bs=data.businesses.filter(b=>inScope(b.service));return `<section class="panel section-gap"><div class="table-head"><h2>사업장 목록 <span class="pill gray">${bs.length}개</span></h2><p class="panel-desc">테스트·체험 사업장은 집계에서 제외합니다. 같은 이름의 사업장도 원천 ID로 구분합니다.</p></div>${bs.length?table(['사업장','서비스 / 업종','활동 상태','실적 포함','관리'],bs.map(b=>row([`<b>${esc(b.name)}</b><small class="row-note">${esc(b.id.slice(0,8))}</small>`,`${esc(serviceName(b.service))}<small class="row-note">${esc(({building:'건물관리',factory:'맞춤제작',rental:'렌탈',salon:'미용',academy:'학원',unmanned:'무인매장'})[b.industry]||'홀덤 매장')}</small>`,b.excluded?'<span class="pill gray">테스트 / 체험</span>':`<span class="pill ${b.active?'':'gray'}">${b.active?'활동 중':'비활성'}</span>`,`<label class="check-label"><input type="checkbox" data-own="${esc(b.key)}" ${b.owned?'checked':''} ${b.excluded?'disabled':''}>직영 포함</label>`,button('상세 보기','business',b.key)]))):empty('이 서비스에는 연결된 사업장이 없습니다.')}</section>`+businessDetail();}
 function businessDetail(){const b=data.businesses.find(b=>b.key===state.business);if(!b)return `<p class="caption">상세 보기에서 원천 실적, 비용 항목, 연결 업무를 확인할 수 있습니다.</p>`;const d=service(b.service).snapshot?.data,op=d?.operations?.find(x=>x.businessId===b.id),monthly=(d?.monthly||[]).filter(r=>r.businessId===b.id&&r.month===state.month);const expenses=(d?.expenseDetails||[]).filter(r=>r.businessId===b.id&&r.month===state.month);return `<section class="panel panel-inner section-gap"><div class="panel-head"><div><h2>${esc(b.name)}</h2><p class="panel-desc">${esc(serviceName(b.service))} · ${b.owned?'직영 사업장':'직영 미지정'} · ${state.month}</p></div>${service(b.service).url?`<a class="btn" href="${esc(service(b.service).url)}" target="_blank" rel="noopener noreferrer">원본 서비스 열기 ↗</a>`:''}</div>${op?`<div class="metric-grid" style="margin-top:20px">${[['고객',op.customers],['건물',op.buildings],['활성 호실',op.units],['현재 계약',op.activeContracts],['미완료 작업',op.openWorkOrders],['미완료 제작 주문',op.pendingFactoryOrders]].map(([l,v])=>`<div class="metric-tile"><strong>${money(v)}</strong><span class="caption">${l}</span></div>`).join('')}</div><div class="pl-row"><span>관리비 미수 원장 잔액 · 현재 상태</span><strong>${won(op.outstanding)}</strong></div>`:''}${monthly.map(r=>`<div class="pl-row"><span>${esc(metricsLabels[r.metric]||'매장 수납 스냅샷')}</span><strong>${won(b.service==='holdem'?r.storedReceipts+r.storedAddonReceipts:r.amount)}</strong></div>`).join('')}${b.service==='holdem'?monthly.map(r=>`<p class="source-note">수납 ${r.records}건 · 저장 미수 ${won(r.storedUnpaid)} · 과거 산식 재확인 ${r.legacyRecords}건 · VAT 구분 미확인</p>`).join(''):''}${!monthly.length?empty('선택 월의 원천 금액이 없습니다.'):''}<p class="source-note">원본의 주문·계약·수납 변경은 해당 서비스에서 처리합니다. NURI ONE의 업무와 비용 기록은 아래 통합 관리에서 저장됩니다.</p></section>${expenses.length?`<section class="panel section-gap"><div class="table-head"><h2>건물 비용 상세 · 발생/입력 기준</h2></div>${table(['분류','거래처','공급가액','VAT','원천 ID'],expenses.map(e=>row([esc(e.category),esc(e.vendor||'미입력'),won(e.supply),won(e.vat),esc(e.id.slice(0,8))])))}</section>`:''}`;}
