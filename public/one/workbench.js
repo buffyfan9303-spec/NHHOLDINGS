@@ -99,12 +99,15 @@
   }
 
   function connect(){
-    return '<div class="workbench-body"><section aria-labelledby="workbench-channels-title"><h2 id="workbench-channels-title">내 작업 채널</h2><div data-channel-overview>'+channelOverview()+'</div></section><section><h2>본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
-      '<label class="workbench-address">누리원 서버 주소<input readonly value="'+esc(connectionURL())+'"></label>'+action('주소 복사','copy-url')+
-      '<ul class="workbench-list">'+Object.entries(providers).map(([id,[name,instructions,link]])=>{
+    return '<div class="workbench-body workbench-connections"><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-channels-title"><h2 id="workbench-channels-title">내 작업 채널</h2><div data-channel-overview>'+channelOverview()+'</div></section><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-ai-title"><h2 id="workbench-ai-title">본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
+      '<div class="workbench-address"><p>누리원 서버 주소</p><div class="workbench-copy"><code id="workbench-server-address">'+esc(connectionURL())+'</code>'+
+      action('주소 복사','copy-url')+'</div></div>'+
+      '<ul class="workbench-list workbench-provider-list">'+Object.entries(providers).map(([id,[name,instructions,link]])=>{
         const active=data.connections?.find(c=>c.provider===id&&c.active);
-        return '<li><strong>'+name+'</strong><p>'+instructions+'</p><div class="workbench-actions"><a href="'+link+'" target="_blank" rel="noopener noreferrer">'+name+' 열기</a>'+
-          (active?'<span>연결됨</span><span>'+(active.socialRead?'SNS 목록 조회 허용':'SNS 목록 조회는 AI 앱에서 다시 연결')+'</span>'+action('연결 끊기','disconnect',id):'<span>연결 필요</span>')+'</div></li>';
+        return '<li><div class="workbench-provider-heading"><strong>'+name+'</strong><span>'+(active?'연결됨':'연결 필요')+'</span></div>'+
+          '<p>'+instructions+'</p>'+(active?'<p class="workbench-muted">'+(active.socialRead?'SNS 목록 조회 허용':'SNS 목록 조회는 AI 앱에서 다시 연결')+'</p>':'')+
+          '<div class="workbench-actions"><a class="btn" href="'+link+'" target="_blank" rel="noopener noreferrer">'+name+' 열기</a>'+
+          (active?action('연결 끊기','disconnect',id):'')+'</div></li>';
       }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p></section></div>';
   }
   const renderers={projects,schedule,approvals,connect};
