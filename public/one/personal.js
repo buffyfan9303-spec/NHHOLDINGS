@@ -22,6 +22,7 @@
   more.addEventListener('click', () => {
     const groups = [...document.querySelectorAll('.personal-nav [data-menu-group]')].map(group => {
       const copy = group.cloneNode(true);
+      copy.querySelector('#personal-owner-links')?.removeAttribute('id');
       for (const link of copy.querySelectorAll('[data-personal-link]')) {
         if (quickViews.has(link.dataset.personalLink)) link.remove();
       }
@@ -184,6 +185,11 @@
       agenda = result.agenda||[];
       el('personal-account').textContent = result.account.email;
       el('personal-owner-links').hidden = !result.account.owner;
+      if(!window.NuriWorkspace && result.account.owner){
+        const bar=el('one-workspace-bar');
+        bar.hidden=false;
+        bar.querySelector('[href="/personal"]').setAttribute('aria-current','page');
+      }
       ready = true;
       document.body.classList.remove('personal-revalidating');
       el('personal-message').textContent = '';
@@ -307,8 +313,8 @@
   date.dateTime = day();
   date.textContent = dateFormatter.format(new Date());
   el('personal-start-ai')?.addEventListener('click',()=>{if(ready)el('personal-ai-open').click();});
-  window.addEventListener('hashchange',()=>route(true));
-  window.addEventListener('personal-automation-changed',()=>{if(ready)void load();});
+  window.addEventListener('hashchange',()=>{if(location.pathname==='/personal')route(true);});
+  window.addEventListener('personal-automation-changed',()=>{if(ready&&location.pathname==='/personal')void load();});
   document.querySelector('.personal-skip').addEventListener('click',event=>{
     event.preventDefault();
     el('personal-main').focus();
@@ -325,13 +331,18 @@
     window.NuriPersonalAI?.suspend?.();
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }
-  function checkAccount(){mask();void load();}
+  function checkAccount(){mask();route();void load();}
+  window.NuriPersonalWorkspace={activate:checkAccount,deactivate(){
+    mask();
+    for(const dialog of el('one-personal-view').querySelectorAll('dialog[open]'))dialog.close();
+    document.body.classList.remove('personal-revalidating');
+  }};
   document.addEventListener('visibilitychange',()=>{
+    if(location.pathname!=='/personal')return;
     if(document.visibilityState==='hidden')mask();
     else checkAccount();
   });
   window.addEventListener('pagehide',mask);
-  window.addEventListener('pageshow',event=>{if(event.persisted)checkAccount();});
-  route();
-  void load();
+  window.addEventListener('pageshow',event=>{if(event.persisted&&location.pathname==='/personal')checkAccount();});
+  if(location.pathname==='/personal')checkAccount();
 })();

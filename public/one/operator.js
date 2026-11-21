@@ -420,7 +420,7 @@ window.NuriOperator = (() => {
   commandTrigger.addEventListener('click', () => open(commandTrigger));
   document.getElementById('command-close').addEventListener('click', () => palette.close());
   document.addEventListener('keydown', e => {
-   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open], #sidebar.open')) {
+   if (location.pathname!=='/personal' && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open], #sidebar.open')) {
     e.preventDefault();
     open(document.activeElement);
    }

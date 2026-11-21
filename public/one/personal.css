@@ -58,7 +58,6 @@ button:disabled {opacity:.55;cursor:default}
 .personal-account button:hover,.personal-action:hover {background:var(--teal-soft);color:var(--ink)}
 .personal-account [data-one-theme] {min-width:44px;justify-content:center}
 .personal-app #personal-ai-open[aria-expanded="true"] {background:var(--teal-soft);color:var(--teal)}
-.personal-owner-links {display:flex;flex-wrap:wrap;justify-content:flex-end;gap:0 16px;padding-inline:clamp(16px,4vw,58px);background:var(--surface);border-bottom:1px solid var(--line)}
 .personal-workspace {
   display:grid;grid-template-columns:166px minmax(0,1fr);gap:clamp(20px,3.5vw,42px);
   padding:28px clamp(16px,4vw,54px) 68px;max-width:1370px;margin-inline:auto;
