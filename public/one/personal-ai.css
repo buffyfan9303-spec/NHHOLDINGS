@@ -256,19 +256,59 @@
  .personal-ai-options {gap:6px}
 }
 
+[data-ai-action="handoff"][aria-expanded="true"] {
+  color:var(--teal);
+  background:var(--teal-soft);
+}
 .personal-ai-handoff {
   grid-area:history;
   display:grid;
   grid-template-columns:minmax(0,1fr);
-  align-content:start;
-  gap:10px;
+  grid-template-rows:auto minmax(0,1fr);
   min-width:0;
   min-height:0;
-  padding:10px 4px 15px;
+}
+.personal-ai-handoff-nav {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  border-bottom:1px solid var(--line);
+}
+.personal-ai-handoff-nav button {
+  min-height:44px;
+  padding:6px 2px;
+  border:0;
+  border-bottom:2px solid transparent;
+  background:transparent;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:570;
+  white-space:nowrap;
+}
+.personal-ai-handoff-nav button[aria-current="page"] {
+  border-bottom-color:var(--teal);
+  color:var(--teal);
+  font-weight:700;
+}
+.personal-ai-handoff-content {
+  min-height:0;
+  padding:12px 3px max(12px,env(safe-area-inset-bottom));
   overflow:auto;
   overscroll-behavior:contain;
 }
-.personal-ai-handoff :is(form,[data-ai-handoff-output]) {gap:8px}
+.personal-ai-handoff-content .personal-form {gap:10px}
+.personal-ai-handoff-content .personal-ai-status {margin-block:10px 0}
+.personal-ai-context {
+  min-inline-size:0;
+  margin:0;
+  padding:5px 0 0;
+  border:0;
+  border-top:1px solid var(--line);
+}
+.personal-ai-context legend {
+  padding-inline:0 8px;
+  color:var(--muted);
+  font-size:12px;
+}
 .personal-ai-dock .personal-ai-check {
   display:flex;
   align-items:center;
@@ -284,14 +324,12 @@
   padding:0;
   accent-color:var(--teal);
 }
-.personal-ai-profile {
-  padding-block:4px;
-  border-top:1px solid var(--line);
+.personal-ai-check:has(input:disabled) {color:var(--muted)}
+.personal-ai-preview-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
 }
-.personal-ai-profile summary {
-  display:list-item;
-  padding:11px 0;
-  min-height:44px;
-  cursor:pointer;
-  font-weight:600;
-}
+.personal-ai-preview-head h3 {margin:0;font-size:16px}
+.personal-ai-preview textarea {min-height:150px}

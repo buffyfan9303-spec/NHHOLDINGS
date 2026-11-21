@@ -52,44 +52,59 @@
       <p class="personal-ai-status" role="status" data-ai-status></p>
       <section class="personal-ai-history" aria-label="나의 AI 대화" tabindex="0" data-ai-history></section>
       <section id="personal-ai-handoff" class="personal-ai-handoff" aria-label="구독 AI에서 이어서" hidden>
-        <p class="personal-ai-mode-note">내 요청을 준비해 본인 AI 계정에 붙여넣으세요. 누리원에서 자동으로 보내지 않습니다.</p>
-        <form class="personal-form" data-ai-handoff-form>
-          <div class="personal-ai-options">
+        <nav class="personal-ai-handoff-nav" aria-label="구독 AI 메뉴">
+          <button type="button" data-ai-action="handoff-pane" data-pane="request" aria-controls="handoff-request" aria-current="page">요청 준비</button>
+          <button type="button" data-ai-action="handoff-pane" data-pane="import" aria-controls="handoff-import">답변 가져오기</button>
+          <button type="button" data-ai-action="handoff-pane" data-pane="profile" aria-controls="handoff-profile">업무 방식</button>
+        </nav>
+        <div class="personal-ai-handoff-content" data-ai-handoff-content>
+          <section id="handoff-request" data-ai-handoff-pane="request" aria-label="요청 준비">
+            <form class="personal-form" data-ai-handoff-form>
+          <p class="personal-ai-mode-note">요청을 준비한 뒤 본인의 AI에 복사해 보냅니다.</p>
+              <div class="personal-ai-options">
             <label>사용할 AI<select name="provider">${selectOptions(Object.fromEntries(Object.entries(subscriptionSites).map(([key,value])=>[key,value.label])))}</select></label>
             <label>목적<select name="kind">${selectOptions(Object.fromEntries(Object.entries(requestTypes).map(([key,value])=>[key,value[0]])))}</select></label>
           </div>
           <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
+          <fieldset class="personal-ai-context"><legend>요청에 포함할 자료</legend>
           <label class="personal-ai-check"><input type="checkbox" name="today"> 오늘 할 일과 일정 포함</label>
           <label class="personal-ai-check"><input type="checkbox" name="profile" disabled> 저장된 일하는 방식 포함</label>
+          </fieldset>
           <div><button type="submit" class="btn primary" data-ai-preview>요청 미리보기</button></div>
         </form>
-        <p class="personal-ai-status" role="status" data-ai-handoff-status></p>
-        <section class="personal-form" data-ai-handoff-output hidden aria-label="복사할 요청">
-          <label>외부 AI에 붙여넣을 내용<textarea rows="7" readonly data-ai-handoff-text></textarea></label>
-          <div class="personal-ai-actions">
-            <button type="button" class="btn primary" data-ai-action="copy-handoff">요청 복사</button>
-            <a class="btn" target="_blank" rel="noopener noreferrer" data-ai-handoff-link></a>
-          </div>
-        </section>
-        <details class="personal-ai-profile">
-          <summary>AI 답변 가져오기</summary>
-          <form class="personal-form" data-ai-import>
+            <section class="personal-form personal-ai-preview" data-ai-handoff-output hidden aria-label="복사할 요청">
+              <div class="personal-ai-preview-head">
+                <h3>보낼 내용 확인</h3>
+                <button type="button" class="personal-action" data-ai-action="edit-handoff">요청 수정</button>
+              </div>
+              <p class="personal-ai-mode-note">공유할 내용을 확인하세요. 여기서 문장을 지우거나 다듬을 수 있습니다.</p>
+              <textarea rows="8" maxlength="14000" aria-label="복사할 요청" data-ai-handoff-text></textarea>
+              <div class="personal-ai-actions">
+                <button type="button" class="btn primary" data-ai-action="copy-handoff">요청 복사</button>
+                <a class="btn" target="_blank" rel="noopener noreferrer" data-ai-handoff-link></a>
+              </div>
+            </section>
+            <p class="personal-ai-status" role="status" data-ai-handoff-status></p>
+          </section>
+          <section id="handoff-import" data-ai-handoff-pane="import" aria-label="답변 가져오기" hidden>
+            <form class="personal-form" data-ai-import>
+            <p class="personal-ai-mode-note">AI 답변을 붙여넣고 내 업무의 편집 화면에서 확인한 뒤 저장합니다.</p>
             <label>업무 종류<select name="kind"><option value="note">메모</option><option value="task">할 일</option><option value="schedule">일정</option></select></label>
             <label>제목<input name="title" required maxlength="160"></label>
             <label>답변<textarea name="detail" rows="5" required maxlength="4000" placeholder="본인 AI의 답변을 여기에 붙여넣으세요."></textarea></label>
-            <div><button type="submit" class="btn">내 업무에서 검토</button></div>
+            <div><button type="submit" class="btn primary">내 업무에서 검토</button></div>
             <p class="personal-ai-status" role="status" data-ai-import-status></p>
           </form>
-        </details>
-        <details class="personal-ai-profile">
-          <summary>내가 일하는 방식</summary>
-          <form class="personal-form" data-ai-profile-form>
+          </section>
+          <section id="handoff-profile" data-ai-handoff-pane="profile" aria-label="내가 일하는 방식" hidden>
+            <form class="personal-form" data-ai-profile-form>
             <p class="personal-ai-mode-note">답변 어조, 우선순위 기준, 선호하는 결과 형식을 저장하세요. 누리원 AI에 적용되며 구독 AI용 요청에는 개별 선택으로 포함합니다.</p>
-            <label>업무 원칙<textarea name="instructions" rows="3" maxlength="1200" disabled placeholder="예: 오전에는 집중 업무부터. 시간과 마감이 있으면 표로 정리."></textarea></label>
-            <div><button type="submit" class="btn" disabled>업무 원칙 저장</button></div>
+            <label>업무 원칙<textarea name="instructions" rows="5" maxlength="1200" disabled placeholder="예: 오전에는 집중 업무부터. 시간과 마감이 있으면 표로 정리."></textarea></label>
+            <div><button type="submit" class="btn primary" disabled>업무 원칙 저장</button></div>
             <p class="personal-ai-status" role="status" data-ai-profile-status></p>
           </form>
-        </details>
+          </section>
+        </div>
       </section>
       <form class="personal-form personal-ai-compose" data-ai-compose>
         <div class="personal-ai-options">
@@ -314,6 +329,7 @@
     view.handoffCheck?.abort();
     view.handoffCheck=null;
     view.handoffForm.querySelector('[data-ai-preview]').disabled=false;
+    view.handoffForm.hidden=false;
     view.handoff.querySelector('[data-ai-handoff-text]').value='';
     view.handoff.querySelector('[data-ai-handoff-output]').hidden=true;
     view.handoff.querySelector('[data-ai-handoff-status]').textContent='';
@@ -375,7 +391,24 @@
     }
   }
 
-  function setHandoff(view,open){
+  function setHandoffPane(view,pane){
+    const controls=view.handoff.querySelectorAll('[data-pane]');
+    const selected=[...controls].find(control=>control.dataset.pane===pane);
+    if(!selected)return;
+    if(view.handoffCheck)refreshHandoff(view);
+    view.handoffPane=pane;
+    for(const control of controls){
+      if(control===selected)control.setAttribute('aria-current','page');
+      else control.removeAttribute('aria-current');
+    }
+    for(const section of view.handoff.querySelectorAll('[data-ai-handoff-pane]')){
+      section.hidden=section.dataset.aiHandoffPane!==pane;
+    }
+    view.handoff.querySelector('[data-ai-handoff-content]').scrollTop=0;
+    if(pane==='profile')void loadWorkStyle(view);
+  }
+
+  function setHandoff(view,open,pane=view.handoffPane||'request'){
     view.handoff.hidden=!open;
     view.status.hidden=open;
     view.history.hidden=open;
@@ -385,7 +418,8 @@
       setSettings(view,false);
       view.setup.elements.apiKey.value='';
       void loadWorkStyle(view);
-      view.handoffForm.elements.request.focus({preventScroll:true});
+      setHandoffPane(view,pane);
+      view.handoff.querySelector('[data-pane="'+pane+'"]').focus({preventScroll:true});
     }else refreshHandoff(view);
   }
 
@@ -428,9 +462,10 @@
       const link=output.querySelector('a');
       link.href=subscriptionSites[provider].url;
       link.textContent=subscriptionSites[provider].label+' 열기 ↗';
+      form.hidden=true;
       output.hidden=false;
-      output.scrollIntoView({block:'nearest'});
-      note.textContent='내용을 확인한 뒤 복사하고 본인 AI에서 붙여넣으세요.';
+      view.handoff.querySelector('[data-ai-handoff-content]').scrollTop=0;
+      output.querySelector('[data-ai-action="copy-handoff"]').focus({preventScroll:true});
     }catch(error){
       if(current(view)&&view.handoffCheck===check)note.textContent=error.message;
     }finally{
@@ -444,6 +479,11 @@
   async function copyHandoff(view){
     const area=view.handoff.querySelector('[data-ai-handoff-text]');
     const note=view.handoff.querySelector('[data-ai-handoff-status]');
+    if(!area.value.trim()){
+      note.textContent='보낼 내용을 입력해 주세요.';
+      area.focus();
+      return;
+    }
     try{
       await navigator.clipboard.writeText(area.value);
       if(current(view)&&!view.handoff.hidden)note.textContent='요청을 복사했습니다.';
@@ -645,6 +685,11 @@
       const action=control.dataset.aiAction;
       if(action==='close')hide(view,true);
       else if(action==='handoff')setHandoff(view,view.handoff.hidden);
+      else if(action==='handoff-pane')setHandoffPane(view,control.dataset.pane);
+      else if(action==='edit-handoff'){
+        refreshHandoff(view);
+        view.handoffForm.elements.request.focus();
+      }
       else if(action==='copy-handoff')void copyHandoff(view);
       else if(action==='settings'){
         if(!view.handoff.hidden)setHandoff(view,false);
@@ -669,6 +714,7 @@
     view.setup.addEventListener('submit',event=>{event.preventDefault();void changeProvider(view);});
     view.setup.elements.provider.addEventListener('change',()=>providerState(view));
     view.handoffForm.addEventListener('input',()=>refreshHandoff(view));
+    view.handoff.querySelector('[data-ai-handoff-link]').addEventListener('click',()=>{view.externalAI=true;});
     view.handoffForm.addEventListener('submit',event=>void prepareHandoff(view,event));
     view.profileForm.addEventListener('submit',event=>void saveWorkStyle(view,event));
     view.handoff.querySelector('[data-ai-import]').addEventListener('submit',event=>reviewHandoff(view,event));
@@ -710,14 +756,14 @@
     setControls(view);
     if(resume?.owner===owner){
       show(view);
-      if(resume.handoff)setHandoff(view,true);
+      if(resume.pane)setHandoff(view,true,resume.pane);
     }
     resume=null;
   }
 
   function suspend(){
     if(!active)return;
-    resume=active.dock.open?{owner:active.owner,handoff:!active.handoff.hidden}:null;
+    resume=active.dock.open?{owner:active.owner,pane:active.handoff.hidden?null:active.externalAI?'import':active.handoffPane}:null;
     dispose(active);
   }
 
