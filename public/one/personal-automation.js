@@ -12,6 +12,13 @@
     youtube:'https://accounts.google.com/o/oauth2/v2/auth',
     mail:'https://accounts.google.com/o/oauth2/v2/auth',
   };
+  const setupGuides={
+    instagram:['Instagram 비즈니스 또는 크리에이터 계정이 필요합니다. Meta 앱에서 Instagram Login과 게시 권한을 설정하세요.','https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/business-login/'],
+    threads:['Meta 앱에서 Threads API와 게시 권한을 설정하세요.','https://developers.facebook.com/docs/threads/get-started/get-access-tokens-and-permissions/'],
+    youtube:['Google Cloud에서 YouTube Data API v3를 사용 설정하고 웹 애플리케이션 OAuth 클라이언트를 만드세요.','https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps'],
+    x:['X 개발자 앱의 OAuth 2.0에서 읽기와 쓰기 권한 및 아래 콜백 주소를 설정하세요.','https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code'],
+    mail:['Google Cloud에서 Gmail API를 사용 설정하고 웹 애플리케이션 OAuth 클라이언트를 만드세요. 누리원은 예약 메일을 보내기 위한 권한을 요청합니다.','https://developers.google.com/workspace/gmail/api/auth/scopes'],
+  };
   const formatter=new Intl.DateTimeFormat('ko-KR',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Seoul'});
   const views=new Map();
   const cardIdPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -66,7 +73,7 @@
           </div>
         </header>
         <div class="auto-first-connect" data-auto-first-connect hidden>
-          <p>${kind==='social'?'계정을 연결하면 게시 초안을 만들고 예약할 수 있습니다.':'Gmail을 연결하면 작성한 초안을 발송 예약할 수 있습니다.'}</p>
+          <p>${kind==='social'?'연결할 채널을 선택하세요. 연결 뒤에도 게시하려면 원고와 예약을 승인해야 합니다.':'Gmail을 연결하면 작성한 초안을 발송 예약할 수 있습니다.'}</p>
           ${actionButton('계정 연결로 이동','setup-jump','',kind==='social')}
         </div>
         <p class="auto-message" data-auto-message role="status">목록을 불러오고 있습니다.</p>
@@ -180,7 +187,7 @@
       const {configured,connection={}}=view.data;
       const state=connection.connected?(connection.paused?'발송 일시정지':'연결됨'):'미연결';
       return `<div class="auto-account">
-       <strong>Gmail</strong><p>${state}</p>
+       <strong>Gmail</strong><p>${configured?state:'앱 준비 필요'}</p>
        <div class="auto-actions">
         ${configured?connectionAction(view,'mail',connection.connected?'다시 연결':'Google로 연결','connect'):''}
         ${connection.connected?actionButton(connection.paused?'발송 재개':'발송 일시정지','pause','mail')+actionButton('연결 해제','disconnect','mail'):''}
@@ -194,7 +201,7 @@
       const accounts=groupAccounts(provider);
       return `<section class="auto-account" aria-label="${escape(provider.name||providerNames[provider.id])}">
         <strong>${escape(provider.name||providerNames[provider.id])}</strong>
-        <p>${catalog?(provider.configured?'연결 가능':'앱 설정 필요'):accounts.length+'개 계정'}</p>
+        <p>${catalog?(provider.configured?'계정 연결 가능':'앱 준비 필요'):accounts.length+'개 계정'}</p>
         ${accounts.length?`<ul class="auto-account-list">${accounts.map(account=>`<li>
           <div><b>${escape(account.label)}</b><small>${escape(account.username||'')}${account.ready?account.paused?' · 게시 일시정지':'':' · 다시 연결 필요'}</small></div>
           <div class="auto-actions">
@@ -204,7 +211,7 @@
           </div></li>`).join('')}</ul>`:''}
         ${catalog?'<div class="auto-actions">'+
           (provider.configured?connectionAction(view,provider.id,'계정 연결','connect'):'')+
-          actionButton(provider.appSource==='personal'?'앱 설정':'내 앱 설정','configure',provider.id)+'</div>':''}
+          '<details class="auto-advanced"><summary>개발자 앱 설정</summary><p class="auto-caption">'+setupGuides[provider.id][0]+'</p>'+actionButton(provider.appSource==='personal'?'앱 설정':'내 앱 설정','configure',provider.id)+'</details>'+'</div>':''}
       </section>`;
     }).join('');
   }
@@ -427,7 +434,10 @@
     const provider=view.data.providers?.find(p=>p.id===providerId);
     const mail=view.kind==='mail';
     const callback=configuredCallback(view,providerId);
+    const [instructions,guide]=setupGuides[providerId];
     modal(view,'configure',providerId,`
+      <p class="auto-caption">${instructions}</p>
+      <p><a class="personal-link" href="${guide}" target="_blank" rel="noopener noreferrer">공식 설정 가이드 열기</a></p>
       <p class="auto-caption">${mail?'Google':'채널'} 앱에 등록할 콜백 주소</p>
       ${callback?`<code class="auto-callback" tabindex="0">${escape(callback.href)}</code>
         <div class="auto-actions">${actionButton('주소 복사','copy-callback')}</div>`:
@@ -545,11 +555,6 @@
         return mutate(view,{action:kind,clientId:fields.clientId,clientSecret:fields.clientSecret,
           ...(provider?{provider:id,...(fields.version?{version:fields.version}:{})}:{})},'앱 설정을 저장했습니다.');
       }
-      if(kind==='connect'){
-        const account=view.data.accounts.find(a=>a.id===id);
-        const provider=account?.provider||id;
-        return mutate(view,{action:kind,provider,label:fields.label,...(account?{accountId:account.id}:{})},'',provider);
-      }
       if(kind==='disconnect')return mutate(view,{action:kind,...(view.kind==='social'?{accountId:id}:{})},'연결을 해제했습니다.');
       if(kind==='cancel'&&item)return mutate(view,{action:kind,id,version},'예약을 취소했습니다.');
     } catch(error) {note(view,error.message,true,true);}
@@ -586,16 +591,17 @@
     }
     if(action==='connect'&&view.kind==='mail')return mutate(view,{action},'',id);
     if(action==='connect'||action==='reconnect'&&account){
-      return modal(view,'connect',id,`<label>계정 이름<input name="label" required maxlength="100" value="${escape(account?.label)}"></label>`,
-        providerNames[account?.provider||id]+' 계정 연결','승인 화면 열기');
+      const provider=account?.provider||id;
+      return mutate(view,{action:'connect',provider,...(account?{accountId:account.id}:{})},'',provider);
     }
   }
 
   function oauthNotice(kind) {
     const url=new URL(location.href),key=kind==='social'?'sns':'mail',value=url.searchParams.get(key);
-    if(value!=='connected'&&value!=='failed')return '';
+    if(value!=='connected'&&value!=='failed'&&!(kind==='social'&&value==='wrong-account'))return '';
     url.searchParams.delete(key);
     history.replaceState(history.state,'',url.href);
+    if(value==='wrong-account')return '다른 SNS 계정으로 로그인했습니다. 기존 계정은 유지됩니다. 제공사에서 기존 계정을 선택해 다시 연결해 주세요.';
     return value==='connected'?'계정을 연결했습니다.':'연결을 완료하지 못했습니다. 다시 연결해 주세요.';
   }
 

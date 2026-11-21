@@ -129,10 +129,11 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
       assert.equal(init?.redirect, 'error', 'provider calls do not follow redirects');
       if (url.hostname === 'graph.threads.com') {
         if (url.pathname === '/oauth/access_token') {
-          const person = fields.get('code') === 'owner-code' ? 'owner' : 'friend';
+          const person = fields.get('code')?.startsWith('owner-') ? 'owner' : 'friend';
           assert.equal(fields.get('client_id'), person === 'owner' ? '2731' : '2732');
           assert.equal(fields.get('client_secret'), person + '-app-key');
-          return Response.json({access_token:person+'-short'});
+          const account=fields.get('code')==='owner-wrong-account'?'friend':person;
+          return Response.json({access_token:account+'-short'});
         }
         if (url.pathname === '/access_token') return Response.json({access_token:url.searchParams.get('access_token')?.replace('-short','-grant'),expires_in:86400*40});
         if (url.pathname === '/v1.0/me') return Response.json({id:token==='owner-grant'?'3111':'3112',username:token==='owner-grant'?'owner_handle':'friend_handle'});
@@ -215,8 +216,8 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     const wrongHost = await change(req('friend',{action:'connect',provider:'threads',label:'wrong host'},{host:alternate,from:alternate}));
     assert.match((await responseJSON(wrongHost,403)).error,/등록된 사이트 주소/);
 
-    async function begin(who: Person,provider = 'threads') {
-      const response = await change(req(who,{action:'connect',provider,label:who+' saved label'}));
+    async function begin(who: Person,provider = 'threads', options:Record<string,unknown>={label:who+' saved label'}, code=who+'-code') {
+      const response = await change(req(who,{action:'connect',provider,...options}));
       const url = new URL((await responseJSON(response)).url);
       const setCookie = response.headers.get('Set-Cookie') ?? '';
       assert.match(setCookie,/HttpOnly/i);
@@ -224,7 +225,7 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
       const providerHosts: Record<string,string> = {threads:'threads.com',instagram:'www.instagram.com',youtube:'accounts.google.com',x:'x.com'};
       assert.equal(url.host,providerHosts[provider]);
       assert.equal(url.searchParams.get('redirect_uri'),origin+'/api/personal/social/'+provider);
-      const finishPath = '/api/personal/social/'+provider+'?' + new URLSearchParams({state:url.searchParams.get('state')!,code:who+'-code'});
+      const finishPath = '/api/personal/social/'+provider+'?' + new URLSearchParams({state:url.searchParams.get('state')!,code});
       return {provider,finishPath, flowCookie:setCookie.split(';')[0]};
     }
     function finish(who: Person, flow: {provider:string;finishPath:string;flowCookie:string}) {
@@ -235,12 +236,19 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     assert.equal(remote.length,0, 'mismatched callback does not reach Meta');
     assert.match((await finish('owner',ownerFlow)).headers.get('Location') ?? '',/sns=connected#social$/);
     assert.match((await finish('owner',ownerFlow)).headers.get('Location') ?? '',/sns=failed#social$/, 'callback cannot be replayed');
-    const friendFlow = await begin('friend');
+    const friendFlow = await begin('friend','threads',{});
     assert.match((await finish('friend',friendFlow)).headers.get('Location') ?? '',/sns=connected#social$/);
     const owner = (await state('owner')).accounts[0];
     const friend = (await state('friend')).accounts[0];
     assert.equal(owner.username,'owner_handle');
     assert.equal(friend.username,'friend_handle');
+    assert.equal(friend.label,'friend_handle','fresh connections default to the approved provider profile');
+    const wrongAccount=await begin('owner','threads',{accountId:owner.id},'owner-wrong-account');
+    assert.match((await finish('owner',wrongAccount)).headers.get('Location')??'',/sns=wrong-account#social$/);
+    assert.deepEqual((await state('owner')).accounts[0],owner);
+    const sameAccount=await begin('owner','threads',{accountId:owner.id});
+    assert.match((await finish('owner',sameAccount)).headers.get('Location')??'',/sns=connected#social$/);
+    assert.equal((await state('owner')).accounts[0].label,owner.label);
     assert.equal(owner.ready,true);
     assert.deepEqual(await listConnectedPersonalSocial(accounts.owner.id),[{id:owner.id,provider:'threads',label:owner.label,paused:false}]);
     assert.deepEqual(await listConnectedPersonalSocial(accounts.friend.id),[{id:friend.id,provider:'threads',label:friend.label,paused:false}]);
