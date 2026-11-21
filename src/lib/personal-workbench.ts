@@ -152,6 +152,13 @@ async function changeSlots(client:PoolClient, owner:string, decision:Decision, a
 }
 
 export async function updateWorkbench(owner:string,input:Record<string,unknown>) {
+  if (input.action==='cards-import') {
+    const text=textValue(input.text,'카드뉴스 초안',18_000).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+    let card:unknown;
+    try { card=JSON.parse(text); } catch { throw new MarketError('AI가 반환한 카드뉴스 JSON을 붙여넣어 주세요.'); }
+    if (!card||typeof card!=='object'||Array.isArray(card)) throw new MarketError('카드뉴스 초안 형식을 확인해 주세요.');
+    return {decision:await submitCardDraft(owner,{...card,projectId:input.projectId},'구독 AI 답변 가져오기')};
+  }
   if (input.action==='draft') return {decision:await submitDraft(owner,input,'내가 작성')};
   if (input.action==='project') {
     const name=textValue(input.name,'프로젝트 이름',80),rules=textValue(input.rules,'프로젝트 기억',1600);
