@@ -21,6 +21,7 @@
   try { initial = localStorage.getItem(key) ?? initial; } catch {}
   apply(initial);
   document.addEventListener('DOMContentLoaded', () => apply(root.dataset.oneTheme), {once:true});
+  document.addEventListener('nuri-workspace-change', () => apply(root.dataset.oneTheme));
 
   document.addEventListener('click', event => {
     if (!(event.target instanceof Element) || !event.target.closest(control)) return;

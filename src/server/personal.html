@@ -15,8 +15,14 @@
  <link rel="stylesheet" href="/one/personal-automation.css">
  <link rel="stylesheet" href="/one/personal-ai.css">
  <link rel="stylesheet" href="/one/personal-sites.css">
+ <link rel="stylesheet" href="/one/workspace.css">
 </head>
 <body class="personal-app">
+ <nav class="one-workspace-bar" id="one-workspace-bar" aria-label="누리원 업무 공간" hidden>
+ <span class="one-workspace-brand" role="img" aria-label="ONE PIECE"></span>
+ <div class="one-workspace-tabs"><a href="/dashboard">운영 대시보드</a><a href="/personal">내 업무</a></div>
+</nav>
+ <div id="one-personal-view">
  <a class="personal-skip" href="#personal-main">본문으로 이동</a>
  <header class="personal-top">
   <a class="personal-brand" href="/personal" aria-label="누리원 내 업무 홈"><span class="personal-wordmark" aria-hidden="true"></span></a>
@@ -27,10 +33,6 @@
    <button type="button" id="personal-logout">로그아웃</button>
   </div>
  </header>
- <nav id="personal-owner-links" class="personal-owner-links" aria-label="운영 공간 이동" hidden>
-  <a class="personal-link" href="/dashboard" id="personal-owner">운영 대시보드</a>
-  <a class="personal-link" href="/dashboard#connections/integrations">운영 설정 · 연결</a>
- </nav>
  <div class="personal-workspace">
   <nav class="personal-mobile-nav" aria-label="내 업무 빠른 메뉴">
    <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
@@ -59,6 +61,7 @@
     <a href="#files" data-personal-link="files">비공개 저장소</a>
     <a href="#getting-started" data-personal-link="getting-started">시작 가이드</a>
     <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
+    <a id="personal-owner-links" href="/dashboard#connections/integrations" hidden>운영 설정 · 연결</a>
    </div>
   </nav>
   <main id="personal-main" tabindex="-1" class="personal-main" aria-busy="true">
@@ -312,6 +315,7 @@
    </div>
   </form>
  </dialog>
+ </div>
  <script src="/one/personal-revenue.js" defer></script>
  <script src="/one/personal-sites.js" defer></script>
  <script src="/one/personal-files.js" defer></script>

@@ -24,7 +24,7 @@ function fixture() {
     addEventListener:(type,fn)=>events.set(type,fn),
   };
   const location = {
-    hash:'',search:'',reloads:0,redirect:null,
+    pathname:'/personal',hash:'',search:'',reloads:0,redirect:null,
     assign(path){this.redirect=path;},reload(){this.reloads++;},
   };
   const sandbox = {

@@ -74,12 +74,11 @@ body,.workspace,.login-shell {background:var(--bg);color:var(--ink)}
 .topbar-control:hover,.topbar-control:focus-within {border-color:var(--work-accent-line);background:var(--work-hover)}
 .heading-row h1 {color:var(--ink);font-size:clamp(26px,3vw,34px);font-weight:680;letter-spacing:-.04em;text-wrap:balance}
 .heading-row h1:focus {outline:none}
-.heading-controls[hidden],.heading-controls label[hidden],#personal-shortcut[hidden],#personal-mobile[hidden],#mobile-studio[hidden] {display:none!important}
+.heading-controls[hidden],.heading-controls label[hidden],#mobile-studio[hidden] {display:none!important}
 .heading-filter-label,.heading-controls label {color:var(--muted)}
 .heading-controls select.select,.compact-view .heading-controls select.select {color:var(--ink);background-color:var(--surface);border-color:var(--line)}
 .assistant-dashboard .sample-line {display:none}
 .assistant-dashboard .heading-row {margin-bottom:20px}
-#personal-shortcut {text-decoration:none;margin:3px 0 10px}
 
 .assistant-home-grid {display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:20px;align-items:start}
 .assistant-home-main {display:grid;gap:20px;min-width:0}
@@ -120,7 +119,6 @@ body,.workspace,.login-shell {background:var(--bg);color:var(--ink)}
 .assistant-figures a {display:grid;gap:3px;padding:8px 12px;color:var(--muted);text-decoration:none;border-left:1px solid var(--line);font-size:13px;min-width:0}
 .assistant-figures a:first-child {border-left:0;padding-inline-start:0}
 .assistant-figures strong {color:var(--ink);font-size:clamp(21px,3vw,27px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.personal-nav-icon {display:grid;place-items:center;width:20px;height:20px;flex:none}
 .website-overview {display:grid;gap:20px}
 .website-overview .daily-queue {margin-bottom:0}
 .setup-health small {overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -198,11 +196,8 @@ th,.publishing-board th {background-color:var(--work-field);border-color:var(--l
 .compact-post-status dd,.compact-post-status h2 {color:var(--ink)}
 .compact-post-status dt,.compact-post-status>p,.compact-post-status .compact-status-note {color:var(--muted)}
 #operator-mobile {background:var(--surface);border-color:var(--line)}
-#operator-mobile.has-personal {grid-template-columns:repeat(5,minmax(0,1fr))}
 #operator-mobile :is(a,button) {color:var(--muted);min-width:0;min-height:52px}
 #operator-mobile :is(a,button)[aria-current="page"],#operator-mobile button.active {color:var(--teal)}
-#operator-mobile .mobile-personal {display:grid;justify-items:center;align-content:center;text-decoration:none;font-size:11px}
-#operator-mobile .mobile-personal .icon {width:20px;height:20px}
 
 @media (hover:hover) and (pointer:fine) {
   .workspace :is(.site-card,.channel-tile,.setup-shortcuts a):hover {
