@@ -241,6 +241,15 @@ h2 {font-size:17px}
   .personal-row-text {padding-top:6px}
   .personal-row-text strong {font-size:14px}
   .personal-row-actions {gap:0}
+  #personal-list .personal-row:has(.personal-row-actions) {
+    display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:2px 8px;
+  }
+  #personal-list .personal-row:has(.personal-checkbox) {grid-template-columns:auto minmax(0,1fr)}
+  #personal-list .personal-row:has(.personal-checkbox) .personal-row-actions {
+    grid-column:2;justify-content:flex-start;column-gap:4px;
+  }
+  #personal-list .personal-row-text strong {display:block;word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty}
+
   .personal-action {padding-inline:6px;min-width:44px}
 }
 .personal-revalidating [data-personal-view],

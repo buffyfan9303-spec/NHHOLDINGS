@@ -478,7 +478,7 @@ function siteCards(){
       <small>업무 ${money(tasks)} · 예약 ${money(scheduled)}</small>
      </div>
     </div>
-    <span class="site-card-value"><strong>${field?money(snapshot?.[field]):snapshot?.readiness?.length?(snapshot.readiness.every(r=>r.ready)?'판매 가능':'판매 개시 전'):'조회 전'}</strong><small>${label}</small>${site.userTrend?`<small class="site-user-delta">7일 순변동 ${formatUserChange(site.userTrend.change)}</small>`:''}${window.NuriDaily.trend(site)}</span>
+    <span class="site-card-value"><strong>${field?money(snapshot?.[field]).replaceAll(',',',<wbr>'):snapshot?.readiness?.length?(snapshot.readiness.every(r=>r.ready)?'판매 가능':'판매 개시 전'):'조회 전'}</strong><small>${label}</small>${site.userTrend?`<small class="site-user-delta">7일 순변동 ${formatUserChange(site.userTrend.change)}</small>`:''}${window.NuriDaily.trend(site)}</span>
     <div class="site-card-observation">
      <span><span class="site-status ${!snapshot||site.stale?'stale':''}" aria-hidden="true"></span>${status}</span>
      ${observedAt?`<time datetime="${esc(observedAt)}">${esc(dt(observedAt))}</time>`:''}

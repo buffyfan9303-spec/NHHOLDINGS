@@ -70,6 +70,11 @@ publicationContext.data.services.push(
 const websiteCards=vm.runInContext('siteCards()',publicationContext);
 assert(websiteCards.includes('<strong>15</strong><small>가입 유저'));
 assert(websiteCards.includes('<strong>92</strong><small>가입 유저'));
+publicationContext.data.services.find(site=>site.id==='mind').snapshot.data.users=9876543210;
+publicationContext.money=value=>new Intl.NumberFormat('ko-KR').format(value);
+assert(vm.runInContext('siteCards()',publicationContext).includes('<strong>9,<wbr>876,<wbr>543,<wbr>210</strong>'));
+publicationContext.money=String;
+publicationContext.data.services.find(site=>site.id==='mind').snapshot.data.users=15;
 assert(!websiteCards.includes('연결 매장'));
 publicationContext.state.scope='holdem';
 const scopedCards=vm.runInContext('siteCards()',publicationContext);
