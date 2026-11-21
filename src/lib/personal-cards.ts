@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import type {PoolClient} from 'pg';
 import type {NextRequest} from 'next/server';
 import {accessStatus, canUsePersonalWorkspace, identity} from './auth';
 import {hash, MarketError} from './security';
@@ -7,8 +8,8 @@ import {pool} from '../server/postgres.cjs';
 export const personalCardThemes = ['mint', 'cobalt', 'ink'] as const;
 type Theme = typeof personalCardThemes[number];
 export type PersonalCardSlide = {headline: string; body: string; label: string | null};
-type Blueprint = {title: string; theme: Theme; slides: PersonalCardSlide[]};
-export type PersonalCard = Blueprint & {id: string; createdAt: string};
+export type PersonalCardBlueprint = {title: string; theme: Theme; slides: PersonalCardSlide[]};
+export type PersonalCard = PersonalCardBlueprint & {id: string; createdAt: string};
 type StoredCard = PersonalCard & {ownerId: string};
 const cardId = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const scope = "workspace='live' AND kind='personal-card'";
@@ -44,7 +45,7 @@ function cleanText(value: unknown, max: number, name: string, optional = false) 
   return cleaned;
 }
 
-export function validatePersonalCard(input: unknown): Blueprint {
+export function validatePersonalCard(input: unknown): PersonalCardBlueprint {
   const draft = object(input);
   const title = cleanText(draft.title, 64, '카드뉴스 제목');
   const theme = draft.theme ?? 'mint';
@@ -66,10 +67,10 @@ function expose(card: StoredCard): PersonalCard {
   return {id, title, theme, slides, createdAt};
 }
 
-export async function createPersonalCard(actor: string, input: unknown): Promise<PersonalCard> {
+export async function createPersonalCard(actor: string, input: unknown, db:Pick<PoolClient,'query'>=pool()): Promise<PersonalCard> {
   const blueprint = validatePersonalCard(input);
   const card = {...blueprint, ownerId: actor, id: randomUUID(), createdAt: new Date().toISOString()};
-  await pool().query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-card',$1,$2)",
+  await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-card',$1,$2)",
     [key(actor, card.id), JSON.stringify(card)]);
   return expose(card);
 }

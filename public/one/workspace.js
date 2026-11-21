@@ -6,8 +6,8 @@
   const dashboardStyles = [...document.querySelectorAll('link[rel="stylesheet"]')]
     .filter(link => !link.href.endsWith('/fonts/pretendard.css') && !link.href.endsWith('/workspace.css'));
   const menus = [...bar.querySelectorAll('a')];
-  const styles = ['personal', 'personal-files', 'personal-automation', 'personal-ai', 'personal-sites'];
-  const scripts = ['personal-revenue', 'personal-sites', 'personal-files', 'personal-automation', 'personal-ai', 'personal'];
+  const styles = ['personal', 'personal-files', 'personal-automation', 'personal-ai', 'personal-sites', 'workbench'];
+  const scripts = ['personal-revenue', 'personal-sites', 'personal-files', 'personal-automation', 'personal-ai', 'workbench', 'personal'];
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const title = document.title;
   const remembered = {'/dashboard': location.href, '/personal': '/personal#home'};

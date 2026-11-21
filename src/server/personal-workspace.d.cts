@@ -11,6 +11,8 @@ export interface PersonalDraft {
 
 export interface PersonalItem extends PersonalDraft {
   id: string;
+  focusOn?: string;
+  focusTime?: string;
   createdAt: string;
   updatedAt: string;
   version: number;

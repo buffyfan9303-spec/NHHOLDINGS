@@ -4,7 +4,7 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', notes:'메모', links:'바로가기', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
   const kinds = {tasks:'task', schedule:'schedule', notes:'note', links:'link'};
   const dayFormatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
@@ -90,7 +90,7 @@
         '" data-personal-action="toggle" data-item="'+item.id+'"><span aria-hidden="true">'+(item.done?'✓':'')+'</span></button>':'';
       const late = !item.done&&item.dueOn&&item.dueOn<day()&&isTask?' <span class="personal-late">기한 지남</span>':'';
       return '<li class="personal-row'+(item.done?' is-done':'')+'">'+toggle+'<div class="personal-row-text"><strong>'+
-        primary+'</strong>'+details+'<div class="personal-row-meta">'+description(item)+late+'</div></div>'+
+        primary+'</strong>'+details+'<div class="personal-row-meta">'+description(item)+late+(item.focusOn?' <span>집중 '+esc(item.focusOn)+' '+esc(item.focusTime)+'</span>':'')+'</div></div>'+
         (controls?'<div class="personal-row-actions">'+controls+'</div>':'')+'</li>';
     }).join('')+'</ul>';
   }
@@ -106,9 +106,12 @@
       return {...event,title:label+' · '+event.title,dueOn:dayFormatter.format(new Date(event.scheduledAt)),
         dueTime:timeFormatter.format(new Date(event.scheduledAt)),createdAt:event.scheduledAt,done:false};
     });
-    el('personal-upcoming').innerHTML = list([...schedule,...automated].sort(dateOrder).slice(0,4),'예정된 일정이 없습니다.',true);
+    const focus = tasks.filter(item=>item.focusOn>=now).map(item=>({
+      ...item,title:'집중 · '+item.title,kind:'focus',dueOn:item.focusOn,dueTime:item.focusTime,
+    })).sort(dateOrder);
+    el('personal-upcoming').innerHTML = list([...schedule,...automated,...focus].sort(dateOrder).slice(0,4),'예정된 일정이 없습니다.',true);
     el('personal-automation-agenda').hidden=view!=='schedule';
-    if(view==='schedule')el('personal-automation-events').innerHTML=list(automated,'예정된 게시나 메일이 없습니다.',true);
+    if(view==='schedule')el('personal-automation-events').innerHTML=list([...focus,...automated].sort(dateOrder),'집중 시간이나 예약이 없습니다.',true);
     el('personal-pinned').innerHTML = list(links.slice(0,5),'바로가기를 추가할 수 있습니다.',true);
     const kind = kinds[view];
     if(kind) {
@@ -140,6 +143,7 @@
       }
     }
     if(ready) paintItems();
+    if(view==='workbench'&&ready)void window.NuriWorkbench.mount();
     if(view==='revenue'&&ready)void window.NuriPersonalRevenue?.mount?.();
     if(visible==='sites'&&ready)void window.NuriPersonalSites?.mount?.();
     if(view==='files'&&ready) void window.NuriPersonalFiles?.mount?.();
@@ -332,6 +336,7 @@
     window.NuriPersonalSites?.suspend?.();
     window.NuriPersonalRevenue?.suspend?.();
     window.NuriPersonalAI?.suspend?.();
+    window.NuriWorkbench?.suspend();
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }
   function checkAccount(){mask();route();void load();}

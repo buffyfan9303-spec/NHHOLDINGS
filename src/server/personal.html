@@ -15,6 +15,7 @@
  <link rel="stylesheet" href="/one/personal-automation.css">
  <link rel="stylesheet" href="/one/personal-ai.css">
  <link rel="stylesheet" href="/one/personal-sites.css">
+ <link rel="stylesheet" href="/one/workbench.css">
  <link rel="stylesheet" href="/one/workspace.css">
 </head>
 <body class="personal-app">
@@ -46,6 +47,7 @@
     <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
     <a href="#tasks" data-personal-link="tasks">할 일</a>
     <a href="#schedule" data-personal-link="schedule">일정</a>
+    <a href="#workbench" data-personal-link="workbench">업무 작업대</a>
     <a href="#notes" data-personal-link="notes">메모</a>
     <a href="#links" data-personal-link="links">바로가기</a>
    </div>
@@ -77,6 +79,7 @@
      <div id="personal-upcoming"></div>
     </div>
     <section class="personal-sheet personal-quick-sheet" aria-labelledby="personal-quick-title">
+     <a class="personal-link" href="#workbench">업무 작업대</a>
      <h2 id="personal-quick-title">빠른 기록</h2>
      <form id="personal-quick" class="personal-quick">
       <label for="personal-quick-title-input">할 일 또는 메모</label>
@@ -98,9 +101,10 @@
       <button type="button" id="personal-add" class="btn primary">추가</button>
      </div>
      <div id="personal-list"></div>
-     <section id="personal-automation-agenda" hidden class="personal-section-break"><h2>예약된 게시와 메일</h2><div id="personal-automation-events"></div></section>
+     <section id="personal-automation-agenda" hidden class="personal-section-break"><h2>집중 시간과 예약</h2><div id="personal-automation-events"></div></section>
     </div>
    </section>
+   <section id="workbench" data-personal-view="workbench" hidden aria-label="업무 작업대"></section>
    <section data-personal-view="social" hidden aria-label="내 SNS"><div id="personal-social-root"></div></section>
    <section data-personal-view="sites" hidden aria-label="내 웹사이트" class="personal-sites">
     <nav class="personal-site-tabs" aria-label="웹사이트 메뉴">
@@ -321,6 +325,7 @@
  <script src="/one/personal-files.js" defer></script>
  <script src="/one/personal-automation.js" defer></script>
  <script src="/one/personal-ai.js" defer></script>
+ <script src="/one/workbench.js" defer></script>
  <script src="/one/personal.js" defer></script>
 </body>
 </html>

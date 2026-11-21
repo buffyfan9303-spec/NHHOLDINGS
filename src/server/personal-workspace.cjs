@@ -19,6 +19,7 @@ function personalWorkspace(ownerId) {
     dueOn: data.dueOn,
     dueTime: data.dueTime,
     done: data.done,
+    ...(data.focusOn && data.focusTime ? {focusOn:data.focusOn,focusTime:data.focusTime} : {}),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     version: data.version,
@@ -53,6 +54,7 @@ function personalWorkspace(ownerId) {
   async function update(previous, draft) {
     const data = {
       ...draft,
+      ...(previous.focusOn&&previous.focusTime ? {focusOn:previous.focusOn,focusTime:previous.focusTime} : {}),
       ownerId,
       createdAt: previous.createdAt,
       updatedAt: new Date().toISOString(),
