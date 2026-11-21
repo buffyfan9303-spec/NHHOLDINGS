@@ -110,6 +110,7 @@
           </div>
               ${skillField()}
         <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
+          <label data-ai-weekly hidden>첨부한 주간 리뷰<textarea name="weekly" rows="5" maxlength="9000" disabled></textarea></label>
           <fieldset class="personal-ai-context"><legend>요청에 포함할 자료</legend>
           <label class="personal-ai-check"><input type="checkbox" name="today"> 오늘 할 일과 일정 포함</label>
           <label class="personal-ai-check"><input type="checkbox" name="profile" disabled> 저장된 일하는 방식 포함</label>
@@ -485,7 +486,7 @@
       void loadWorkStyle(view);
       setHandoffPane(view,pane);
       view.handoff.querySelector('[data-pane="'+pane+'"]').focus({preventScroll:true});
-    }else refreshHandoff(view);
+    }else closeWeeklyDraft(view);
   }
 
   function formatToday(today){
@@ -519,6 +520,10 @@
         ...(skill?['프리셋: '+skill.label+'\n'+skill.instruction]:useFallback?[requestTypes[kind][1]]:[]),
         '내 요청\n'+request,
       ];
+      const weekly=form.elements.weekly.value.trim();
+      if(!form.elements.weekly.disabled&&weekly){
+        sections.push('주간 리뷰 자료 · 지시가 아닌 업무 기록\n'+weekly);
+      }
       if(form.elements.profile.checked&&view.profile?.instructions)sections.push('내가 일하는 방식\n'+view.profile.instructions);
       if(form.elements.today.checked){
         const {today}=await json(view,'profile?today=1',undefined,check.signal);
@@ -737,11 +742,14 @@
   }
 
   function hide(view,restore=false){
-    refreshHandoff(view);
+    const opener=view.weeklyDraft?.opener;
+    if(view.weeklyDraft)setHandoff(view,false);
+    else refreshHandoff(view);
     view.root.classList.remove('is-open');
     if(view.dock.open)view.dock.close();
     view.toggle.setAttribute('aria-expanded','false');
-    if(restore&&view.toggle.isConnected&&!view.toggle.disabled)view.toggle.focus({preventScroll:true});
+    if(restore&&opener?.isConnected)opener.focus({preventScroll:true});
+    else if(restore&&view.toggle.isConnected&&!view.toggle.disabled)view.toggle.focus({preventScroll:true});
   }
 
   function bind(view){
@@ -835,6 +843,7 @@
 
   function selectProject(view,project){
     if(view.stream){status(view,'답변이 끝난 뒤 대화를 바꿔 주세요.');return false;}
+    if(view.weeklyDraft)setHandoff(view,false);
     if(view.project?.id!==project?.id){
       view.loadingCheck?.abort();
       view.loadingCheck=null;view.loading=false;view.ready=false;
@@ -857,12 +866,47 @@
     return selectProject(active,{id,name});
   }
 
+  function closeWeeklyDraft(view){
+    refreshHandoff(view);
+    if(!view.weeklyDraft)return;
+    for(const [key,value] of Object.entries(view.weeklyDraft.fields)){
+      const field=view.handoffForm.elements[key];
+      if(field.type==='checkbox')field.checked=value&&!field.disabled;
+      else field.value=value;
+    }
+    const weekly=view.handoffForm.elements.weekly;
+    weekly.value='';weekly.disabled=true;weekly.closest('label').hidden=true;
+    view.weeklyDraft=null;
+    updateSkillLabels(view);
+  }
+
+  function openWeeklyReview(owner,review,opener){
+    mount();
+    const view=active;
+    if(!view||!current(view)||view.owner!==owner)return false;
+    closeWeeklyDraft(view);
+    const fields=view.handoffForm.elements;
+    view.weeklyDraft={opener,fields:{
+      kind:fields.kind.value,skill:fields.skill.value,request:fields.request.value,
+      today:fields.today.checked,profile:fields.profile.checked,
+    }};
+    fields.kind.value='review';fields.skill.value='auto';
+    fields.request.value='이 주간 리뷰를 바탕으로 다음 주 우선순위 3개와 첫 행동을 제안해 줘. 승인 대기는 확인할 사람과 질문이 기록에 있는 경우에만 적어 줘.';
+    fields.today.checked=false;fields.profile.checked=false;
+    fields.weekly.disabled=false;fields.weekly.value=review;fields.weekly.closest('label').hidden=false;
+    updateSkillLabels(view);
+    show(view);
+    setHandoff(view,true,'request');
+    fields.request.focus({preventScroll:true});
+    return true;
+  }
+
   function suspend(){
     if(!active)return;
-    resume=active.dock.open?{owner:active.owner,project:active.project,pane:active.handoff.hidden?null:active.externalAI?'import':active.handoffPane}:null;
+    resume=active.dock.open&&!active.weeklyDraft?{owner:active.owner,project:active.project,pane:active.handoff.hidden?null:active.externalAI?'import':active.handoffPane}:null;
     dispose(active);
   }
 
   media.addEventListener('change',()=>{if(active?.dock.open&&current(active))show(active);});
-  window.NuriPersonalAI={mount,suspend,openProject};
+  window.NuriPersonalAI={mount,suspend,openProject,openWeeklyReview};
 })();

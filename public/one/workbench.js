@@ -200,6 +200,35 @@
   const currentWeek=()=>{const date=today();return calendarDay(date,-((new Date(date+'T00:00:00Z').getUTCDay()+6)%7));};
   const repeatLabels={daily:'매일',weekly:'매주',monthly:'매월'};
   const listReview=(rows,body,empty)=>rows.length?'<ul class="workbench-list">'+rows.map(body).join('')+'</ul>':'<p class="personal-empty">'+empty+'</p>';
+  function weeklyReport(project,review,maxRows=Infinity){
+    const {window:dates,completed,unfinished,approvals}=review;
+    const line=value=>String(value??'').replace(/\s+/g,' ').trim();
+    const show=(title,rows)=>{
+      const listed=rows.slice(0,maxRows).map(row=>'- '+line(row.title)+(row.dueOn?' · 마감 '+line(row.dueOn):''));
+      if(rows.length>listed.length)listed.push('외 '+(rows.length-listed.length)+'건');
+      return [title+' ('+rows.length+'건)',...(listed.length?listed:['없음'])].join('\n');
+    };
+    return ['프로젝트 주간 리뷰 · '+line(project.name),dates.start+' – '+dates.end+' · 한국 시간',
+      show('완료',completed),show('미완료',unfinished),show('현재 승인 대기',approvals)].join('\n\n');
+  }
+
+  function shareWeekly(key,trigger){
+    if(owner!==window.NuriPersonalAccount||!weeklyData||weeklyData.error)return;
+    const project=data.projects.find(row=>row.id===weeklyProject);
+    if(!project)return;
+    if(key==='weekly-ai'){
+      if(!window.NuriPersonalAI?.openWeeklyReview(owner,weeklyReport(project,weeklyData,12),trigger)){
+        status('AI 도우미를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      return;
+    }
+    const url=URL.createObjectURL(new Blob([weeklyReport(project,weeklyData)+'\n'],{type:'text/plain;charset=utf-8'}));
+    const link=document.createElement('a');
+    link.href=url;link.download='nuri-one-weekly-'+weeklyData.window.start+'.txt';
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
   function weekly(){
     const available=data.projects.some(project=>project.id===weeklyProject);
     const header='<section class="workbench-narrow"><h2>프로젝트 주간 리뷰</h2>'+
@@ -230,7 +259,9 @@
       '<label>주기<select name="frequency"><option value="daily">매일</option><option value="weekly" selected>매주</option><option value="monthly">매월</option></select></label>'+
       '<label>시작 날짜<input name="startOn" type="date" value="'+today()+'" min="'+today()+'" required></label></div>'+
       '<div><button class="btn primary" type="submit">반복 설정 저장</button></div></form></details></section>';
-    return header+counts+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
+    const tools='<div class="workbench-actions">'+action('주간 리뷰 내려받기','weekly-download')+
+      action('AI로 다음 주 준비','weekly-ai')+'</div>';
+    return header+counts+tools+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
   }
   function setupWeekly(){
     weeklyStart||=currentWeek();
@@ -482,6 +513,7 @@
     if(key==='retry'){void mount();return;}
     if(!data)return;
     if(next){switchPane(next);return;}
+    if(key==='weekly-download'||key==='weekly-ai'){shareWeekly(key,trigger);return;}
     if(key==='refresh-activity'||key==='refresh-profile'){void loadPane(pane,true);return;}
     if(key==='open-activity'){
       const item=Array.isArray(activityData)&&activityData.find(row=>row.id===id);
