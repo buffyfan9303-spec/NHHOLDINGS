@@ -32,7 +32,7 @@
   width: clamp(82px,14vw,116px);
   height: 23px;
   flex: none;
-  background: url('/brand/nuri-one-dark.svg') left center / contain no-repeat;
+  background: url('/brand/nuri-one.svg') left center / contain no-repeat;
 }
 :root[data-one-theme="light"] .one-workspace-brand {background-image:url('/brand/nuri-one-light.svg')}
 .one-workspace-tabs {display:flex;gap:4px;min-width:0}
