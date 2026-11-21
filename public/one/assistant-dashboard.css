@@ -145,6 +145,17 @@ th,.publishing-board th {background-color:var(--work-field);border-color:var(--l
 .setup-tabs button.active,.site-tabs button.active,.channel-tabs button.active,.automation-tabs button.active,.status-filters button.active {
   color:var(--teal);background:var(--work-active);border-color:var(--work-accent-line);box-shadow:none;
 }
+/* Compact publishing shares the same surface and readable status colors. */
+.mobile-status-summary>div+div {border-color:var(--line)}
+.mobile-status-summary span,.mobile-channel-count,.mobile-channel-count>span,
+.mobile-list-heading>span,.mobile-list-note,.mobile-post-card header>span {color:var(--muted)}
+.mobile-status-summary .published strong,.mobile-channel-count b {color:var(--teal)}
+.mobile-status-summary .scheduled strong {color:var(--ink)}
+.mobile-status-summary .review strong,.mobile-channel-count i {color:var(--amber)}
+.mobile-channel-row:hover {background:var(--work-hover)}
+.mobile-post-filters button {background:var(--work-field);color:var(--muted);border:1px solid var(--line)}
+.mobile-post-filters button:hover {background:var(--work-hover);color:var(--ink)}
+.mobile-post-filters button.active {background:var(--work-active);color:var(--teal);border-color:var(--work-accent-line)}
 .studio-nav {border-color:var(--line)}
 .studio-nav :is(a,button) {color:var(--muted)}
 .studio-nav :is(.active,[aria-current="page"]) {color:var(--teal);background:var(--work-active)}
