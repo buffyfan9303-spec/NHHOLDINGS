@@ -60,7 +60,7 @@
         <div class="personal-ai-handoff-content" data-ai-handoff-content>
           <section id="handoff-request" data-ai-handoff-pane="request" aria-label="요청 준비">
             <form class="personal-form" data-ai-handoff-form>
-          <p class="personal-ai-mode-note">요청을 준비한 뒤 본인의 AI에 복사해 보냅니다.</p>
+          <p class="personal-ai-mode-note">요청을 준비한 뒤 본인의 AI에 복사해 보냅니다. <a href="/personal?workbench=connect#workbench" data-ai-go>공식 AI 연결</a></p>
               <div class="personal-ai-options">
             <label>사용할 AI<select name="provider">${selectOptions(Object.fromEntries(Object.entries(subscriptionSites).map(([key,value])=>[key,value.label])))}</select></label>
             <label>목적<select name="kind">${selectOptions(Object.fromEntries(Object.entries(requestTypes).map(([key,value])=>[key,value[0]])))}</select></label>

@@ -16,7 +16,7 @@
   const views=new Map();
   const cardIdPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
   const imageProviders=['instagram','threads'];
-  let socialCard=null;
+  let socialCard=null, approvedDraft=null;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const safeLink=value=>{
     try {
@@ -249,7 +249,7 @@
         if(current(view)){
           setControls(view);
           if(view.needsRefresh&&!view.busy&&location.hash==='#'+view.kind)void load(view);
-          else openSelectedCard(view);
+          else openPendingDraft(view);
         }
       }
     }
@@ -265,23 +265,23 @@
     view.fields.querySelector('input,select,textarea')?.focus();
   }
 
-  function draftEditor(view,item,cardChoice=null) {
+  function draftEditor(view,item,cardChoice=null,seed=null) {
     if(view.kind==='mail'){
       return modal(view,'draft',item?.id,`
         <label>받는 사람<input name="to" type="email" required maxlength="254" value="${escape(item?.to)}"></label>
-        <label>제목<input name="subject" required maxlength="160" value="${escape(item?.subject)}"></label>
-        <label>본문<textarea name="body" rows="6" maxlength="16000" required>${escape(item?.body)}</textarea></label>`,
+        <label>제목<input name="subject" required maxlength="160" value="${escape(item?.subject??seed?.title)}"></label>
+        <label>본문<textarea name="body" rows="6" maxlength="16000" required>${escape(item?.body??seed?.text)}</textarea></label>`,
       item?'메일 초안 편집':'새 메일 초안','초안 저장');
     }
     if(!view.data.accounts.length)return note(view,'SNS 계정을 연결한 뒤 초안을 작성해 주세요.',true);
     const accounts=view.data.accounts;
-    const account=cardChoice?.accountId||(item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):accounts[0].id);
+    const account=cardChoice?.accountId||(item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):seed?'':accounts[0].id);
     const bool=(value)=>option('','선택',value==null?'':String(value))+option('true','예',String(value))+option('false','아니요',String(value));
     modal(view,'draft',item?.id,`
      ${item?.status==='scheduled'?'<p class="auto-caption">편집을 저장하면 현재 예약이 해제됩니다. 게시 시각을 다시 승인해 주세요.</p>':''}
      <label>게시 계정<select name="accountId" required>${option('','게시 계정을 선택해 주세요.',account)+accounts.map(a=>option(a.id,a.label+' · '+(providerNames[a.provider]||a.provider),account)).join('')}</select></label>
-     <label>제목<input name="title" required maxlength="160" value="${escape(item?.title)}"></label>
-     <label>본문<textarea name="body" rows="6" maxlength="5000" required>${escape(item?.body)}</textarea></label>
+     <label>제목<input name="title" required maxlength="160" value="${escape(item?.title??seed?.title)}"></label>
+     <label>본문<textarea name="body" rows="6" maxlength="5000" required>${escape(item?.body??seed?.text)}</textarea></label>
      <p class="auto-caption" data-auto-media-note></p>
      <div data-auto-channel-field="image"><label for="personal-sns-image-source">게시 이미지</label>
      <select id="personal-sns-image-source" name="imageSource">
@@ -495,7 +495,7 @@
           (buttons.find(button=>button.dataset.id===focus.id&&button.dataset.autoAction===focus.autoAction)||
            buttons.find(button=>button.dataset.autoAction==='refresh'))?.focus({preventScroll:true});
         }
-        openSelectedCard(view);
+        openPendingDraft(view);
       }
     }
   }
@@ -591,9 +591,16 @@
     if(secret)secret.value='';
   }
 
-  function openSelectedCard(view) {
-    if(view.kind!=='social'||!current(view)||!view.data||view.loading||view.busy||view.dialog.open||
-       document.visibilityState==='hidden'||!socialCard||socialCard.owner!==view.owner||location.hash!=='#social')return;
+  function openPendingDraft(view) {
+    if(!current(view)||!view.data||view.loading||view.busy||view.dialog.open||
+       document.visibilityState==='hidden'||location.hash!=='#'+view.kind)return;
+    if(approvedDraft?.owner===view.owner&&approvedDraft.kind===view.kind){
+      const seed=approvedDraft;
+      approvedDraft=null;
+      draftEditor(view,null,null,seed);
+      return;
+    }
+    if(view.kind!=='social'||!socialCard||socialCard.owner!==view.owner)return;
     const pending=socialCard;
     socialCard=null;
     const account=view.data.accounts.find(a=>imageProviders.includes(a.provider)&&a.ready&&!a.paused);
@@ -602,6 +609,15 @@
       return;
     }
     draftEditor(view,null,{id:pending.id,slide:pending.slide,accountId:account.id});
+  }
+
+  function reviewApprovedDraft(kind,title,text) {
+    const owner=window.NuriPersonalAccount;
+    if(!owner||!['mail','social'].includes(kind))return false;
+    approvedDraft={kind,title,text,owner};
+    if(location.hash!=='#'+kind)location.hash=kind;
+    else mount(kind);
+    return true;
   }
 
   function selectSocialCard(id,slide=0) {
@@ -630,7 +646,7 @@
           if(prior.form.elements.imageSource?.value==='card')void loadDraftCards(prior);
         }
         void load(prior);
-      }else openSelectedCard(prior);
+      }else openPendingDraft(prior);
       return;
     }
     if(prior)suspendView(prior);
@@ -657,13 +673,14 @@
       view.cardRead?.abort();
       const secret=view.form.elements.clientSecret;
       if(secret)secret.value='';
-      openSelectedCard(view);
+      openPendingDraft(view);
     });
     root.onclick=event=>click(view,event);
     void load(view,oauthNotice(kind));
   }
 
   function suspend() {
+    approvedDraft=null;
     for(const view of views.values())suspendView(view);
   }
   window.addEventListener('personal-automation-changed',event=>{
@@ -674,5 +691,5 @@
   });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')suspend();});
   window.addEventListener('pagehide',suspend);
-  window.NuriPersonalAutomation={mount,suspend,selectSocialCard};
+  window.NuriPersonalAutomation={mount,suspend,selectSocialCard,reviewApprovedDraft};
 })();

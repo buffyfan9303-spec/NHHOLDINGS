@@ -1,0 +1,7 @@
+:root{color-scheme:light dark;font:16px system-ui,sans-serif}
+body{margin:0;background:Canvas;color:CanvasText}
+main{max-width:34rem;margin:12vh auto;padding:1.25rem;overflow-wrap:anywhere;word-break:keep-all}
+h1{font-size:clamp(1.35rem,4vw,2rem);line-height:1.35}p{line-height:1.6}
+form{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem}
+button{min-height:44px;padding:0 1rem;border:1px solid ButtonText;border-radius:7px;font:inherit;cursor:pointer}
+button:first-of-type{background:#176048;color:#fff;border-color:#176048}
