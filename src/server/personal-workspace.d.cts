@@ -7,6 +7,7 @@ export interface PersonalDraft {
   dueOn: string | null;
   dueTime: string | null;
   done: boolean;
+  projectId?: string;
 }
 
 export interface PersonalItem extends PersonalDraft {

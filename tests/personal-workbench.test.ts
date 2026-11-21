@@ -107,6 +107,24 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     assert.equal((await post('first',{action:'approve',id:stale.id})).status,409);
     assert.equal((await itemState()).focusOn,undefined);
 
+    const projectTask={action:'create',kind:'task',title:'프로젝트 마감',projectId:project.id,dueOn:tomorrow};
+    assert.equal((await save(req('/api/personal','second',projectTask))).status,404);
+    const {item:attached}=await (await save(req('/api/personal','first',projectTask))).json();
+    assert.equal(attached.projectId,project.id);
+    const personalState=await (await personal(req('/api/personal','first'))).json();
+    assert.deepEqual(personalState.projects,[{id:project.id,name:project.name}]);
+    assert.deepEqual((await (await personal(req('/api/personal','second'))).json()).projects,[]);
+    const scopedPlan={action:'plan',day:tomorrow,start:'09:00',end:'11:00',projectId:project.id,projectOnly:true};
+    assert.equal((await post('first',{...scopedPlan,projectId:''})).status,400);
+    const {decision:scoped}=await (await post('first',scopedPlan)).json();
+    assert.deepEqual(scoped.moves.map((row:{id:string;time:string})=>[row.id,row.time]),[[attached.id,'10:00']]);
+    const {item:detached}=await (await save(req('/api/personal','first',{action:'update',id:attached.id,version:1,projectId:null}))).json();
+    assert.equal(detached.projectId,undefined);
+    assert.equal((await post('first',{action:'approve',id:scoped.id})).status,409);
+    const aiTask=await applyPersonalAI(first,'task','','instagram',JSON.stringify({title:'프로젝트 AI 할 일'}),project.id);
+    const taskList=await (await personal(req('/api/personal','first'))).json();
+    assert.equal(taskList.items.find((row:{id:string})=>row.id===aiTask.action.id).projectId,project.id);
+
     const register=(redirect_uris:string[])=>connectPost(req(url+'register',undefined,{redirect_uris}),step('register'));
     assert.equal((await register(['https://example.invalid/'])).status,400);
     const client=(await (await register([redirect])).json()).client_id as string;

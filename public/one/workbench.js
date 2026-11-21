@@ -35,7 +35,7 @@
         '<div class="workbench-actions">'+action('요청 문장 복사','copy-example',selectedTemplate)+
         '<a class="personal-link" href="#workbench" data-action="connect-pane">AI 연결 확인</a></div></details>':'')+'</section>':'';
     const next=project?'<section class="workbench-narrow"><div class="workbench-heading"><h2>이 프로젝트 이어서 하기</h2>'+
-      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+'</div>'+'</div>'+
+      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+action('프로젝트 기록','project-records',project.id)+action('할 일 추가','project-task',project.id)+'</div>'+'</div>'+
       (related.length?'<ul class="workbench-list">'+related.slice(0,6).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+
       '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>':'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
       contentForm(project.id)+'</section>':'';
@@ -56,6 +56,7 @@
       '<form class="personal-form" data-form="plan"><label>배치할 날짜<input type="date" name="day" min="'+today()+'" value="'+today()+'" required></label>'+
       '<label>관련 프로젝트<select name="projectId">'+selectProject()+'</select></label>'+
       '<div class="workbench-time"><label>시작 시간<input type="time" name="start" value="09:00" required></label><label>끝 시간<input type="time" name="end" value="18:00" required></label></div>'+
+      '<label class="workbench-check"><input type="checkbox" name="projectOnly"> 선택한 프로젝트의 할 일만 배치</label>'+
       '<small>한국 시간 기준. 시간이 있는 일정과 예약은 시작부터 30분을 비워 둡니다.</small>'+
       '<div><button class="btn primary" type="submit">일정 제안 만들기</button></div></form><a class="personal-link" href="#schedule">내 일정 보기</a></section>';
   }
@@ -197,6 +198,7 @@
   const renderers={projects,schedule,approvals,activity,connect,preferences};
 
   function render(message=''){
+    if(data)window.NuriPersonalWorkspace?.syncProjects?.(data.projects);
     root.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries({...sections,preferences:'내 선호'}).map(([id,label])=>
       '<button type="button" data-pane="'+id+'"'+(id===pane?' aria-current="page"':'')+'>'+label+'</button>').join('')+
       (data?action('새로고침','refresh'):'')+'</nav><p class="personal-message" data-workbench-status role="status">'+esc(message)+'</p>'+
@@ -418,6 +420,8 @@
       return;
     }
     const project=data.projects.find(row=>row.id===id),decision=data.decisions.find(row=>row.id===id);
+    if(key==='project-records'&&project){window.NuriPersonalWorkspace?.openProjectRecords?.(project.id);return;}
+    if(key==='project-task'&&project){window.NuriPersonalWorkspace?.reviewDraft?.('task',{projectId:project.id});return;}
     if(key==='project-chat'&&project){window.NuriPersonalAI?.openProject(project.id,project.name);return;}
     if(key==='connect-pane'){event.preventDefault();switchPane('connect');return;}
     if(key==='edit'||key==='new'||key==='template'){
@@ -443,7 +447,7 @@
       const {category,title,text}=decision;
       if(category==='mail'||category==='content'){
         window.NuriPersonalAutomation?.reviewApprovedDraft(category==='mail'?'mail':'social',title,text);
-      }else window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text});
+      }else window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text,projectId:decision.projectId});
       return;
     }
     if(key==='disconnect')void mutate({action:key,provider:id},'연결을 끊었습니다.');
@@ -471,6 +475,7 @@
     if(action==='project'&&projectId){
       payload.id=projectId;payload.version=data.projects.find(row=>row.id===projectId)?.version;
     }
+    if(action==='plan')payload.projectOnly=form.elements.projectOnly.checked;
     if(action==='revise'){payload.id=detailId;payload.revision=data.decisions.find(row=>row.id===detailId)?.revision??1;}
     if(action==='content-pack'&&payload.card){
       try{payload.card=JSON.parse(payload.card);if(!payload.card||typeof payload.card!=='object'||Array.isArray(payload.card))throw Error();}catch{status('카드뉴스 JSON 형식을 확인해 주세요.');return;}

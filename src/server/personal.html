@@ -143,6 +143,8 @@
       <input id="personal-search" name="query" type="search" maxlength="160" autocomplete="off" placeholder="할 일, 일정, 메모, 바로가기">
       <label for="personal-search-kind">항목 종류</label>
       <select id="personal-search-kind" name="kind"><option value="all">전체</option><option value="task">할 일</option><option value="schedule">일정</option><option value="note">메모</option><option value="link">바로가기</option></select>
+      <label for="personal-search-project" id="personal-search-project-label" hidden>프로젝트</label>
+      <select id="personal-search-project" name="projectId" hidden><option value="">모든 프로젝트</option></select>
      </form>
      <p id="personal-search-status" class="personal-message" role="status"></p>
      <div id="personal-search-results"></div>
@@ -299,6 +301,8 @@
    <h2 id="personal-editor-title"></h2>
    <label for="personal-item-title">제목</label>
    <input id="personal-item-title" name="title" maxlength="160" required>
+   <label for="personal-item-project" id="personal-item-project-label" hidden>프로젝트</label>
+   <select id="personal-item-project" name="projectId" hidden><option value="">연결 안 함</option></select>
    <div id="personal-item-dates" class="personal-date-fields">
     <label>날짜<input name="dueOn" type="date"></label>
     <label id="personal-item-hour">시간 <small>한국 시간</small><input name="dueTime" type="time"></label>
