@@ -107,19 +107,25 @@ const assistantLinks=[
 ];
 let assistantData=null,assistantLoading=false,assistantCheckedAt=0;
 function personalRollup(){
- if(!assistantData)return '<p class="caption">개인 업무를 확인하고 있습니다.</p>';
- if(assistantData.error)return '<p class="caption">개인 업무를 불러오지 못했습니다. <a class="link" href="/personal">내 업무 열기</a></p>';
- const date=today();
- const automatedToday=(assistantData.agenda||[]).filter(event=>{
-  const time=Date.parse(event.scheduledAt);
-  return Number.isFinite(time)&&today(time)===date;
- }).length;
- const rows=[
-  ['오늘 마감',assistantData.items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn===date).length,'tasks'],
-  ['기한 지난 일',assistantData.items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn&&x.dueOn<date).length,'tasks'],
-  ['오늘 일정',assistantData.items.filter(x=>x.kind==='schedule'&&x.dueOn===date).length+automatedToday,'schedule'],
- ];
- return '<div class="assistant-figures">'+rows.map(([label,count,tab])=>'<a href="/personal#'+tab+'"><span>'+label+'</span><strong>'+money(count)+'</strong></a>').join('')+'</div>';
+ const rows=[['오늘 마감','tasks'],['기한 지난 일','tasks'],['오늘 일정','schedule']];
+ const message=!assistantData?'개인 업무를 확인하고 있습니다.':assistantData.error?'개인 업무를 불러오지 못했습니다.':'';
+ let values;
+ if(!message){
+  const date=today();
+  const items=assistantData.items;
+  const automatedToday=(assistantData.agenda||[]).filter(event=>{
+   const time=Date.parse(event.scheduledAt);
+   return Number.isFinite(time)&&today(time)===date;
+  }).length;
+  values=[
+   items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn===date).length,
+   items.filter(x=>x.kind==='task'&&!x.done&&x.dueOn&&x.dueOn<date).length,
+   items.filter(x=>x.kind==='schedule'&&x.dueOn===date).length+automatedToday,
+  ];
+ }
+ return '<div class="assistant-figures"'+(message?' data-unavailable':'')+'>'+rows.map(([label,tab],index)=>
+  '<a href="/personal#'+tab+'"><span>'+label+'</span><strong>'+(values?money(values[index]):'—')+'</strong></a>'
+ ).join('')+(message?'<p class="assistant-figures-status caption" role="status">'+message+'</p>':'')+'</div>';
 }
 async function loadPersonalRollup(){
  if(!session?.owner||data?.demo||assistantLoading||Date.now()-assistantCheckedAt<30000)return;

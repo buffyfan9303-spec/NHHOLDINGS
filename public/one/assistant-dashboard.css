@@ -122,7 +122,9 @@ body,.workspace,.login-shell {background:var(--bg);color:var(--ink)}
 }
 .assistant-shortcuts a:hover,.assistant-shortcuts button:hover {background:var(--work-hover);color:var(--teal)}
 .assistant-shortcuts .icon,.assistant-operation-list .icon {width:17px;height:17px;color:var(--teal);flex-shrink:0}
-.assistant-figures {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:7px}
+.assistant-figures {position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:7px}
+.assistant-figures[data-unavailable]>a {visibility:hidden}
+.assistant-figures-status {position:absolute;inset:0;display:flex;align-items:center;margin:0}
 .assistant-figures a {display:grid;gap:3px;padding:8px 12px;color:var(--muted);text-decoration:none;border-left:1px solid var(--line);font-size:13px;min-width:0}
 .assistant-figures a:first-child {border-left:0;padding-inline-start:0}
 .assistant-figures strong {color:var(--ink);font-size:clamp(21px,3vw,27px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
