@@ -4,7 +4,7 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
   const kinds = {tasks:'task', schedule:'schedule', notes:'note', links:'link'};
   const dayFormatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
@@ -17,6 +17,9 @@
   const tabs = [...document.querySelectorAll('[data-personal-link]')];
   const screens = [...document.querySelectorAll('[data-personal-view]')];
   const more = el('personal-more'), menu = el('personal-menu'), menuLinks = el('personal-menu-links');
+  const taskFilters = el('personal-task-filters'), week = el('personal-week'), searchForm = el('personal-search-form');
+  const scheduleModes = el('personal-schedule-modes');
+  let taskState = 'all', scheduleMode = 'week', selectedDay = null, weekRead = null, weekAgenda = null;
   const quickViews = new Set(['home','tasks','schedule']);
 
   more.addEventListener('click', () => {
@@ -95,29 +98,171 @@
     }).join('')+'</ul>';
   }
 
+
+  const labelDay = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'short',day:'numeric'});
+  const weekDays = ['월','화','수','목','금','토','일'];
+  const dateAt = date => new Date(date+'T00:00:00+09:00');
+  const addDays = (date,offset) => dayFormatter.format(+dateAt(date)+offset*86400000);
+  const monday = date => addDays(date,-((new Date(date+'T00:00:00Z').getUTCDay()+6)%7));
+  const planLabel = {task:'마감',schedule:'일정',focus:'집중',social:'SNS 예약',mail:'메일 예약'};
+  const itemLabel = {task:'할 일',schedule:'일정',note:'메모',link:'바로가기'};
+  const weekParts = current => Array.from({length:7},(_,index)=>addDays(monday(current),index));
+
+  function automatedEvents(events) {
+    return events.filter(event=>['social','mail'].includes(event.kind)&&Number.isFinite(Date.parse(event.scheduledAt))).map(event=>({
+      ...event,dueOn:dayFormatter.format(new Date(event.scheduledAt)),
+      dueTime:timeFormatter.format(new Date(event.scheduledAt)),createdAt:event.scheduledAt,done:false,
+    }));
+  }
+
+  function plannedItems(events) {
+    const scheduled=items.filter(item=>item.kind==='schedule'||item.kind==='task'&&!item.done&&item.dueOn);
+    const focus=items.filter(item=>item.kind==='task'&&!item.done&&item.focusOn).map(item=>({
+      ...item,kind:'focus',dueOn:item.focusOn,dueTime:item.focusTime,
+    }));
+    return [...scheduled,...focus,...automatedEvents(events)].sort(dateOrder);
+  }
+
+  function recordTitle(item) {
+    const title=esc(item.title);
+    if(item.id&&['task','schedule','note','link','focus'].includes(item.kind))
+      return '<button class="personal-action personal-record-open" type="button" data-open-record="'+esc(item.id)+'">'+title+'</button>';
+    if(item.kind==='social'||item.kind==='mail')
+      return '<a class="personal-link" href="#'+item.kind+'">'+title+'</a>';
+    return title;
+  }
+
+  function paintWeek() {
+    if(!ready||view!=='schedule'||scheduleMode!=='week')return;
+    selectedDay??=day();
+    const dates=weekParts(selectedDay), start=dates[0];
+    const planned=plannedItems(weekAgenda?.start===start?weekAgenda.events:agenda);
+    el('personal-week-title').textContent=labelDay.format(dateAt(start))+' – '+labelDay.format(dateAt(dates[6]));
+    el('personal-day-heading').textContent=dateFormatter.format(dateAt(selectedDay));
+    const days=el('personal-week-days');
+    const focused=days.contains(document.activeElement)?document.activeElement.dataset.planDay:null;
+    days.innerHTML=dates.map((date,index)=>{
+      const count=planned.filter(row=>row.dueOn===date).length;
+      return '<button class="btn" type="button" data-plan-day="'+date+'" aria-pressed="'+(selectedDay===date)+'"'+
+        (date===day()?' aria-current="date"':'')+' aria-label="'+esc(dateFormatter.format(dateAt(date))+', '+count+'건')+'"><small>'+
+        weekDays[index]+'</small><strong>'+Number(date.slice(-2))+'</strong><span>'+(count||'')+'</span></button>';
+    }).join('');
+    if(focused)Array.from(days.children).find(button=>button.dataset.planDay===focused)?.focus({preventScroll:true});
+    const rows=planned.filter(row=>row.dueOn===selectedDay);
+    el('personal-day-events').innerHTML=rows.length?'<ul class="personal-plan-results">'+rows.map(row=>
+      '<li><span>'+esc(row.dueTime||planLabel[row.kind])+'</span><div>'+recordTitle(row)+(row.dueTime?
+        '<small>'+esc(planLabel[row.kind])+'</small>':'')+'</div></li>').join('')+'</ul>':
+      '<p class="personal-empty">이날 예정된 업무가 없습니다.</p>';
+    week.querySelector('[data-week-action="export"]').disabled=!items.some(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
+  }
+
+  async function loadWeek() {
+    if(!ready||view!=='schedule'||scheduleMode!=='week')return;
+    const start=monday(selectedDay??day()), owner=accountId;
+    if(weekRead?.start===start)return;
+    weekRead?.controller.abort();
+    weekRead=null;
+    if(weekAgenda?.start===start)return;
+    const request={start,controller:new AbortController()};
+    weekRead=request;
+    const note=el('personal-week-status');
+    note.textContent='예약을 불러오는 중입니다.';
+    try {
+      const response=await fetch('/api/personal?week='+encodeURIComponent(start),{
+        cache:'no-store',signal:request.controller.signal,headers:{'X-Personal-Account':owner},
+      });
+      if(!response.ok)throw Error();
+      const result=await response.json();
+      if(weekRead!==request||!ready||owner!==accountId)return;
+      if(!Array.isArray(result.agenda))throw Error();
+      weekAgenda={start,events:result.agenda};
+      note.textContent='';
+      paintWeek();
+    } catch {
+      if(weekRead===request)note.textContent='SNS·메일 예약을 조회하지 못했습니다. 이번 주 또는 다른 주를 선택해 다시 조회하세요.';
+    } finally {
+      if(weekRead===request)weekRead=null;
+    }
+  }
+
+  const searchText = value => String(value??'').normalize('NFKC').toLocaleLowerCase('ko');
+  function paintSearch() {
+    if(!ready||view!=='search')return;
+    const terms=searchText(searchForm.elements.query.value).trim().split(/\s+/).filter(Boolean);
+    const kind=searchForm.elements.kind.value;
+    const available=items.filter(item=>kind==='all'||item.kind===kind);
+    const matches=available.filter(item=>{
+      if(!terms.length)return true;
+      const source=searchText(item.title+' '+item.detail);
+      return terms.every(term=>source.includes(term));
+    }).sort(recent);
+    el('personal-search-status').textContent=matches.length?
+      (terms.length?'검색 결과 ':'저장한 항목 ')+matches.length+'건'+(matches.length>30?' · 최근 수정 30건 표시':''):
+      terms.length?'일치하는 업무가 없습니다.':'저장한 항목이 없습니다.';
+    el('personal-search-results').innerHTML=matches.length?'<ul class="personal-plan-results">'+
+      matches.slice(0,30).map(item=>'<li><span>'+esc(itemLabel[item.kind])+'</span><div>'+recordTitle(item)+
+        (item.dueOn?'<small>'+description(item)+'</small>':'')+'</div></li>').join('')+'</ul>':'';
+  }
+
+  const calendarText = value => String(value).replaceAll('\\','\\\\').replace(/\r\n|\r|\n/g,'\\n')
+    .replaceAll(';','\\;').replaceAll(',','\\,');
+  const calendarStamp = value => new Date(value).toISOString().replace(/[-:]|\.\d{3}/g,'');
+  function calendarFold(line) {
+    const bytes=new TextEncoder();
+    let result='',size=0;
+    for(const char of line){
+      const count=bytes.encode(char).length;
+      if(size+count>75){result+='\r\n ';size=1;}
+      result+=char;size+=count;
+    }
+    return result;
+  }
+  function exportWeek() {
+    const dates=weekParts(selectedDay??day());
+    const selected=items.filter(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
+    if(!selected.length)return;
+    const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//NH HOLDINGS//NURI ONE//KO','CALSCALE:GREGORIAN'];
+    for(const item of selected){
+      const dateField=item.dueTime?'DTSTART:'+calendarStamp(item.dueOn+'T'+item.dueTime+':00+09:00'):
+        'DTSTART;VALUE=DATE:'+item.dueOn.replaceAll('-','');
+      lines.push('BEGIN:VEVENT','UID:'+item.id+'@nhholdings.xyz','DTSTAMP:'+calendarStamp(item.updatedAt),dateField,
+        'SUMMARY:'+calendarText(item.title),'END:VEVENT');
+    }
+    const href=URL.createObjectURL(new Blob([lines.map(calendarFold).join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'}));
+    const link=document.createElement('a');
+    link.href=href;link.download='nuri-one-'+dates[0]+'.ics';
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(href),1000);
+    el('personal-week-status').textContent='개인 일정 '+selected.length+'건을 다운로드했습니다.';
+  }
+
   function paintItems() {
     const now = day();
     const tasks = items.filter(item=>item.kind==='task'&&!item.done).sort(dateOrder);
     const schedule = items.filter(item=>item.kind==='schedule'&&item.dueOn>=now).sort(dateOrder);
     const links = items.filter(item=>item.kind==='link').sort(recent);
     el('personal-today').innerHTML = list(tasks.filter(item=>!item.dueOn||item.dueOn<=now).slice(0,6),'오늘 처리할 일이 없습니다.',true);
-    const automated=agenda.filter(event=>Number.isFinite(Date.parse(event.scheduledAt))).map(event=>{
-      const label=event.kind==='mail'?'메일 예약':'SNS 예약';
-      return {...event,title:label+' · '+event.title,dueOn:dayFormatter.format(new Date(event.scheduledAt)),
-        dueTime:timeFormatter.format(new Date(event.scheduledAt)),createdAt:event.scheduledAt,done:false};
-    });
+    const automated=automatedEvents(agenda).map(event=>({...event,title:planLabel[event.kind]+' · '+event.title}));
     const focus = tasks.filter(item=>item.focusOn>=now).map(item=>({
       ...item,title:'집중 · '+item.title,kind:'focus',dueOn:item.focusOn,dueTime:item.focusTime,
     })).sort(dateOrder);
     el('personal-upcoming').innerHTML = list([...schedule,...automated,...focus].sort(dateOrder).slice(0,4),'예정된 일정이 없습니다.',true);
-    el('personal-automation-agenda').hidden=view!=='schedule';
+    taskFilters.hidden=view!=='tasks';
+    scheduleModes.hidden=view!=='schedule';
+    week.hidden=view!=='schedule'||scheduleMode!=='week';
+    el('personal-add').hidden=view==='schedule'&&scheduleMode==='week';
+    el('personal-list').hidden=view==='schedule'&&scheduleMode==='week';
+    el('personal-automation-agenda').hidden=view!=='schedule'||scheduleMode!=='all';
+    paintSearch();
+    paintWeek();
     if(view==='schedule')el('personal-automation-events').innerHTML=list([...focus,...automated].sort(dateOrder),'집중 시간이나 예약이 없습니다.',true);
     el('personal-pinned').innerHTML = list(links.slice(0,5),'바로가기를 추가할 수 있습니다.',true);
     const kind = kinds[view];
     if(kind) {
-      const rows = items.filter(item=>item.kind===kind);
+      const rows = items.filter(item=>item.kind===kind&&(kind!=='task'||taskState==='all'||
+        (taskState==='done'?item.done:!item.done&&(taskState==='active'||!!item.dueOn&&item.dueOn<now))));
       rows.sort(kind==='task'?(a,b)=>Number(a.done)-Number(b.done)||dateOrder(a,b):kind==='schedule'?dateOrder:recent);
-      el('personal-list-title').textContent = names[view]+' '+rows.length+'건';
+      el('personal-list-title').textContent = view==='schedule'&&scheduleMode==='week'?'주간 계획':names[view]+' '+rows.length+'건';
       el('personal-list').innerHTML = list(rows,'저장한 항목이 없습니다.');
     }
   }
@@ -142,7 +287,10 @@
         requestAnimationFrame(()=>{if(!section.hidden)section.classList.add('personal-arrive');});
       }
     }
-    if(ready) paintItems();
+    if(ready){
+      paintItems();
+      if(view==='schedule')void loadWeek();
+    }
     if(view==='home'&&ready)void window.NuriWorkbench?.loadHome();
     if(view==='workbench'&&ready)void window.NuriWorkbench.mount();
     if(view==='revenue'&&ready)void window.NuriPersonalRevenue?.mount?.();
@@ -221,9 +369,9 @@
     editorKind = kind;
     form.reset();
     form.elements.title.value = draft?.title||'';
-    form.elements.dueOn.value = item?.dueOn||(kind==='schedule'?day():'');
+    form.elements.dueOn.value = draft?.dueOn||(kind==='schedule'?day():'');
     form.elements.dueOn.required = kind==='schedule';
-    form.elements.dueTime.value = item?.dueTime||'';
+    form.elements.dueTime.value = draft?.dueTime||'';
     const isLink = kind==='link';
     form.elements.detail.value = isLink?'':draft?.detail||'';
     form.elements.url.value = isLink?item?.detail||'':'';
@@ -271,7 +419,7 @@
         {action:'create',id:crypto.randomUUID()};
       saveLocal(await api({...change,kind,title,detail,dueOn,dueTime}));
       editor.close();
-      el('personal-add').focus();
+      (el('personal-add').hidden?week.querySelector('[data-week-action=add]'):el('personal-add')).focus();
     } catch(error) {el('personal-editor-message').textContent = error.message;}
     finally {saving=false;lockControls(form,false);}
   });
@@ -299,6 +447,43 @@
     finally {saving=false;control.disabled=false;}
   });
 
+  taskFilters.addEventListener('click',event=>{
+    const picked=event.target.closest('[data-task-state]');
+    if(!ready||!picked)return;
+    taskState=picked.dataset.taskState;
+    for(const control of taskFilters.children)control.setAttribute('aria-pressed',String(control===picked));
+    paintItems();
+  });
+  scheduleModes.addEventListener('click',event=>{
+    const control=event.target.closest('[data-schedule-mode]');
+    if(!ready||!control)return;
+    scheduleMode=control.dataset.scheduleMode;
+    for(const button of scheduleModes.children)button.setAttribute('aria-pressed',String(button===control));
+    paintItems();void loadWeek();
+  });
+  week.addEventListener('click',event=>{
+    const control=event.target.closest('[data-plan-day],[data-week-action]');
+    if(!control||!ready||saving)return;
+    const {planDay,weekAction}=control.dataset;
+    if(weekAction==='add')return openEditor(null,'schedule',{dueOn:selectedDay??day()});
+    if(weekAction==='export')return exportWeek();
+    el('personal-week-status').textContent='';
+    selectedDay=planDay??(weekAction==='current'?day():addDays(selectedDay??day(),weekAction==='previous'?-7:7));
+    paintWeek();void loadWeek();
+  });
+  searchForm.addEventListener('input',paintSearch);
+  searchForm.addEventListener('submit',event=>{event.preventDefault();paintSearch();});
+  document.addEventListener('click',event=>{
+    const target=event.target.closest('[data-open-record]');
+    if(!target||!ready||saving||editor.open)return;
+    const item=items.find(row=>row.id===target.dataset.openRecord);
+    if(!item)return;
+    const destination=Object.keys(kinds).find(key=>kinds[key]===item.kind);
+    if(location.hash!=='#'+destination)history.pushState(null,'','#'+destination);
+    route();
+    openEditor(item,item.kind);
+  });
+
   el('personal-reload').addEventListener('click',load);
   el('personal-add').addEventListener('click',()=>{if(ready)openEditor(null,kinds[view]);});
   el('personal-editor-close').addEventListener('click',()=>editor.close());
@@ -308,6 +493,7 @@
       const result = await fetch('/api/auth',{method:'DELETE'});
       const response=await result.json().catch(()=>null);
       if(!result.ok&&!response?.localCleared) throw Error('로그아웃을 다시 시도해 주세요.');
+      searchForm.reset();
       suspendedEditor=false;
       mask();
       items=[];
@@ -322,7 +508,12 @@
   date.textContent = dateFormatter.format(new Date());
   el('personal-start-ai')?.addEventListener('click',()=>{if(ready)el('personal-ai-open').click();});
   window.addEventListener('hashchange',()=>{if(location.pathname==='/personal')route(true);});
-  window.addEventListener('personal-automation-changed',()=>{if(ready&&location.pathname==='/personal')void load();});
+  window.addEventListener('personal-automation-changed',()=>{
+    if(ready&&location.pathname==='/personal'){
+      weekRead?.controller.abort();weekRead=null;weekAgenda=null;
+      void load();
+    }
+  });
   document.querySelector('.personal-skip').addEventListener('click',event=>{
     event.preventDefault();
     el('personal-main').focus();
@@ -330,6 +521,10 @@
   function mask(){
     checkNumber++;
     activeCheck?.abort();
+    weekRead?.controller.abort();weekRead=null;weekAgenda=null;
+    el('personal-week-status').textContent='';
+    el('personal-search-results').replaceChildren();
+    el('personal-search-status').textContent='';
     document.body.classList.add('personal-revalidating');
     ready=false;
     window.NuriPersonalAccount=null;

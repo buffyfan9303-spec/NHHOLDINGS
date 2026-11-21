@@ -47,6 +47,7 @@
     <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
     <a href="#tasks" data-personal-link="tasks">할 일</a>
     <a href="#schedule" data-personal-link="schedule">일정</a>
+    <a href="#search" data-personal-link="search">업무 검색</a>
     <a href="#workbench" data-personal-link="workbench">업무 작업대</a>
     <a href="#notes" data-personal-link="notes">메모</a>
     <a href="#links" data-personal-link="links">바로가기</a>
@@ -80,7 +81,7 @@
      <div id="personal-upcoming"></div>
     </div>
     <section class="personal-sheet personal-quick-sheet" aria-labelledby="personal-quick-title">
-     <a class="personal-link" href="#workbench">업무 작업대</a>
+     <div class="personal-planning-actions"><a class="personal-link" href="#workbench">업무 작업대</a><a class="personal-link" href="#search">업무 검색</a></div>
      <h2 id="personal-quick-title">빠른 기록</h2>
      <form id="personal-quick" class="personal-quick">
       <label for="personal-quick-title-input">할 일 또는 메모</label>
@@ -101,8 +102,50 @@
      <div class="personal-section-head"><h2 id="personal-list-title"></h2>
       <button type="button" id="personal-add" class="btn primary">추가</button>
      </div>
+     <div id="personal-task-filters" class="personal-planning-actions" role="group" aria-label="할 일 상태" hidden>
+      <button class="btn" type="button" aria-pressed="true" data-task-state="all">전체</button>
+      <button class="btn" type="button" aria-pressed="false" data-task-state="active">진행 중</button>
+      <button class="btn" type="button" aria-pressed="false" data-task-state="late">기한 지남</button>
+      <button class="btn" type="button" aria-pressed="false" data-task-state="done">완료</button>
+     </div>
+     <div id="personal-schedule-modes" class="personal-planning-actions" role="group" aria-label="일정 보기 방식" hidden>
+      <button class="btn" type="button" aria-pressed="true" data-schedule-mode="week">주간 일정</button>
+      <button class="btn" type="button" aria-pressed="false" data-schedule-mode="all">전체 일정</button>
+     </div>
+     <div id="personal-week" hidden>
+      <div class="personal-section-head">
+       <h3 id="personal-week-title"></h3>
+       <div class="personal-planning-actions" aria-label="주간 일정 탐색">
+        <button class="btn" type="button" data-week-action="previous">이전 주</button>
+        <button class="btn" type="button" data-week-action="current">이번 주</button>
+        <button class="btn" type="button" data-week-action="next">다음 주</button>
+       </div>
+      </div>
+      <div id="personal-week-days" class="personal-week-days" role="group" aria-label="요일 선택"></div>
+      <div class="personal-section-head">
+       <h3 id="personal-day-heading"></h3>
+       <div class="personal-planning-actions">
+        <button class="btn" type="button" data-week-action="add">이날 일정 추가</button>
+        <button class="btn" type="button" data-week-action="export">주간 일정 다운로드</button>
+       </div>
+      </div>
+      <p id="personal-week-status" class="personal-message" role="status"></p>
+      <div id="personal-day-events"></div>
+     </div>
      <div id="personal-list"></div>
      <section id="personal-automation-agenda" hidden class="personal-section-break"><h2>집중 시간과 예약</h2><div id="personal-automation-events"></div></section>
+    </div>
+   </section>
+   <section data-personal-view="search" hidden class="personal-items">
+    <div class="personal-sheet">
+     <form id="personal-search-form" class="personal-form" role="search">
+      <label for="personal-search">제목과 내용 검색</label>
+      <input id="personal-search" name="query" type="search" maxlength="160" autocomplete="off" placeholder="할 일, 일정, 메모, 바로가기">
+      <label for="personal-search-kind">항목 종류</label>
+      <select id="personal-search-kind" name="kind"><option value="all">전체</option><option value="task">할 일</option><option value="schedule">일정</option><option value="note">메모</option><option value="link">바로가기</option></select>
+     </form>
+     <p id="personal-search-status" class="personal-message" role="status"></p>
+     <div id="personal-search-results"></div>
     </div>
    </section>
    <section id="workbench" data-personal-view="workbench" hidden aria-label="업무 작업대"></section>

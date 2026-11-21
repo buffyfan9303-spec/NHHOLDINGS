@@ -85,6 +85,15 @@ function rejected(error: unknown) {
 export async function GET(req: NextRequest) {
   try {
     const {workspace, account} = await actor(req);
+    const week = req.nextUrl.searchParams.get('week');
+    if (week !== null) {
+      if (req.headers.get('X-Personal-Account') !== account.id) throw changed();
+      const day = calendarDate(week);
+      const from = new Date(day + 'T00:00:00+09:00');
+      if (!day || new Date(day + 'T00:00:00Z').getUTCDay() !== 1) throw new MarketError('월요일 기준의 주간 일정을 선택해주세요.');
+      const until = new Date(+from + 7 * 86400_000 - 1);
+      return Response.json({agenda:await personalAgenda(account.id,{from:from.toISOString(),until:until.toISOString()})},{headers});
+    }
     const [items,agenda]=await Promise.all([workspace.list(),personalAgenda(account.id)]);
     return Response.json({account,items,agenda}, {headers});
   } catch (error) {
