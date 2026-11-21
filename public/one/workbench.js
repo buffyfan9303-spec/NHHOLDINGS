@@ -28,24 +28,27 @@
     const related=project?data.decisions.filter(row=>row.projectId===project.id):[];
     const starter=!data.projects.length||!!template;
     const firstRun=starter?'<section class="workbench-narrow"><h2>첫 업무 시작</h2><p>자주 할 일을 선택하면 업무 원칙과 첫 검토 항목을 준비합니다.</p>'+
-      '<div class="workbench-actions">'+Object.entries(templates).map(([id,value])=>action(value.label,'template',id)).join('')+'</div>'+
-      (template?'<p>'+esc(template.step)+'</p>'+action('프로젝트와 첫 업무 만들기','start',selectedTemplate):'')+'</section>':'';
+      '<div class="workbench-actions workbench-starter-options">'+Object.entries(templates).map(([id,value])=>
+        '<button type="button" class="btn" data-action="template" data-id="'+id+'" aria-pressed="'+(selectedTemplate===id)+'">'+esc(value.label)+'</button>').join('')+'</div>'+
+      (template?'<p>'+esc(template.step)+'</p>'+action('프로젝트와 첫 업무 만들기','start',selectedTemplate)+
+        '<details><summary>연결한 AI에 요청하기</summary><p>'+esc(template.prompt)+'</p>'+
+        '<div class="workbench-actions">'+action('요청 문장 복사','copy-example',selectedTemplate)+
+        '<a class="personal-link" href="#workbench" data-action="connect-pane">AI 연결 확인</a></div></details>':'')+'</section>':'';
     const next=project?'<section class="workbench-narrow"><div class="workbench-heading"><h2>이 프로젝트 이어서 하기</h2>'+
       '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+'</div>'+'</div>'+
       (related.length?'<ul class="workbench-list">'+related.slice(0,6).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+
       '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>':'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
       contentForm(project.id)+'</section>':'';
 
-    return firstRun+next+'<div class="workbench-body">'+
+    return firstRun+next+'<div class="workbench-body'+(starter?' workbench-body-single':'')+'">'+
       '<section><h2>프로젝트 기억</h2><p class="workbench-muted">프로젝트마다 말투, 기준, 확인할 사실을 저장합니다. 연결된 AI는 선택한 프로젝트의 기억을 읽습니다.</p>'+
       '<ul class="workbench-list">'+data.projects.map(p=>'<li>'+action(esc(p.name),'edit',p.id)+'</li>').join('')+'</ul>'+
       '<form data-form="project" class="personal-form"><label>프로젝트 이름<input name="name" maxlength="80" required value="'+esc(project?.name??template?.name)+'"></label>'+
       '<label>AI가 참고할 업무 원칙<textarea name="rules" rows="4" maxlength="1600" required>'+esc(project?.rules??template?.rules)+'</textarea></label>'+
       '<div class="workbench-actions"><button class="btn primary" type="submit">기억 저장</button>'+
       (project?action('새 프로젝트','new')+action('기억 삭제','remove-project',project.id):'')+'</div></form></section>'+
-      '<section><h2>업무별 시작 가이드</h2><ul class="workbench-list">'+Object.entries(templates).map(([id,entry])=>
-        '<li><strong>'+entry.label+'</strong><p>'+entry.step+'</p>'+action('예제로 시작','template',id)+'</li>').join('')+'</ul>'+
-      (template?'<div class="workbench-detail"><h3>연결한 AI에게 이렇게 요청하세요</h3><p>'+esc(template.prompt)+'</p>'+action('요청 문장 복사','copy-example',selectedTemplate)+' <a href="#workbench" data-action="connect-pane">AI 연결 확인</a></div>':'')+'</section></div>';
+      (!starter?'<section><h2>업무별 시작 가이드</h2><ul class="workbench-list">'+Object.entries(templates).map(([id,entry])=>
+        '<li><strong>'+entry.label+'</strong><p>'+entry.step+'</p>'+action('예제로 시작','template',id)+'</li>').join('')+'</ul></section>':'')+'</div>';
   }
 
   function schedule(){
