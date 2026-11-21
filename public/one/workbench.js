@@ -5,7 +5,7 @@
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
   const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',connect:'AI 연결'};
   const categories={business:'사업 운영',content:'콘텐츠',seller:'판매 준비',mail:'메일',drive:'Drive',schedule:'일정',cards:'카드뉴스'};
-  const providers={chatgpt:['ChatGPT','설정 → 앱 → 개발자 모드에서 누리원 서버를 추가하세요. 요금제와 워크스페이스 권한에 따라 메뉴가 표시됩니다.','https://chatgpt.com/'],claude:['Claude','커넥터에서 사용자 지정 연결을 추가하고 OAuth 클라이언트는 자동 등록을 선택하세요.','https://claude.ai/'],gemini:['Gemini','사용자 지정 연결은 현재 미국의 개인 Google 계정에서 영어로 지원됩니다. 한국에서는 구독 AI의 요청 복사 기능을 사용하세요.','https://gemini.google.com/']};
+  const providers={chatgpt:['ChatGPT','플러그인 → 추가 → 사용자 지정 MCP 서버에서 이 주소를 등록하세요. 추가 권한은 워크스페이스에 따라 다릅니다.','https://chatgpt.com/'],claude:['Claude','커넥터에서 사용자 지정 연결을 추가하고 OAuth 클라이언트는 자동 등록을 선택하세요.','https://claude.ai/'],gemini:['Gemini','사용자 지정 연결은 현재 미국의 개인 Google 계정에서 영어로 지원됩니다. 한국에서는 구독 AI의 요청 복사 기능을 사용하세요.','https://gemini.google.com/']};
   const templates={
     business:{label:'1인 AI 사업자',name:'고객 제안과 주간 운영',rules:'고객이 요청한 범위와 확인되지 않은 가정을 구분한다. 제안서는 목표, 범위, 일정, 검토할 질문 순으로 쓴다. 확인되지 않은 비용이나 성과를 확정 표현으로 쓰지 않는다.',step:'고객 요청 요약 → 제안 초안 → 마감 배치 → 메일 검토',prompt:'프로젝트 기억을 읽고, 내가 제공하는 고객 요청으로 제안서 초안을 작성해 누리원 승인함에 넣어줘. 확정되지 않은 조건에는 확인 필요라고 표시해줘.'},
     content:{label:'콘텐츠 크리에이터',name:'주간 콘텐츠 제작',rules:'독자가 바로 사용할 수 있는 예시를 넣는다. 인용과 이미지의 출처를 확인한다. 채널마다 첫 문장과 길이를 조정하고, 과장 표현을 피한다.',step:'아이디어 → 카드뉴스 원고 → 채널별 문구 → 게시 전 검토',prompt:'프로젝트 기억을 읽고 내가 주는 주제를 바탕으로 카드뉴스 5장은 카드뉴스 도구로, 채널별 문구는 별도의 콘텐츠 초안으로 작성해 누리원 승인함에 넣어줘.'},

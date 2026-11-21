@@ -7,6 +7,13 @@ import {pool} from '@/server/postgres.cjs';
 import {uuidPattern} from '@/server/personal-workspace.cjs';
 
 const scope='nuri.workbench';
+const offlineScope='offline_access';
+const supportedScopes=[scope,offlineScope];
+function validScope(value:string|null) {
+  if(value===null)return true;
+  const requested=value.split(/\s+/);
+  return requested.includes(scope)&&requested.every(item=>supportedScopes.includes(item));
+}
 const expiresIn=3600;
 const grantDays=30;
 const credentials="workspace='live' AND kind='personal-connector' AND id=$1 AND data->>'ownerId'=$2";
@@ -30,7 +37,7 @@ export function authorizationMetadata() {
   const url=issuer()+'/api/one/connect/';
   return {issuer:issuer(),authorization_endpoint:url+'authorize',token_endpoint:url+'token',
     registration_endpoint:url+'register',response_types_supported:['code'],grant_types_supported:['authorization_code','refresh_token'],
-    code_challenge_methods_supported:['S256'],scopes_supported:[scope],token_endpoint_auth_methods_supported:['none'],
+    code_challenge_methods_supported:['S256'],scopes_supported:supportedScopes,token_endpoint_auth_methods_supported:['none'],
     authorization_response_iss_parameter_supported:true};
 }
 
@@ -50,7 +57,7 @@ export function registerClient(input:Record<string,unknown>) {
   if(!Array.isArray(input.redirect_uris)||input.redirect_uris.length!==1)throw invalid();
   if(input.token_endpoint_auth_method!==undefined&&input.token_endpoint_auth_method!=='none')throw invalid();
   const client=clientFor(input.redirect_uris[0]);
-  return {client_id:seal(JSON.stringify({...client,kind:'nuri-client'})),redirect_uris:[client.redirect],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code'],scope};
+  return {client_id:seal(JSON.stringify({...client,kind:'nuri-client'})),redirect_uris:[client.redirect],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code'],scope:supportedScopes.join(' ')};
 }
 
 function readClient(clientId:string|null,redirect:string|null):Client {
@@ -66,7 +73,7 @@ export function readGrant(form:URLSearchParams):Grant {
   const challenge=form.get('code_challenge')??'',state=form.get('state')??'';
   if(form.get('response_type')!=='code'||form.get('code_challenge_method')!=='S256'||
     !/^[A-Za-z0-9_-]{43}$/.test(challenge)||!state||state.length>600||
-    (form.has('scope')&&form.get('scope')!==scope)||(form.has('resource')&&form.get('resource')!==resource()))throw invalid();
+    !validScope(form.get('scope'))||(form.has('resource')&&form.get('resource')!==resource()))throw invalid();
   return {client,clientId,challenge,state};
 }
 
@@ -111,7 +118,7 @@ function tokenPair(owner:string,provider:string,refreshUntil:number) {
   const refresh=['nuri_refresh',owner,provider,nonce()].join('.');
   const now=Date.now();
   return {
-    public:{access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:expiresIn,scope},
+    public:{access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:expiresIn,scope:supportedScopes.join(' ')},
     store:{tokenHash:hash(access),expires:now+expiresIn*1000,refreshHash:hash(refresh),refreshUntil,updatedAt:new Date(now).toISOString()},
   };
 }
@@ -133,7 +140,7 @@ async function refreshConnector(form:URLSearchParams) {
 }
 
 export async function exchangeConnector(form:URLSearchParams) {
-  if((form.has('resource')&&form.get('resource')!==resource())||(form.has('scope')&&form.get('scope')!==scope))throw invalidGrant();
+  if((form.has('resource')&&form.get('resource')!==resource())||!validScope(form.get('scope')))throw invalidGrant();
   if(form.get('grant_type')==='refresh_token')return refreshConnector(form);
   const clientId=form.get('client_id'), client=readClient(clientId,form.get('redirect_uri'));
   const code=form.get('code'), key=credential(code,'nuri_code'), verify=form.get('code_verifier')??'';
