@@ -146,7 +146,7 @@ th,.publishing-board th {background-color:var(--work-field);border-color:var(--l
   color:var(--teal);background:var(--work-active);border-color:var(--work-accent-line);box-shadow:none;
 }
 /* Compact publishing shares the same surface and readable status colors. */
-.mobile-status-summary>div+div {border-color:var(--line)}
+.mobile-status-summary>div {border-color:var(--line)}
 .mobile-status-summary span,.mobile-channel-count,.mobile-channel-count>span,
 .mobile-list-heading>span,.mobile-list-note,.mobile-post-card header>span {color:var(--muted)}
 .mobile-status-summary .published strong,.mobile-channel-count b {color:var(--teal)}
