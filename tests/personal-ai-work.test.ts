@@ -4,6 +4,7 @@ import {PGlite} from '@electric-sql/pglite';
 import {NextRequest} from 'next/server';
 import {POST as configure} from '../src/app/api/personal/ai/providers/route';
 import {GET as history,POST as chat} from '../src/app/api/personal/ai/chat/route';
+import {GET as getProfile, POST as writeProfile} from '../src/app/api/personal/ai/profile/route';
 import {personalWorkspace} from '../src/server/personal-workspace.cjs';
 import {listPersonalMail} from '../src/lib/personal-mail';
 import {getPersonalCard} from '../src/lib/personal-cards';
@@ -43,6 +44,7 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
     calls++;
     const payload=JSON.parse(String(init?.body));
     if(payload.stream){
+      assert.match(JSON.stringify(payload),/표로 요약하는 편을 선호합니다/);
       return new Response('data: '+JSON.stringify({type:'response.output_text.delta',delta:'다듬은 일정입니다.'})+'\n\ndata: {"type":"response.completed"}\n\n',
         {headers:{'Content-Type':'text/event-stream'}});
     }
@@ -64,6 +66,20 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
   const saved=await configure(request('/api/personal/ai/providers',ids[0],{method:'POST',body:{action:'save',provider:'openai',model:'gpt-4.1-mini',apiKey:'api-fixture-one'}}));
   assert.equal(saved.status,200);
   assert.doesNotMatch(await saved.text(),/api-fixture-one/);
+  assert.equal(calls,0);
+  const profilePath='/api/personal/ai/profile';
+  const preference='표로 요약하는 편을 선호합니다.';
+  const change=(id:string,instructions:string,version:number)=>writeProfile(request(profilePath,id,{method:'POST',body:{instructions,version}}));
+  assert.equal((await getProfile(request(profilePath,ids[2]))).status,403);
+  assert.equal((await getProfile(request(profilePath,ids[0],{actor:ids[1]}))).status,409);
+  assert.deepEqual(await (await change(ids[0],preference,0)).json(),{instructions:preference,version:1});
+  assert.equal((await change(ids[0],'이전 화면의 수정',0)).status,409);
+  assert.deepEqual(await (await getProfile(request(profilePath,ids[1]))).json(),{instructions:'',version:0});
+  await personalWorkspace(ids[0]).create({kind:'task',title:'사용자 A의 업무',detail:'외부 요청에는 포함하지 않는 본문',dueOn:null,dueTime:null,done:false});
+  const personalContext=await (await getProfile(request(profilePath+'?today=1',ids[0]))).text();
+  assert.match(personalContext,/사용자 A의 업무/);
+  assert.doesNotMatch(personalContext,/외부 요청에는 포함하지 않는 본문|표로 요약/);
+  assert.doesNotMatch(await (await getProfile(request(profilePath+'?today=1',ids[1]))).text(),/사용자 A의 업무/);
   assert.equal(calls,0);
   const ask=(mode:string,prompt:string,id=ids[0])=>chat(request('/api/personal/ai/chat',id,{method:'POST',body:{mode,prompt,provider:'openai'}}));
   assert.equal((await ask('chat','연결 없는 계정',ids[1])).status,409);

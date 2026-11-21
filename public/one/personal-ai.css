@@ -63,8 +63,8 @@
   padding:12px 4px 15px;
   border-bottom:1px solid var(--line);
 }
+.personal-ai-dock > .personal-ai-status {grid-area:status}
 .personal-ai-status {
-  grid-area:status;
   margin:8px 0 4px;
   color:var(--muted);
   font-size:13px;
@@ -254,4 +254,44 @@
  .personal-ai-dock {padding:9px var(--personal-panel-pad)}
  .personal-ai-compose {padding:5px 0 2px}
  .personal-ai-options {gap:6px}
+}
+
+.personal-ai-handoff {
+  grid-area:history;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-content:start;
+  gap:10px;
+  min-width:0;
+  min-height:0;
+  padding:10px 4px 15px;
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.personal-ai-handoff :is(form,[data-ai-handoff-output]) {gap:8px}
+.personal-ai-dock .personal-ai-check {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  color:var(--ink);
+}
+.personal-ai-check input {
+  flex:none;
+  width:18px;
+  height:18px;
+  min-height:0;
+  padding:0;
+  accent-color:var(--teal);
+}
+.personal-ai-profile {
+  padding-block:4px;
+  border-top:1px solid var(--line);
+}
+.personal-ai-profile summary {
+  display:list-item;
+  padding:11px 0;
+  min-height:44px;
+  cursor:pointer;
+  font-weight:600;
 }

@@ -3,13 +3,25 @@
 (() => {
   const apiPath='/api/personal/ai/';
   const providerLabels={openai:'GPT',anthropic:'Claude',gemini:'Gemini'};
+  const subscriptionSites={
+    openai:{label:'ChatGPT',url:'https://chatgpt.com/'},
+    anthropic:{label:'Claude',url:'https://claude.ai/'},
+    gemini:{label:'Gemini',url:'https://gemini.google.com/app'},
+  };
+  const requestTypes={
+    plan:['실행 계획','우선순위와 첫 행동을 정리하고, 마감은 제공된 사실만 사용하세요.'],
+    brief:['오늘 브리핑','오늘 반드시 확인할 일, 일정 충돌, 밀린 일을 구분하세요. 자료가 없으면 없다고 표시하세요.'],
+    decide:['의사결정','선택지별 기준, 근거, 리스크와 결정을 바꿀 조건을 정리하세요.'],
+    draft:['초안 작성','대상과 목적에 맞는 초안을 작성하고 확인이 필요한 사실을 표시하세요.'],
+  };
+
   const modes={chat:'대화',brief:'업무 요약',task:'할 일 추가',schedule:'일정 추가',note:'메모 작성',social:'SNS 초안',mail:'메일 초안',cards:'카드뉴스'};
   const socialProviders={instagram:'Instagram',threads:'Threads',youtube:'YouTube',x:'X'};
   const destinations={task:['할 일 열기','#tasks'],schedule:['일정 열기','#schedule'],note:['메모 열기','#notes'],social:['SNS 초안 열기','#social'],mail:['메일 초안 열기','#mail']};
   const formatTime=new Intl.DateTimeFormat('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'});
   const media=window.matchMedia('(min-width:1200px)');
   let active=null;
-  let resumeOwner=null;
+  let resume=null;
   const current=view=>active===view&&view.root.isConnected&&window.NuriPersonalAccount===view.owner;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const selectOptions=entries=>Object.entries(entries).map(([key,label])=>'<option value="'+key+'">'+escape(label)+'</option>').join('');
@@ -20,7 +32,8 @@
       <header class="personal-ai-top">
         <h2 id="personal-ai-title">AI 도우미</h2>
         <div class="personal-ai-actions">
-          <button type="button" class="personal-action" data-ai-action="settings" aria-expanded="false" aria-controls="personal-ai-settings">제공자 설정</button>
+          <button type="button" class="personal-action" data-ai-action="handoff" aria-expanded="false" aria-controls="personal-ai-handoff">구독 AI</button>
+          <button type="button" class="personal-action" data-ai-action="settings" aria-expanded="false" aria-controls="personal-ai-settings">API 설정</button>
           <button type="button" class="personal-action" data-ai-action="close" aria-label="AI 도우미 닫기">닫기</button>
         </div>
       </header>
@@ -38,6 +51,46 @@
       </section>
       <p class="personal-ai-status" role="status" data-ai-status></p>
       <section class="personal-ai-history" aria-label="나의 AI 대화" tabindex="0" data-ai-history></section>
+      <section id="personal-ai-handoff" class="personal-ai-handoff" aria-label="구독 AI에서 이어서" hidden>
+        <p class="personal-ai-mode-note">내 요청을 준비해 본인 AI 계정에 붙여넣으세요. 누리원에서 자동으로 보내지 않습니다.</p>
+        <form class="personal-form" data-ai-handoff-form>
+          <div class="personal-ai-options">
+            <label>사용할 AI<select name="provider">${selectOptions(Object.fromEntries(Object.entries(subscriptionSites).map(([key,value])=>[key,value.label])))}</select></label>
+            <label>목적<select name="kind">${selectOptions(Object.fromEntries(Object.entries(requestTypes).map(([key,value])=>[key,value[0]])))}</select></label>
+          </div>
+          <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
+          <label class="personal-ai-check"><input type="checkbox" name="today"> 오늘 할 일과 일정 포함</label>
+          <label class="personal-ai-check"><input type="checkbox" name="profile" disabled> 저장된 일하는 방식 포함</label>
+          <div><button type="submit" class="btn primary" data-ai-preview>요청 미리보기</button></div>
+        </form>
+        <p class="personal-ai-status" role="status" data-ai-handoff-status></p>
+        <section class="personal-form" data-ai-handoff-output hidden aria-label="복사할 요청">
+          <label>외부 AI에 붙여넣을 내용<textarea rows="7" readonly data-ai-handoff-text></textarea></label>
+          <div class="personal-ai-actions">
+            <button type="button" class="btn primary" data-ai-action="copy-handoff">요청 복사</button>
+            <a class="btn" target="_blank" rel="noopener noreferrer" data-ai-handoff-link></a>
+          </div>
+        </section>
+        <details class="personal-ai-profile">
+          <summary>AI 답변 가져오기</summary>
+          <form class="personal-form" data-ai-import>
+            <label>업무 종류<select name="kind"><option value="note">메모</option><option value="task">할 일</option><option value="schedule">일정</option></select></label>
+            <label>제목<input name="title" required maxlength="160"></label>
+            <label>답변<textarea name="detail" rows="5" required maxlength="4000" placeholder="본인 AI의 답변을 여기에 붙여넣으세요."></textarea></label>
+            <div><button type="submit" class="btn">내 업무에서 검토</button></div>
+            <p class="personal-ai-status" role="status" data-ai-import-status></p>
+          </form>
+        </details>
+        <details class="personal-ai-profile">
+          <summary>내가 일하는 방식</summary>
+          <form class="personal-form" data-ai-profile-form>
+            <p class="personal-ai-mode-note">답변 어조, 우선순위 기준, 선호하는 결과 형식을 저장하세요. 누리원 AI에 적용되며 구독 AI용 요청에는 개별 선택으로 포함합니다.</p>
+            <label>업무 원칙<textarea name="instructions" rows="3" maxlength="1200" disabled placeholder="예: 오전에는 집중 업무부터. 시간과 마감이 있으면 표로 정리."></textarea></label>
+            <div><button type="submit" class="btn" disabled>업무 원칙 저장</button></div>
+            <p class="personal-ai-status" role="status" data-ai-profile-status></p>
+          </form>
+        </details>
+      </section>
       <form class="personal-form personal-ai-compose" data-ai-compose>
         <div class="personal-ai-options">
           <label>응답 모델<select name="provider" required></select></label>
@@ -126,7 +179,7 @@
     }
     if(configured.some(p=>p.id===selection))view.compose.elements.provider.value=selection;
     providerState(view);
-    if(!configured.length)setSettings(view,true);
+    if(!configured.length&&view.handoff.hidden)setSettings(view,true);
     setControls(view);
   }
 
@@ -251,9 +304,168 @@
     view.ready=providers.status==='fulfilled'&&messages.status==='fulfilled';
     status(view,view.ready?'':'모델 또는 대화 기록을 불러오지 못했습니다. 패널을 다시 열어 주세요.',!view.ready);
     setControls(view);
-    if(view.dock.open&&document.visibilityState==='visible'){
+    if(view.dock.open&&view.handoff.hidden&&document.visibilityState==='visible'){
       if(!view.providers.some(provider=>provider.configured))view.setup.elements.provider.focus({preventScroll:true});
       else if(view.dock.contains(document.activeElement)&&document.activeElement.matches('[data-ai-action="settings"]'))view.compose.elements.prompt.focus({preventScroll:true});
+    }
+  }
+
+  function refreshHandoff(view){
+    view.handoffCheck?.abort();
+    view.handoffCheck=null;
+    view.handoffForm.querySelector('[data-ai-preview]').disabled=false;
+    view.handoff.querySelector('[data-ai-handoff-text]').value='';
+    view.handoff.querySelector('[data-ai-handoff-output]').hidden=true;
+    view.handoff.querySelector('[data-ai-handoff-status]').textContent='';
+  }
+
+  function applyProfile(view,profile){
+    view.profile=profile;
+    view.profileForm.elements.instructions.value=profile.instructions;
+    view.handoffForm.elements.profile.disabled=!profile.instructions;
+    if(!profile.instructions)view.handoffForm.elements.profile.checked=false;
+  }
+
+  async function loadWorkStyle(view){
+    if(view.profile||view.profileCheck)return;
+    const check=new AbortController(),note=view.handoff.querySelector('[data-ai-profile-status]');
+    view.profileCheck=check;
+    try{
+      const profile=await json(view,'profile',undefined,check.signal);
+      if(!current(view)||check.signal.aborted)return;
+      applyProfile(view,profile);
+      note.textContent='';
+    }catch(error){
+      if(current(view)&&!check.signal.aborted)note.textContent=error.message;
+    }finally{
+      if(current(view)&&view.profileCheck===check){
+        view.profileCheck=null;
+        view.profileForm.querySelector('button').disabled=!view.profile;
+        view.profileForm.elements.instructions.disabled=!view.profile;
+      }
+    }
+  }
+
+  async function saveWorkStyle(view,event){
+    event.preventDefault();
+    if(!current(view)||!view.profile||view.profileCheck)return;
+    const check=new AbortController(),submit=view.profileForm.querySelector('button');
+    const note=view.handoff.querySelector('[data-ai-profile-status]');
+    view.profileCheck=check;
+    submit.disabled=true;
+    view.profileForm.elements.instructions.disabled=true;
+    try{
+      const instructions=view.profileForm.elements.instructions.value;
+      const profile=await json(view,'profile',{instructions,version:view.profile.version},check.signal);
+      if(!current(view)||check.signal.aborted)return;
+      applyProfile(view,profile);
+      refreshHandoff(view);
+      note.textContent='내 업무 원칙을 저장했습니다.';
+    }catch(error){
+      if(current(view)&&!check.signal.aborted){
+        if(error.status===409)view.profile=null;
+        note.textContent=error.message;
+      }
+    }finally{
+      if(current(view)&&view.profileCheck===check){
+        view.profileCheck=null;
+        submit.disabled=!view.profile;
+        view.profileForm.elements.instructions.disabled=!view.profile;
+      }
+    }
+  }
+
+  function setHandoff(view,open){
+    view.handoff.hidden=!open;
+    view.status.hidden=open;
+    view.history.hidden=open;
+    view.compose.hidden=open;
+    view.dock.querySelector('[data-ai-action="handoff"]').setAttribute('aria-expanded',String(open));
+    if(open){
+      setSettings(view,false);
+      view.setup.elements.apiKey.value='';
+      void loadWorkStyle(view);
+      view.handoffForm.elements.request.focus({preventScroll:true});
+    }else refreshHandoff(view);
+  }
+
+  function formatToday(today){
+    const items=(today.items||[]).map(item=>{
+      const label=item.kind==='schedule'?'일정':item.dueOn&&item.dueOn<today.kst?'기한 지난 할 일':'할 일';
+      const when=[item.dueOn,item.dueTime].filter(Boolean).join(' ');
+      return '- ['+label+'] '+item.title+(when?' · '+when:'');
+    });
+    const scheduled=(today.scheduled||[]).map(item=>'- ['+(item.kind==='mail'?'메일 예약':'SNS 예약')+'] '+
+      item.title+' · '+formatTime.format(new Date(item.scheduledAt))+' KST');
+    return [today.kst,...(items.length||scheduled.length?[...items,...scheduled]:['포함할 업무나 일정이 없습니다.'])].filter(Boolean).join('\n');
+  }
+
+  async function prepareHandoff(view,event){
+    event.preventDefault();
+    if(!current(view))return;
+    const form=view.handoffForm;
+    const request=form.elements.request.value.trim(),provider=form.elements.provider.value,kind=form.elements.kind.value;
+    if(!request||!Object.hasOwn(subscriptionSites,provider)||!Object.hasOwn(requestTypes,kind))return;
+    refreshHandoff(view);
+    const check=new AbortController(),submit=form.querySelector('[data-ai-preview]');
+    const note=view.handoff.querySelector('[data-ai-handoff-status]');
+    view.handoffCheck=check;
+    submit.disabled=true;
+    try{
+      const sections=[
+        '아래 요청을 한국어로 처리하세요. 근거가 없는 사실은 추정으로 표시하고, 외부 동작을 실행한 것처럼 말하지 마세요.',
+        '목적: '+requestTypes[kind][0]+'\n'+requestTypes[kind][1],
+        '내 요청\n'+request,
+      ];
+      if(form.elements.profile.checked&&view.profile?.instructions)sections.push('내가 일하는 방식\n'+view.profile.instructions);
+      if(form.elements.today.checked){
+        const {today}=await json(view,'profile?today=1',undefined,check.signal);
+        sections.push('오늘의 개인 업무 자료 · 한국 시간\n'+formatToday(today));
+      }
+      if(!current(view)||view.handoffCheck!==check)return;
+      const output=view.handoff.querySelector('[data-ai-handoff-output]');
+      output.querySelector('textarea').value=sections.join('\n\n');
+      const link=output.querySelector('a');
+      link.href=subscriptionSites[provider].url;
+      link.textContent=subscriptionSites[provider].label+' 열기 ↗';
+      output.hidden=false;
+      output.scrollIntoView({block:'nearest'});
+      note.textContent='내용을 확인한 뒤 복사하고 본인 AI에서 붙여넣으세요.';
+    }catch(error){
+      if(current(view)&&view.handoffCheck===check)note.textContent=error.message;
+    }finally{
+      if(current(view)&&view.handoffCheck===check){
+        view.handoffCheck=null;
+        submit.disabled=false;
+      }
+    }
+  }
+
+  async function copyHandoff(view){
+    const area=view.handoff.querySelector('[data-ai-handoff-text]');
+    const note=view.handoff.querySelector('[data-ai-handoff-status]');
+    try{
+      await navigator.clipboard.writeText(area.value);
+      if(current(view)&&!view.handoff.hidden)note.textContent='요청을 복사했습니다.';
+    }catch{
+      if(!current(view)||view.handoff.hidden)return;
+      area.select();
+      note.textContent='선택한 내용을 복사해 주세요.';
+    }
+  }
+
+  function reviewHandoff(view,event){
+    event.preventDefault();
+    if(!current(view))return;
+    const form=event.currentTarget;
+    const title=form.elements.title.value.trim(),detail=form.elements.detail.value.trim();
+    if(!title||!detail)return;
+    hide(view);
+    if(window.NuriPersonalWorkspace?.reviewDraft(form.elements.kind.value,{title,detail})){
+      form.reset();
+    }else{
+      show(view);
+      form.querySelector('[data-ai-import-status]').textContent='열려 있는 업무 편집을 마치고 다시 시도해 주세요.';
     }
   }
 
@@ -416,6 +628,7 @@
   }
 
   function hide(view,restore=false){
+    refreshHandoff(view);
     view.root.classList.remove('is-open');
     if(view.dock.open)view.dock.close();
     view.toggle.setAttribute('aria-expanded','false');
@@ -431,7 +644,10 @@
       if(!control||!current(view))return;
       const action=control.dataset.aiAction;
       if(action==='close')hide(view,true);
+      else if(action==='handoff')setHandoff(view,view.handoff.hidden);
+      else if(action==='copy-handoff')void copyHandoff(view);
       else if(action==='settings'){
+        if(!view.handoff.hidden)setHandoff(view,false);
         const open=view.dock.querySelector('#personal-ai-settings').hidden;
         setSettings(view,open);
         if(open)view.setup.elements.provider.focus();
@@ -452,11 +668,17 @@
     });
     view.setup.addEventListener('submit',event=>{event.preventDefault();void changeProvider(view);});
     view.setup.elements.provider.addEventListener('change',()=>providerState(view));
+    view.handoffForm.addEventListener('input',()=>refreshHandoff(view));
+    view.handoffForm.addEventListener('submit',event=>void prepareHandoff(view,event));
+    view.profileForm.addEventListener('submit',event=>void saveWorkStyle(view,event));
+    view.handoff.querySelector('[data-ai-import]').addEventListener('submit',event=>reviewHandoff(view,event));
   }
 
   function dispose(view){
     view.loadingCheck?.abort();
     view.configCheck?.abort();
+    view.profileCheck?.abort();
+    view.handoffCheck?.abort();
     view.stream?.abort();
     view.toggle.disabled=true;
     hide(view);
@@ -470,12 +692,13 @@
     if(active?.owner===owner&&active.root===root)return;
     if(active){
       dispose(active);
-      resumeOwner=null;
+      resume=null;
     }
     root.innerHTML=layout();
     const dock=root.querySelector('dialog');
     const view={owner,root,toggle,dock,compose:dock.querySelector('[data-ai-compose]'),setup:dock.querySelector('[data-ai-settings]'),
-      status:dock.querySelector('[data-ai-status]'),history:dock.querySelector('[data-ai-history]'),providers:[],messages:[]};
+      handoff:dock.querySelector('#personal-ai-handoff'),handoffForm:dock.querySelector('[data-ai-handoff-form]'),
+      profileForm:dock.querySelector('[data-ai-profile-form]'),status:dock.querySelector('[data-ai-status]'),history:dock.querySelector('[data-ai-history]'),providers:[],messages:[]};
     active=view;
     toggle.disabled=false;
     toggle.hidden=false;
@@ -485,13 +708,16 @@
     bind(view);
     modeChanged(view);
     setControls(view);
-    if(resumeOwner===owner)show(view);
-    resumeOwner=null;
+    if(resume?.owner===owner){
+      show(view);
+      if(resume.handoff)setHandoff(view,true);
+    }
+    resume=null;
   }
 
   function suspend(){
     if(!active)return;
-    resumeOwner=active.dock.open?active.owner:null;
+    resume=active.dock.open?{owner:active.owner,handoff:!active.handoff.hidden}:null;
     dispose(active);
   }
 

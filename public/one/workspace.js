@@ -123,7 +123,8 @@
     if (!options?.owner || event.defaultPrevented || event.button !== 0 ||
         event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
         !link || link.target || link.hasAttribute('download') || link.origin !== location.origin ||
-        !Object.hasOwn(remembered,link.pathname) || link.search) return;
+        !Object.hasOwn(remembered,link.pathname) ||
+        (link.search && !(link.pathname==='/personal' && link.search==='?ai=1'))) return;
     const primary = menus.includes(link);
     if (!primary && link.pathname === active) return;
     event.preventDefault();
