@@ -47,6 +47,13 @@ export async function driveOAuthConfig(actor: string) {
 
 const clientHashOf = (config: OAuthConfig) => hash(JSON.stringify([config.clientId, config.clientSecret]));
 
+export async function driveConnectionOverview(actor: string) {
+  const stored = await record(actor);
+  const app = configuredApp(stored);
+  return {configured: !!app, connected: !!(app && stored.connection?.secret && stored.connection.clientHash === clientHashOf(app)),
+    hasSavedConnection: !!stored.connection};
+}
+
 export async function saveDriveApp(actor: string, input: {[key: string]: unknown}) {
   const data = await record(actor);
   const previous = configuredApp(data);

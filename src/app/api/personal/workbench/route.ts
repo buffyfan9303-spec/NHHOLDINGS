@@ -2,6 +2,9 @@ import type {NextRequest} from 'next/server';
 import {automationActor} from '@/lib/personal-automation-access';
 import {readWorkbench,updateWorkbench} from '@/lib/personal-workbench';
 import {connectorStatus,disconnectConnector} from '@/lib/personal-connector';
+import {driveConnectionOverview} from '@/lib/personal-files';
+import {mailConnection} from '@/lib/personal-mail-auth';
+import {personalSocialOverview} from '@/lib/personal-social';
 import {body,failure,requireOrigin} from '@/lib/security';
 
 export const dynamic='force-dynamic';
@@ -11,6 +14,16 @@ async function respond(req:NextRequest,write:boolean) {
   try {
     if(write) requireOrigin(req);
     const actor=await automationActor(req);
+    if(!write&&req.nextUrl.searchParams.get('view')==='channels'){
+      const [social,mail,drive]=await Promise.allSettled([
+        personalSocialOverview(actor.id),mailConnection(actor.id),driveConnectionOverview(actor.id),
+      ]);
+      return Response.json({
+        social:social.status==='fulfilled'?social.value:null,
+        mail:mail.status==='fulfilled'?{configured:mail.value.configured,connected:mail.value.connected,paused:mail.value.paused}:null,
+        drive:drive.status==='fulfilled'?drive.value:null,
+      },{headers});
+    }
     const input=write?await body(req):null;
     if(input?.action==='disconnect')await disconnectConnector(actor.id,input.provider);
     const result=input&&input.action!=='disconnect'

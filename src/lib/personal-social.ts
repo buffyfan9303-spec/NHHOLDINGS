@@ -161,6 +161,18 @@ export async function listConnectedPersonalSocial(owner:string) {
     .map(({id,provider,label,paused})=>({id,provider,label,paused}));
 }
 
+export async function personalSocialOverview(owner: string) {
+  const store = socialStore(owner);
+  const [configured, accounts] = await Promise.all([configuredApps(store), store.list<Account>(kinds.account)]);
+  const views = accounts.map(account => connectedAccountView(account, configured));
+  return personalProviders.map(id => {
+    const own = views.filter(account => account.provider === id);
+    return {id, configured: !!configured.get(id), connected: own.filter(account => account.ready).length,
+      paused: own.filter(account => account.ready && account.paused).length,
+      stale: own.filter(account => !account.ready).length};
+  });
+}
+
 export async function personalSocialState(actor: Actor) {
   const store = socialStore(actor.id);
   const configured = await configuredApps(store);
