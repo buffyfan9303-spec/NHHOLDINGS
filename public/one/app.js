@@ -197,11 +197,12 @@ function channelForm(){const a=data.accounts.find(a=>a.id===state.channelEdit&&s
 function reports(){const t=financeTotals();return `<div class="report-summary section-gap"><section class="panel report-box"><span class="pill gray">${state.month} · ${esc(state.scope==='all'?'전체 서비스':serviceName(state.scope))}</span><h3>월간 운영 리포트</h3><p>기록 매출 ${won(t.revenue)}<br>기록 비용 ${won(t.cost)}<br>영업 손익 ${won(t.profit)}<br>${t.complete?'월별 입력 확인 완료':'부분 기록 · 손익 미확인'}</p><div class="toolbar">${button('인쇄 / PDF','print')}${button('거래 CSV','csv')}${button('관리 데이터 JSON','export')}</div></section><section class="panel report-box"><h3>확인할 항목</h3><p>직영 사업장 ${data.businesses.filter(b=>inScope(b.service)&&b.owned&&!b.excluded).length}개<br>미완료 업무 ${data.tasks.filter(t=>inScope(t.service)&&t.status!=='done').length}개<br>콘텐츠 확인 필요 ${data.contents.filter(p=>inScope(p.service)&&(!snsRecord(p)||supportedChannel(p.channel))&&p.status==='review').length}개<br>이전 조회 / 미연결 ${selected().filter(s=>s.stale).length}개 서비스</p><p class="source-note">내보내기는 비밀 키와 게시 토큰을 제외합니다. JSON은 선택 기간의 관리 기록용이며 인증 데이터 백업 파일은 아닙니다.</p></section></div>`+kpis()+sourceTable()+serviceSummary();}
 function sync(){
  const summary=state.page==='overview',websites=state.page==='websites';
+ const hideFilters=summary||state.page==='connections';
  const filters=document.querySelector('.heading-controls');
- filters.hidden=summary;
- $('scope').closest('label').hidden=summary||state.page==='market-operations'||automationPage();
+ filters.hidden=hideFilters;
+ $('scope').closest('label').hidden=hideFilters||state.page==='market-operations'||automationPage();
  const periodLabel=$('period').closest('label');
- periodLabel.hidden=summary;
+ periodLabel.hidden=hideFilters;
  periodLabel.querySelector('.heading-filter-label').textContent=websites?'업무 조회 월':'조회 월';
  $('period').setAttribute('aria-label',websites?'업무 조회 월':'조회 월');
  $('app').classList.toggle('assistant-dashboard',summary);
@@ -235,7 +236,17 @@ function render(){if(!data||location.pathname==='/personal')return;refreshEpoch+
  if(state.page==='overview')void loadPersonalRollup();
  if(state.page==='connections')void window.NuriDaily.loadPush();
  if(['studio','calendar','growth'].includes(state.page))NuriStudio.mount?.();}
-function navigate(page,approvalId,{setupTab='system',channel='all'}={}){if(!Object.hasOwn(pages,page))return;if(page!==state.page&&window.NuriStudio?.canLeave&&!NuriStudio.canLeave())return;if(approvalId)NuriOperator.resetFilters();if(page==='connections')state.setupTab=setupTab;if(page==='publish'){state.channel=channel;state.postStatus='all';}refreshEpoch++;window.NuriDaily.target=page==='approval'?approvalId||null:null;if(state.page==='site'&&state.siteId==='tistory'&&page==='publish')state.scope='all';state.page=page;if(page==='overview'||page==='websites'){state.scope='all';state.channel='all';if(page==='overview')assistantCheckedAt=0;}if(automationPage()){state.scope='tistory';state.business=null;}if(page==='prompts'){state.channel='all';state.promptService='tistory';}const cameFromMenu=$('sidebar').classList.contains('open');closeSidebar();const update=()=>{render();writeRoute();window.scrollTo(0,0);if(cameFromMenu||document.activeElement===document.body)$('page-title').focus({preventScroll:true});if(approvalId)NuriOperator.reveal(approvalId);};if(document.startViewTransition&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.startViewTransition(update);}else update();}
+let navigationMotion;
+function navigate(page,approvalId,{setupTab='system',channel='all'}={}){if(!Object.hasOwn(pages,page))return;if(page!==state.page&&window.NuriStudio?.canLeave&&!NuriStudio.canLeave())return;if(approvalId)NuriOperator.resetFilters();if(page==='connections')state.setupTab=setupTab;if(page==='publish'){state.channel=channel;state.postStatus='all';}refreshEpoch++;window.NuriDaily.target=page==='approval'?approvalId||null:null;if(state.page==='site'&&state.siteId==='tistory'&&page==='publish')state.scope='all';state.page=page;if(page==='overview'||page==='websites'){state.scope='all';state.channel='all';if(page==='overview')assistantCheckedAt=0;}if(automationPage()){state.scope='tistory';state.business=null;}if(page==='prompts'){state.channel='all';state.promptService='tistory';}const cameFromMenu=$('sidebar').classList.contains('open');closeSidebar();
+ navigationMotion?.cancel();
+ render();writeRoute();window.scrollTo(0,0);
+ if(cameFromMenu||document.activeElement===document.body)$('page-title').focus({preventScroll:true});
+ if(approvalId)NuriOperator.reveal(approvalId);
+ if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)navigationMotion=$('content').animate(
+  [{opacity:.8,transform:'translateY(4px)'},{opacity:1,transform:'none'}],
+  {duration:180,easing:'cubic-bezier(.23,1,.32,1)'}
+ );
+}
 function restoreConnectionResult(){
  const url=new URL(location.href);
  const social=url.searchParams.get('social'),adsense=url.searchParams.get('adsense');
