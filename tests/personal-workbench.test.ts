@@ -102,6 +102,8 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     async function connectAccount(who:'first'|'second'){
       const view=await connect(req(url+'authorize?'+params,who),step('authorize'));
       assert.equal(view.status,200);
+      assert.equal(view.headers.get('Referrer-Policy'),'same-origin');
+      assert.match(view.headers.get('Content-Security-Policy')??'',/form-action 'self' https:\/\/chatgpt\.com/);
       const ticket=(await view.text()).match(/name="ticket" value="([^"]+)"/)?.[1];
       assert.ok(ticket);
       const consent=new URLSearchParams({ticket,decision:'allow'});
