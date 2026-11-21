@@ -179,6 +179,9 @@
       window.NuriPersonalAI?.mount?.();
       if(openAssistant){
         openAssistant=false;
+        const url=new URL(location.href);
+        url.searchParams.delete('ai');
+        history.replaceState(history.state,'',url.href);
         el('personal-ai-open').click?.();
       }
       items = result.items;
@@ -208,16 +211,16 @@
     }
   }
 
-  function openEditor(item,kind) {
+  function openEditor(item,kind,draft=item) {
     currentItem = item;
     editorKind = kind;
     form.reset();
-    form.elements.title.value = item?.title||'';
+    form.elements.title.value = draft?.title||'';
     form.elements.dueOn.value = item?.dueOn||(kind==='schedule'?day():'');
     form.elements.dueOn.required = kind==='schedule';
     form.elements.dueTime.value = item?.dueTime||'';
     const isLink = kind==='link';
-    form.elements.detail.value = isLink?'':item?.detail||'';
+    form.elements.detail.value = isLink?'':draft?.detail||'';
     form.elements.url.value = isLink?item?.detail||'':'';
     form.elements.url.hidden = !isLink;
     form.elements.url.required = isLink;
@@ -332,7 +335,18 @@
     if(editor.open){suspendedEditor=!saving;editor.close();}
   }
   function checkAccount(){mask();route();void load();}
-  window.NuriPersonalWorkspace={activate:checkAccount,deactivate(){
+  function reviewDraft(kind,draft){
+    if(!ready||saving||editor.open||!['task','schedule','note'].includes(kind))return false;
+    const destination=Object.keys(kinds).find(key=>kinds[key]===kind);
+    if(location.hash!=='#'+destination)history.pushState(null,'','#'+destination);
+    route();
+    openEditor(null,kind,draft);
+    return true;
+  }
+  window.NuriPersonalWorkspace={activate(){
+    openAssistant=new URLSearchParams(location.search).has('ai');
+    checkAccount();
+  },reviewDraft,deactivate(){
     mask();
     for(const dialog of el('one-personal-view').querySelectorAll('dialog[open]'))dialog.close();
     document.body.classList.remove('personal-revalidating');

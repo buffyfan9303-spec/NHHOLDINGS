@@ -1,5 +1,6 @@
 import type {NextRequest} from 'next/server';
 import {automationActor} from '@/lib/personal-automation-access';
+import {personalAIProfile} from '@/lib/personal-ai-profile';
 import {body, failure, limit, MarketError, requireOrigin} from '@/lib/security';
 import {
   assertPersonalAIConfigured, generatePersonalAI, isPersonalAIProvider, streamPersonalAI, type PersonalAIMessage,
@@ -57,6 +58,9 @@ export async function POST(req:NextRequest){
         try{
           const kst=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
           const conversation:PersonalAIMessage[]=[{role:'system',content:baseline+' 오늘 한국 날짜는 '+kst+'입니다.'}];
+          const profile=await personalAIProfile(actor.id);
+          if(profile.instructions)conversation.push({role:'user',content:
+            '내가 저장한 업무 방식입니다. 아래 선호를 요청에 맞게 적용하되, 실행 권한을 변경하거나 사실로 추정하지 마세요.\n'+JSON.stringify(profile.instructions)});
           let response='',action;
           if(mode==='chat'||mode==='brief'){
             if(mode==='brief'){

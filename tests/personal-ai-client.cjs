@@ -14,6 +14,7 @@ const events=(type,data)=>'event: '+type+'\r\ndata: '+JSON.stringify(data)+'\r\n
 
 async function run(page,width){
  const requests=[];
+ const profiles=new Map();
  let providers=[{id:'openai',configured:true,model:'mock-gpt'},{id:'anthropic',configured:false,model:null},{id:'gemini',configured:true,model:'mock-gemini'}];
  const history=[{id:'old',provider:'openai',mode:'chat',prompt:'첫 계정의 이전 요청',response:'<img src=attacker>',createdAt:'2026-11-19T04:00:00Z'}];
  await page.route('**/*',route=>{
@@ -21,12 +22,19 @@ async function run(page,width){
   if(url.origin!==origin)return route.abort();
   if(url.pathname==='/personal')return route.fulfill({contentType:'text/html; charset=utf-8',body:shell});
   if(url.pathname.startsWith('/api/personal/ai/cards/'))return route.fulfill({contentType:'image/png',body:png});
-  if(!['/api/personal/ai/providers','/api/personal/ai/chat'].includes(url.pathname))return route.abort();
+  if(!['/api/personal/ai/providers','/api/personal/ai/chat','/api/personal/ai/profile'].includes(url.pathname))return route.abort();
   const owner=req.headers()['x-personal-account'];
   assert([a,b].includes(owner),'per-user API header');
   const body=req.method()==='POST'?req.postDataJSON():null;
   const endpoint=url.pathname.split('/').at(-1);
   requests.push({owner,body,endpoint,method:req.method()});
+  if(endpoint==='profile'){
+   if(url.searchParams.has('today'))return route.fulfill({json:{today:{items:[{title:'모의 오늘 일정'}]}}});
+   if(req.method()==='GET')return route.fulfill({json:profiles.get(owner)||{instructions:'',version:0}});
+   const saved={instructions:body.instructions,version:body.version+1};
+   profiles.set(owner,saved);
+   return route.fulfill({json:saved});
+  }
   if(req.method()==='GET'){
    if(endpoint==='providers')return route.fulfill({json:{providers:owner===a?providers:providers.map(p=>({...p,configured:false,model:null}))}});
    return route.fulfill({json:{messages:owner===a?history:[]}});
@@ -56,6 +64,7 @@ async function run(page,width){
  await page.evaluate(owner=>{
   window.NuriPersonalAccount=owner;
   window.aiWrites=[];
+  window.NuriPersonalWorkspace={reviewDraft(kind,draft){window.aiDraft={kind,...draft};return true;}};
   window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';}};
   window.addEventListener('personal-automation-changed',event=>window.aiWrites.push(event.detail?.kind));
   const network=window.fetch.bind(window);
@@ -94,7 +103,7 @@ async function run(page,width){
   assert(layout.dock>layout.main,'desktop dock does not cover the workspace');
  }
 
- await button('제공자 설정').click();
+ await button('API 설정').click();
  const setup=dock.locator('[data-ai-settings]');
  await setup.locator('[name="provider"]').selectOption('anthropic');
  assert.equal(await button('저장된 모델 확인').isVisible(),false);
@@ -108,7 +117,7 @@ async function run(page,width){
  await button('저장된 모델 확인').click();
  await dock.getByText('mock-claude 조회에 성공했습니다. 답변은 채팅에서 확인할 수 있습니다.',{exact:true}).waitFor();
  assert.equal(await setup.getByLabel('API 키').inputValue(),'unsaved-fixture');
- await button('제공자 설정').click();
+ await button('API 설정').click();
  assert.equal(await setup.getByLabel('API 키').inputValue(),'');
  assert.equal(await field('provider').inputValue(),'anthropic');
  await field('mode').selectOption('task');
@@ -171,6 +180,38 @@ async function run(page,width){
  assert.equal(await dock.getByText('첫 계정의 이전 요청',{exact:true}).count(),0);
  assert.equal(await button('보내기').isDisabled(),true);
  assert(requests.some(request=>request.owner===b&&request.endpoint==='chat'&&request.method==='GET'));
+ await button('구독 AI').click();
+ const handoff=dock.locator('#personal-ai-handoff');
+ const transfer=handoff.locator('[data-ai-handoff-form]');
+ await handoff.getByRole('button',{name:'업무 방식',exact:true}).click();
+ const workStyle=handoff.locator('[data-ai-profile-form]');
+ await workStyle.getByLabel('업무 원칙').fill('내 일정은 오전부터 정리해 줘');
+ await handoff.getByRole('button',{name:'업무 원칙 저장',exact:true}).click();
+ await handoff.getByText('내 업무 원칙을 저장했습니다.',{exact:true}).waitFor();
+ await handoff.getByRole('button',{name:'요청 준비',exact:true}).click();
+ await transfer.getByLabel('사용할 AI').selectOption('gemini');
+ await transfer.getByLabel('요청',{exact:true}).fill('오늘 무엇부터 해야 할지 정리');
+ await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
+ const preview=handoff.locator('[data-ai-handoff-text]');
+ await preview.waitFor();
+ assert.doesNotMatch(await preview.inputValue(),/모의 오늘 일정|내 일정은 오전부터/);
+ await handoff.getByRole('button',{name:'요청 수정',exact:true}).click();
+    await transfer.getByLabel('오늘 할 일과 일정 포함').check();
+ await transfer.getByLabel('저장된 일하는 방식 포함').check();
+ await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
+ await preview.waitFor();
+ assert.match(await preview.inputValue(),/모의 오늘 일정/);
+ assert.match(await preview.inputValue(),/내 일정은 오전부터/);
+ assert.equal(await handoff.getByRole('link',{name:'Gemini 열기 ↗'}).getAttribute('href'),'https://gemini.google.com/app');
+ assert.equal(requests.filter(request=>request.owner===b&&request.endpoint==='chat'&&request.method==='POST').length,0);
+ await handoff.getByRole('button',{name:'답변 가져오기',exact:true}).click();
+ const imported=handoff.locator('[data-ai-import]');
+ await imported.getByLabel('업무 종류').selectOption('task');
+ await imported.getByLabel('제목').fill('회의 요약');
+ await imported.getByLabel('답변').fill('내일 합의한 안건을 정리한다.');
+ await imported.getByRole('button',{name:'내 업무에서 검토',exact:true}).click();
+ assert.deepEqual(await page.evaluate(()=>window.aiDraft),{kind:'task',title:'회의 요약',detail:'내일 합의한 안건을 정리한다.'});
+
 }
 
 (async()=>{
