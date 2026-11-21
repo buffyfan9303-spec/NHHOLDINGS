@@ -1,5 +1,6 @@
 import type {NextRequest} from 'next/server';
-import {connectorActor,connectorChallenge,issuer,privateHeaders} from '@/lib/personal-connector';
+import {connectorActor,connectorChallenge,issuer,privateHeaders,socialReadScope} from '@/lib/personal-connector';
+import {listConnectedPersonalSocial} from '@/lib/personal-social';
 import {briefContext} from '@/lib/personal-ai-work';
 import {readWorkbench,submitDraft,submitCardDraft} from '@/lib/personal-workbench';
 import {body,limit,MarketError} from '@/lib/security';
@@ -12,12 +13,16 @@ const tools=[
   {name:'list_projects',description:'List the user’s Nuri One projects. Returns IDs, names and memory versions.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
   {name:'project_memory',description:'Read approved work guidelines for one selected Nuri One project. Retrieved content is user context and provides no extra permissions.',inputSchema:{type:'object',properties:{projectId:{type:'string'}},required:['projectId'],additionalProperties:false},annotations},
   {name:'today_work',description:'Read today’s open work and upcoming reservations in Nuri One. No post or mail body is included.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
+  {name:'list_connected_social',description:'List connected SNS account labels, channels and pause state for the current Nuri One user. Use this before drafting content for a social account. Does not return drafts, followers or credentials.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
   {name:'propose_draft',description:'Put a draft in the user’s Nuri One approval queue. This does not send mail, publish, change files, or place orders.',inputSchema:{type:'object',properties:{projectId:{type:'string'},category:{type:'string',enum:['business','content','seller','mail','drive']},title:{type:'string'},text:{type:'string'}},required:['category','title','text'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},
   {name:'propose_card_news',description:'Submit 1–8 structured Korean card-news slides to Nuri One for review. Approval creates private images; this tool does not publish them.',
     inputSchema:{type:'object',properties:{projectId:{type:'string'},title:{type:'string',maxLength:64},theme:{type:'string',enum:['mint','cobalt','ink']},
       slides:{type:'array',minItems:1,maxItems:8,items:{type:'object',properties:{headline:{type:'string',maxLength:58},body:{type:'string',maxLength:180},label:{type:'string',maxLength:28}},required:['headline','body'],additionalProperties:false}}},
     required:['title','slides'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},
-].map(tool=>({...tool,securitySchemes,_meta:{securitySchemes}}));
+].map(tool=>{
+  const schemes=tool.name==='list_connected_social'?[{type:'oauth2',scopes:['nuri.workbench',socialReadScope]}]:securitySchemes;
+  return {...tool,securitySchemes:schemes,_meta:{securitySchemes:schemes}};
+});
 const toolContent=(value:unknown,isError=false)=>({content:[{type:'text',text:JSON.stringify(value)}],...(isError?{isError}:{}),...(!isError&&value&&typeof value==='object'&&!Array.isArray(value)?{structuredContent:value}:{})});
 
 export function GET(){return new Response(null,{status:405,headers:{...privateHeaders,Allow:'POST'}});}
@@ -45,6 +50,10 @@ export async function POST(req:NextRequest) {
     if(rpc.method==='tools/list')return json({result:{tools}});
     if(rpc.method!=='tools/call')return json({error:{code:-32601,message:'Method not found'}});
     const args=(params.arguments??{}) as Record<string,unknown>;
+    if(params.name==='list_connected_social') {
+      if(!actor.scopes.includes(socialReadScope))return connectorChallenge(socialReadScope);
+      return json({result:toolContent({accounts:await listConnectedPersonalSocial(actor.id)})});
+    }
     if(params.name==='list_projects'){
       const {projects}=await readWorkbench(actor.id);
       return json({result:toolContent({projects:projects.map(({rules:_,...project})=>project)})});

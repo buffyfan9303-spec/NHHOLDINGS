@@ -5,7 +5,7 @@ import {PGlite} from '@electric-sql/pglite';
 import {NextRequest} from 'next/server';
 import {GET as list, POST as change} from '../src/app/api/personal/social/route';
 import {GET as callback} from '../src/app/api/personal/social/[provider]/route';
-import {runPersonalSocial} from '../src/lib/personal-social';
+import {listConnectedPersonalSocial,runPersonalSocial} from '../src/lib/personal-social';
 import {context} from '../src/server/context.cjs';
 import {createPersonalCard} from '../src/lib/personal-cards';
 import {getPersonalCardMedia} from '../src/lib/personal-card-media';
@@ -242,6 +242,8 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     assert.equal(owner.username,'owner_handle');
     assert.equal(friend.username,'friend_handle');
     assert.equal(owner.ready,true);
+    assert.deepEqual(await listConnectedPersonalSocial(accounts.owner.id),[{id:owner.id,provider:'threads',label:owner.label,paused:false}]);
+    assert.deepEqual(await listConnectedPersonalSocial(accounts.friend.id),[{id:friend.id,provider:'threads',label:friend.label,paused:false}]);
     const dbValues = JSON.stringify((await database.query("SELECT id,data FROM nh_documents WHERE kind LIKE 'personal-social-%'")).rows);
     assert.doesNotMatch(dbValues,/-app-key|-short|-grant/);
     assert.doesNotMatch(JSON.stringify(await state('owner')),/friend_handle|-app-key|-grant|ownerId|clientSecret|appFingerprint/);
@@ -301,6 +303,7 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     const reconnect = (await approve('owner',await drafts('owner','different app'))).post;
     await api('owner',{action:'configure',provider:'threads',clientId:'9021',clientSecret:'changed-fake-key'});
     assert.equal((await state('owner')).accounts[0].ready,false);
+    assert.deepEqual(await listConnectedPersonalSocial(accounts.owner.id),[]);
     await due('owner',reconnect.id);
     assert.equal((await runPersonalSocial()).review,1);
     assert.equal(remote.filter(r=>/\/threads_publish$/.test(r.path)).length,2);

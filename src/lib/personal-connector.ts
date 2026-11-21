@@ -8,7 +8,9 @@ import {uuidPattern} from '@/server/personal-workspace.cjs';
 
 const scope='nuri.workbench';
 const offlineScope='offline_access';
-const supportedScopes=[scope,offlineScope];
+export const socialReadScope='nuri.social.read';
+const priorScopes=[scope,offlineScope];
+const supportedScopes=[...priorScopes,socialReadScope];
 function validScope(value:string|null) {
   if(value===null)return true;
   const requested=value.split(/\s+/);
@@ -21,8 +23,8 @@ export const privateHeaders={'Cache-Control':'private, no-store','Referrer-Polic
 const digest=(value:string)=>createHash('sha256').update(value).digest('base64url');
 const nonce=()=>randomBytes(32).toString('base64url');
 type Client={redirect:string; provider:'chatgpt'|'claude'|'gemini'};
-type Grant={client:Client; clientId:string; challenge:string; state:string};
-type Flow={ownerId:string; provider:Client['provider']; email:string; updatedAt:string; tokenHash?:string; expires?:number; refreshHash?:string; refreshUntil?:number; pending?:{hash:string; challenge:string; clientHash:string; expires:number}};
+type Grant={client:Client; clientId:string; challenge:string; state:string; scopes:string[]};
+type Flow={ownerId:string; provider:Client['provider']; email:string; updatedAt:string; tokenHash?:string; expires?:number; refreshHash?:string; refreshUntil?:number; scopes?:string[]; pending?:{hash:string; challenge:string; clientHash:string; expires:number; scopes?:string[]}};
 const invalid=()=>new MarketError('연결 요청을 확인해 주세요.',400);
 const invalidGrant=()=>new MarketError('연결 승인이 만료되었습니다.',400);
 export const issuer=()=>marketOrigin();
@@ -30,7 +32,7 @@ export const resource=()=>issuer()+'/api/one/mcp';
 const protectedURL=()=>issuer()+'/.well-known/oauth-protected-resource/api/one/mcp';
 
 export function protectedMetadata() {
-  return {resource:resource(),authorization_servers:[issuer()],scopes_supported:[scope],bearer_methods_supported:['header']};
+  return {resource:resource(),authorization_servers:[issuer()],scopes_supported:[scope,socialReadScope],bearer_methods_supported:['header']};
 }
 
 export function authorizationMetadata() {
@@ -41,8 +43,11 @@ export function authorizationMetadata() {
     authorization_response_iss_parameter_supported:true};
 }
 
-export function connectorChallenge() {
-  return Response.json({error:'invalid_token'},{status:401,headers:{...privateHeaders,'WWW-Authenticate':'Bearer resource_metadata="'+protectedURL()+'", scope="'+scope+'"'}});
+export function connectorChallenge(additionalScope?:string) {
+  const error=additionalScope?'insufficient_scope':'invalid_token';
+  const requested=additionalScope?scope+' '+additionalScope:scope;
+  return Response.json({error},{status:additionalScope?403:401,headers:{...privateHeaders,
+    'WWW-Authenticate':'Bearer resource_metadata="'+protectedURL()+'", scope="'+requested+'", error="'+error+'"'}});
 }
 
 function clientFor(redirect:unknown):Client {
@@ -74,7 +79,9 @@ export function readGrant(form:URLSearchParams):Grant {
   if(form.get('response_type')!=='code'||form.get('code_challenge_method')!=='S256'||
     !/^[A-Za-z0-9_-]{43}$/.test(challenge)||!state||state.length>600||
     !validScope(form.get('scope'))||(form.has('resource')&&form.get('resource')!==resource()))throw invalid();
-  return {client,clientId,challenge,state};
+  const requested=form.get('scope');
+  const scopes=requested?supportedScopes.filter(scope=>requested.split(/\s+/).includes(scope)):supportedScopes;
+  return {client,clientId,challenge,state,scopes};
 }
 
 export async function connectorUser(req:NextRequest) {
@@ -99,27 +106,27 @@ export async function authorizeConnector(user:{id:string;email:string},ticket:st
   let request:{kind:string;owner:string;grant:Grant;expires:number};
   try{request=JSON.parse(unseal(ticket));}catch{throw invalid();}
   if(request.kind!=='nuri-consent'||request.owner!==user.id||request.expires<Date.now())throw invalid();
-  const {client,clientId,challenge,state}=request.grant;
+  const {client,clientId,challenge,state,scopes}=request.grant;
   const target=new URL(client.redirect);
   target.searchParams.set('state',state);
   target.searchParams.set('iss',issuer());
   if(!approved){target.searchParams.set('error','access_denied');return target;}
   const code=['nuri_code',user.id,client.provider,nonce()].join('.');
   const details={ownerId:user.id,email:user.email,provider:client.provider,updatedAt:new Date().toISOString(),
-    pending:{hash:hash(code),clientHash:hash(clientId),challenge,expires:Date.now()+180_000}};
+    pending:{hash:hash(code),clientHash:hash(clientId),challenge,scopes,expires:Date.now()+180_000}};
   await pool().query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-connector',$1,$2) ON CONFLICT(workspace,kind,id) DO UPDATE SET data=nh_documents.data||excluded.data,updated=clock_timestamp() WHERE nh_documents.data->>'ownerId'=$3",
     [user.id+':'+client.provider,JSON.stringify(details),user.id]);
   target.searchParams.set('code',code);
   return target;
 }
 
-function tokenPair(owner:string,provider:string,refreshUntil:number) {
+function tokenPair(owner:string,provider:string,refreshUntil:number,scopes:string[]) {
   const access=['nuri_access',owner,provider,nonce()].join('.');
   const refresh=['nuri_refresh',owner,provider,nonce()].join('.');
   const now=Date.now();
   return {
-    public:{access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:expiresIn,scope:supportedScopes.join(' ')},
-    store:{tokenHash:hash(access),expires:now+expiresIn*1000,refreshHash:hash(refresh),refreshUntil,updatedAt:new Date(now).toISOString()},
+    public:{access_token:access,refresh_token:refresh,token_type:'Bearer',expires_in:expiresIn,scope:scopes.join(' ')},
+    store:{tokenHash:hash(access),expires:now+expiresIn*1000,refreshHash:hash(refresh),refreshUntil,scopes,updatedAt:new Date(now).toISOString()},
   };
 }
 
@@ -132,7 +139,10 @@ async function refreshConnector(form:URLSearchParams) {
   const saved=rows[0]?.data, refreshHash=hash(refresh!);
   if(!saved?.refreshHash||!saved.refreshUntil||saved.refreshUntil<Date.now()||!equal(saved.refreshHash,refreshHash)||
     !saved.clientHash||!equal(saved.clientHash,hash(clientId))||!await canRunPersonalAutomation(key.owner,saved.email))throw invalidGrant();
-  const tokens=tokenPair(key.owner,key.provider,saved.refreshUntil);
+  const granted=saved.scopes??priorScopes;
+  const requested=form.get('scope')?.split(/\s+/);
+  if(requested?.some(scope=>!granted.includes(scope)))throw invalidGrant();
+  const tokens=tokenPair(key.owner,key.provider,saved.refreshUntil,requested?granted.filter(scope=>requested.includes(scope)):granted);
   const result=await pool().query("UPDATE nh_documents SET data=data||$3::jsonb,updated=clock_timestamp() WHERE "+credentials+
     " AND data->>'refreshHash'=$4 RETURNING id",[key.key,key.owner,JSON.stringify(tokens.store),refreshHash]);
   if(!result.rowCount)throw invalidGrant();
@@ -150,7 +160,10 @@ export async function exchangeConnector(form:URLSearchParams) {
   const saved=rows[0]?.data, pending=saved?.pending, codeHash=hash(code!);
   if(!pending||!equal(codeHash,pending.hash)||!equal(digest(verify),pending.challenge)||
     !equal(hash(clientId!),pending.clientHash)||pending.expires<Date.now()||!await canRunPersonalAutomation(key.owner,saved.email))throw invalidGrant();
-  const tokens=tokenPair(key.owner,key.provider,Date.now()+grantDays*86400_000);
+  const granted=pending.scopes??priorScopes;
+  const requested=form.get('scope')?.split(/\s+/);
+  if(requested?.some(scope=>!granted.includes(scope)))throw invalidGrant();
+  const tokens=tokenPair(key.owner,key.provider,Date.now()+grantDays*86400_000,granted);
   const next={...tokens.store,clientHash:pending.clientHash};
   const result=await pool().query("UPDATE nh_documents SET data=(data-'pending')||$3::jsonb,updated=clock_timestamp() WHERE "+credentials+
     " AND data->'pending'->>'hash'=$4 RETURNING id",[key.key,key.owner,JSON.stringify(next),codeHash]);
@@ -166,13 +179,13 @@ export async function connectorActor(request:Request) {
   const saved=rows[0]?.data;
   if(!saved?.tokenHash||!saved.expires||saved.expires<Date.now()||!equal(hash(token!),saved.tokenHash)||
     !await canRunPersonalAutomation(key.owner,saved.email)) return null;
-  return {id:key.owner,provider:saved.provider};
+  return {id:key.owner,provider:saved.provider,scopes:saved.scopes??priorScopes};
 }
 
 export async function connectorStatus(owner:string) {
-  const {rows}=await pool().query<{provider:string; expires:number; updatedAt:string}>(
-    "SELECT data->>'provider' AS provider, (data->>'refreshUntil')::bigint AS expires, data->>'updatedAt' AS \"updatedAt\" FROM nh_documents WHERE workspace='live' AND kind='personal-connector' AND id LIKE $1||':%' AND data->>'ownerId'=$1 AND data ? 'tokenHash'",[owner]);
-  return rows.map(row=>({provider:row.provider,expires:Number(row.expires),updatedAt:row.updatedAt,active:Number(row.expires)>Date.now()}));
+  const {rows}=await pool().query<{provider:string; expires:number; updatedAt:string; socialRead:boolean}>(
+    "SELECT data->>'provider' AS provider, (data->>'refreshUntil')::bigint AS expires, data->>'updatedAt' AS \"updatedAt\", COALESCE(data->'scopes' ? 'nuri.social.read',false) AS \"socialRead\" FROM nh_documents WHERE workspace='live' AND kind='personal-connector' AND id LIKE $1||':%' AND data->>'ownerId'=$1 AND data ? 'tokenHash'",[owner]);
+  return rows.map(row=>({provider:row.provider,expires:Number(row.expires),updatedAt:row.updatedAt,active:Number(row.expires)>Date.now(),socialRead:row.socialRead}));
 }
 
 export async function disconnectConnector(owner:string,provider:unknown) {

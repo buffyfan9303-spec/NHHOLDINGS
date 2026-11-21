@@ -70,11 +70,13 @@
           ${actionButton('계정 연결로 이동','setup-jump','',kind==='social')}
         </div>
         <p class="auto-message" data-auto-message role="status">목록을 불러오고 있습니다.</p>
+        ${kind==='social'?'<div data-auto-filter></div>':''}
         <div data-auto-items aria-labelledby="${prefix}-list-title"></div>
       </div>
       <aside class="personal-sheet auto-connections" aria-labelledby="${prefix}-connection-title">
         <h2 id="${prefix}-connection-title">${kind==='social'?'SNS 계정':'Gmail 계정'}</h2>
         <div data-auto-accounts></div>
+        ${kind==='social'?'<details class="auto-channel-setup" data-auto-setup><summary>채널 연결 및 설정</summary><div data-auto-catalog></div></details>':''}
       </aside>
       <dialog class="auto-dialog" aria-labelledby="${prefix}-dialog-title">
         <form class="personal-form" data-auto-form>
@@ -115,8 +117,20 @@
     return Number.isFinite(stamp)?'<time datetime="'+escape(new Date(stamp).toISOString())+'">'+escape(formatter.format(stamp))+' KST</time>':'';
   }
 
+  const connectedAccounts=view=>view.data?.accounts.filter(account=>account.ready)||[];
   function paintItems(view) {
-    const rows=view.data?.items||[];
+    let rows=view.data?.items||[];
+    if(view.kind==='social') {
+      const accounts=connectedAccounts(view);
+      const connected=new Set(accounts.map(account=>account.id));
+      const inactive=rows.filter(row=>!connected.has(row.accountId));
+      const filter=view.root.querySelector('[data-auto-filter]');
+      if(view.filter==='history'&&!inactive.length||view.filter&&view.filter!=='history'&&!connected.has(view.filter))view.filter='';
+      filter.innerHTML=accounts.length>1||inactive.length?'<label>게시 작업 보기<select data-auto-account-filter>'+
+        option('','연결된 계정 전체',view.filter||'')+accounts.map(account=>option(account.id,account.label,view.filter)).join('')+
+        (inactive.length?option('history','연결이 끊긴 계정의 기록',view.filter):'')+'</select></label>':'';
+      rows=view.filter==='history'?inactive:rows.filter(row=>connected.has(row.accountId)&&(!view.filter||view.filter===row.accountId));
+    }
     const pane=view.root.querySelector('[data-auto-items]');
     if(!rows.length) {
       pane.innerHTML=view.data?'<p class="personal-empty">작성한 초안이 없습니다.</p>':'';
@@ -161,7 +175,7 @@
     return actionButton(label,action,id);
   }
 
-  function accountsPanel(view) {
+  function accountsPanel(view,catalog=false) {
     if(view.kind==='mail') {
       const {configured,connection={}}=view.data;
       const state=connection.connected?(connection.paused?'발송 일시정지':'연결됨'):'미연결';
@@ -173,12 +187,14 @@
         ${actionButton(configured?'Google 앱 설정':'Google 앱 설정 추가','configure','mail')}
        </div></div>`;
     }
-    if(!view.data.providers.length)return '<p class="personal-empty">연결할 수 있는 채널이 없습니다.</p>';
-    return view.data.providers.map(provider=>{
-      const accounts=view.data.accounts.filter(account=>account.provider===provider.id);
+    const groupAccounts=provider=>view.data.accounts.filter(account=>account.provider===provider.id&&(catalog?!account.ready:account.ready));
+    const providers=catalog?view.data.providers:view.data.providers.filter(provider=>groupAccounts(provider).length);
+    if(!providers.length)return '<p class="personal-empty">'+(catalog?'연결할 수 있는 채널이 없습니다.':'연결된 SNS 계정이 없습니다.')+'</p>';
+    return providers.map(provider=>{
+      const accounts=groupAccounts(provider);
       return `<section class="auto-account" aria-label="${escape(provider.name||providerNames[provider.id])}">
         <strong>${escape(provider.name||providerNames[provider.id])}</strong>
-        <p>${provider.configured?(accounts.length?accounts.length+'개 계정':'연결 가능한 채널'):'앱 설정 필요'}</p>
+        <p>${catalog?(provider.configured?'연결 가능':'앱 설정 필요'):accounts.length+'개 계정'}</p>
         ${accounts.length?`<ul class="auto-account-list">${accounts.map(account=>`<li>
           <div><b>${escape(account.label)}</b><small>${escape(account.username||'')}${account.ready?account.paused?' · 게시 일시정지':'':' · 다시 연결 필요'}</small></div>
           <div class="auto-actions">
@@ -186,10 +202,9 @@
             ${account.ready?actionButton(account.paused?'게시 재개':'게시 일시정지','pause',account.id):''}
             ${actionButton('연결 해제','disconnect',account.id)}
           </div></li>`).join('')}</ul>`:''}
-        <div class="auto-actions">
-          ${provider.configured?connectionAction(view,provider.id,'계정 연결','connect'):''}
-          ${actionButton(provider.appSource==='personal'?'앱 설정':'내 앱 설정','configure',provider.id)}
-        </div>
+        ${catalog?'<div class="auto-actions">'+
+          (provider.configured?connectionAction(view,provider.id,'계정 연결','connect'):'')+
+          actionButton(provider.appSource==='personal'?'앱 설정':'내 앱 설정','configure',provider.id)+'</div>':''}
       </section>`;
     }).join('');
   }
@@ -197,9 +212,10 @@
   function paint(view) {
     paintItems(view);
     view.root.querySelector('[data-auto-accounts]').innerHTML=view.data?accountsPanel(view):'';
-    const connectionReady=view.kind==='social'?view.data?.accounts.some(account=>account.ready):view.data?.connection?.connected;
+    if(view.kind==='social')view.root.querySelector('[data-auto-catalog]').innerHTML=view.data?accountsPanel(view,true):'';
+    const connectionReady=view.kind==='social'?connectedAccounts(view).length>0:view.data?.connection?.connected;
     view.root.querySelector('[data-auto-first-connect]').hidden=!view.data||connectionReady===true;
-    view.root.querySelector('[data-auto-action="new"]').hidden=view.kind==='social'&&!!view.data&&!view.data.accounts.length;
+    view.root.querySelector('[data-auto-action="new"]').hidden=view.kind==='social'&&!!view.data&&!connectedAccounts(view).length;
     setControls(view);
   }
 
@@ -208,7 +224,7 @@
     view.root.querySelector('.personal-automation').setAttribute('aria-busy',String(working));
     view.fields.inert=view.busy;
     for(const control of view.root.querySelectorAll('[data-auto-action],[data-auto-submit]')){
-      control.disabled=working||(control.dataset.autoAction==='new'&&(!view.data||(view.kind==='social'&&!view.data.accounts.length)));
+      control.disabled=working||(control.dataset.autoAction==='new'&&(!view.data||(view.kind==='social'&&!connectedAccounts(view).length)));
     }
   }
 
@@ -273,9 +289,12 @@
         <label>본문<textarea name="body" rows="6" maxlength="16000" required>${escape(item?.body??seed?.text)}</textarea></label>`,
       item?'메일 초안 편집':'새 메일 초안','초안 저장');
     }
-    if(!view.data.accounts.length)return note(view,'SNS 계정을 연결한 뒤 초안을 작성해 주세요.',true);
-    const accounts=view.data.accounts;
-    const account=cardChoice?.accountId||(item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):seed?'':accounts[0].id);
+    const accounts=connectedAccounts(view);
+    if(!accounts.length){
+      view.root.querySelector('[data-auto-setup]').open=true;
+      return note(view,'SNS 계정을 연결한 뒤 초안을 작성해 주세요.',true);
+    }
+    const account=cardChoice?.accountId||(item?(accounts.some(row=>row.id===item.accountId)?item.accountId:''):seed?'':accounts.find(row=>row.id===view.filter)?.id||accounts[0].id);
     const bool=(value)=>option('','선택',value==null?'':String(value))+option('true','예',String(value))+option('false','아니요',String(value));
     modal(view,'draft',item?.id,`
      ${item?.status==='scheduled'?'<p class="auto-caption">편집을 저장하면 현재 예약이 해제됩니다. 게시 시각을 다시 승인해 주세요.</p>':''}
@@ -547,7 +566,9 @@
     if(action==='refresh')return void load(view);
     if(action==='copy-callback')return void copyCallback(view);
     if(action==='setup-jump'){
-      const control=view.root.querySelector('[data-auto-accounts] :is([data-auto-action="connect"],[data-auto-action="reconnect"],[data-auto-action="configure"],a.personal-link)');
+      const setup=view.root.querySelector('[data-auto-setup]');
+      if(setup)setup.open=true;
+      const control=view.root.querySelector(setup?'[data-auto-setup] summary':'[data-auto-accounts] :is([data-auto-action="connect"],[data-auto-action="reconnect"],[data-auto-action="configure"],a.personal-link)');
       if(control){
         control.focus({preventScroll:true});
         control.scrollIntoView({block:'center',behavior:'instant'});
@@ -635,6 +656,7 @@
       if(previous.owner===owner)continue;
       suspendView(previous);
       previous.root.onclick=null;
+      previous.root.onchange=null;
       previous.root.replaceChildren();
       views.delete(mode);
     }
@@ -676,6 +698,13 @@
       openPendingDraft(view);
     });
     root.onclick=event=>click(view,event);
+    root.onchange=event=>{
+      if(current(view)&&event.target.matches('[data-auto-account-filter]')){
+        view.filter=event.target.value;
+        paintItems(view);
+        root.querySelector('[data-auto-account-filter]')?.focus({preventScroll:true});
+      }
+    };
     void load(view,oauthNotice(kind));
   }
 

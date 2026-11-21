@@ -81,8 +81,8 @@
       '<ul class="workbench-list">'+Object.entries(providers).map(([id,[name,instructions,link]])=>{
         const active=data.connections?.find(c=>c.provider===id&&c.active);
         return '<li><strong>'+name+'</strong><p>'+instructions+'</p><div class="workbench-actions"><a href="'+link+'" target="_blank" rel="noopener noreferrer">'+name+' 열기</a>'+
-          (active?'<span>연결됨</span>'+action('연결 끊기','disconnect',id):'<span>연결 필요</span>')+'</div></li>';
-      }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p></section>';
+          (active?'<span>연결됨</span><span>'+(active.socialRead?'SNS 목록 조회 허용':'SNS 목록 조회는 AI 앱에서 다시 연결')+'</span>'+action('연결 끊기','disconnect',id):'<span>연결 필요</span>')+'</div></li>';
+      }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p><h3>내 작업 채널</h3><div class="workbench-actions"><a class="btn" href="#social">내 SNS 연결</a><a class="btn" href="#mail">Gmail 연결</a><a class="btn" href="#files">Google Drive 연결</a></div></section>';
   }
   const renderers={projects,schedule,approvals,connect};
   function render(message=''){
