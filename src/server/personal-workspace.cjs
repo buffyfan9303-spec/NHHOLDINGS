@@ -19,6 +19,7 @@ function personalWorkspace(ownerId) {
     dueOn: data.dueOn,
     dueTime: data.dueTime,
     done: data.done,
+    ...(data.completedAt ? {completedAt:data.completedAt} : {}),
     ...(data.projectId ? {projectId:data.projectId} : {}),
     ...(data.focusOn && data.focusTime ? {focusOn:data.focusOn,focusTime:data.focusTime} : {}),
     createdAt: data.createdAt,
@@ -41,7 +42,7 @@ function personalWorkspace(ownerId) {
 
   async function create(draft, id = randomUUID()) {
     const now = new Date().toISOString();
-    const data = {...draft, ownerId, createdAt: now, updatedAt: now, version: 1};
+    const data = {...draft, ...(draft.done ? {completedAt:now} : {}), ownerId, createdAt: now, updatedAt: now, version: 1};
     const row = (await query(
       "INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-item',$1,$2) ON CONFLICT DO NOTHING RETURNING id,data",
       [key(id)[0], JSON.stringify(data)],
@@ -53,12 +54,14 @@ function personalWorkspace(ownerId) {
   }
 
   async function update(previous, draft) {
+    const now=new Date().toISOString();
     const data = {
       ...draft,
+      ...(draft.done ? {completedAt:previous.done ? previous.completedAt??previous.updatedAt : now} : {}),
       ...(previous.focusOn&&previous.focusTime ? {focusOn:previous.focusOn,focusTime:previous.focusTime} : {}),
       ownerId,
       createdAt: previous.createdAt,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
       version: previous.version + 1,
     };
     const row = (await query(

@@ -144,3 +144,14 @@
 }
 #workbench .workbench-check{display:flex;align-items:center;gap:8px;min-height:44px}
 #workbench .workbench-check input{width:18px;height:18px;flex:none;margin:0}
+
+#workbench .workbench-week-project{display:grid;gap:4px;max-inline-size:24rem;margin-block:8px 10px}
+#workbench .workbench-week-project select{min-height:44px;padding:7px 36px 7px 10px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--surface);appearance:none;background-image:linear-gradient(45deg,transparent 43%,var(--muted) 44% 59%,transparent 60%),linear-gradient(-45deg,transparent 43%,var(--muted) 44% 59%,transparent 60%);background-position:right 20px center,right 15px center;background-repeat:no-repeat;background-size:6px 6px}
+.workbench-week-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin-block:12px;padding:8px 0;border-block:1px solid var(--line)}
+.workbench-week-counts li{display:grid;gap:2px;padding-inline:10px;min-width:0}
+.workbench-week-counts li+li{border-inline-start:1px solid var(--line)}
+.workbench-week-counts strong{font-variant-numeric:tabular-nums}
+.workbench-week-counts span{font-size:.85rem;color:var(--muted)}
+.workbench-week-details>section{min-width:0}
+.workbench-week-details .workbench-check small,.workbench-repeat li small{display:block}
+.workbench-week-details .workbench-check span{min-width:0;overflow-wrap:anywhere}

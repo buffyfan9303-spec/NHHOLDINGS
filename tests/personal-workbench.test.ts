@@ -12,6 +12,8 @@ import {saveMailApp} from '../src/lib/personal-mail-auth';
 import {getPersonalCard} from '../src/lib/personal-cards';
 import {personalAIHistory,aiRecord,savePersonalAIMessage,applyPersonalAI} from '../src/lib/personal-ai-work';
 import {GET as aiHistory} from '../src/app/api/personal/ai/chat/route';
+import {GET as planning,POST as planningWrite} from '../src/app/api/personal/project-planning/route';
+import {addPlanningDays,nextOccurrence,runPersonalRecurringTasks} from '../src/lib/personal-project-planning';
 import {proposeMoves} from '../src/lib/personal-workbench';
 
 const origin='https://one.example.invalid';
@@ -45,6 +47,13 @@ test('focus slots preserve deadlines, skip work and reservations, and prioritize
   const results=proposeMoves([{...base,kind:'schedule',id:'schedule'},second,first],
     [{kind:'mail',title:'예약',scheduledAt:'2026-11-22T01:00:00Z'}],'2026-11-22','09:00','12:00',new Date('2026-11-21T03:00:00Z'));
   assert.deepEqual(results.map(item=>[item.id,item.time]),[['task1','10:30'],['task2','11:00']]);
+});
+
+test('weekly and month-end recurrence keep their original calendar anchor',()=>{
+  assert.equal(nextOccurrence('2026-01-31','monthly','2026-02-01'),'2026-02-28');
+  assert.equal(nextOccurrence('2026-01-31','monthly','2026-03-01'),'2026-03-31');
+  assert.equal(nextOccurrence('2028-01-31','monthly','2028-02-01'),'2028-02-29');
+  assert.equal(nextOccurrence('2026-11-23','weekly','2026-11-24'),'2026-11-30');
 });
 
 test('workbench routes and OAuth enforce two authorized account boundaries and reversible approvals',async()=>{
@@ -231,6 +240,65 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     assert.equal(log.activity[0].title,'보낸메일 결과 확인');
     assert.equal(log.activity[0].unconfirmed,true);
     assert.doesNotMatch(JSON.stringify(log),/다른 계정|비공개 본문/);
+    const dateNow=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
+    const week=addPlanningDays(dateNow,-((new Date(dateNow+'T00:00:00Z').getUTCDay()+6)%7));
+    const nextWeek=addPlanningDays(week,7);
+    const path='/api/personal/project-planning';
+    const reviewReq=(who:Account)=>planning(req(path+'?project='+project.id+'&week='+week,who));
+    const writeReview=(who:Account,input:Record<string,unknown>)=>planningWrite(req(path,who,{...input,projectId:project.id}));
+    const getState=async()=>await (await reviewReq('first')).json();
+    assert.equal((await reviewReq('second')).status,404);
+    assert.equal((await reviewReq('pending')).status,403);
+    const {item:moving}=await (await save(req('/api/personal','first',{action:'create',kind:'task',projectId:project.id,title:'다음 주 업무',dueOn:dateNow}))).json();
+    const {item:finished}=await (await save(req('/api/personal','first',{action:'create',kind:'task',projectId:project.id,title:'완료한 업무',done:true}))).json();
+    const summary=await getState();
+    assert.equal(summary.completed.some((row:{id:string})=>row.id===finished.id),true);
+    assert.equal(summary.unfinished.some((row:{id:string})=>row.id===moving.id),true);
+    assert.ok(summary.approvals.length>0);
+    const carry={action:'carry',week,target:nextWeek,items:[{id:moving.id,version:1}]};
+    assert.equal((await writeReview('first',{...carry,target:week})).status,400);
+    assert.equal((await writeReview('first',{...carry,items:[...carry.items,{id:finished.id,version:1}]})).status,409);
+    assert.equal((await getState()).unfinished.some((row:{id:string})=>row.id===moving.id),true,'whole selection rolls back');
+    assert.equal((await writeReview('second',carry)).status,404);
+    assert.deepEqual(await (await writeReview('first',carry)).json(),{moved:1});
+    assert.equal((await writeReview('first',carry)).status,409);
+    assert.equal((await getState()).unfinished.some((row:{id:string})=>row.id===moving.id),false);
+
+    const rule={action:'repeat-create',id:'955ba91c-5c29-40ab-a4f5-82e4f1362a10',title:'매주 돌아오는 리뷰',frequency:'weekly',startOn:dateNow};
+    assert.equal((await writeReview('second',rule)).status,404);
+    const registeredRule=await (await writeReview('first',rule)).json();
+    assert.equal(registeredRule.created,true);
+    assert.equal((await (await writeReview('first',{...rule,id:'d61d2c50-25e9-4b23-b1cb-9860925d5621'})).json()).created,false);
+    assert.equal((await getState()).rules.length,1);
+    const start=new Date(dateNow+'T00:00:00+09:00');
+    assert.equal((await runPersonalRecurringTasks(new Date(+start-1))).generated,0,'before KST midnight');
+    assert.equal((await runPersonalRecurringTasks(start,async()=>false)).generated,0);
+    assert.deepEqual(await runPersonalRecurringTasks(start),{checked:1,generated:1,failed:0});
+    assert.equal((await runPersonalRecurringTasks(start)).generated,0);
+    assert.equal((await getState()).rules[0].nextOn,addPlanningDays(dateNow,7));
+    assert.equal((await writeReview('first',{action:'repeat-state',id:registeredRule.id,version:1,active:false})).status,200);
+    assert.equal((await runPersonalRecurringTasks(new Date(+start+7*86400_000))).generated,0);
+    assert.equal((await writeReview('first',{action:'repeat-state',id:registeredRule.id,version:2,active:true})).status,200);
+    const connection=g.nhPool;
+    let exclusive=Promise.resolve();
+    // PGlite has one connection. Queue transactions while both workers still read due rules independently.
+    g.nhPool={query,async connect(){
+      const earlier=exclusive;
+      let release!:()=>void;
+      exclusive=new Promise<void>(resolve=>{release=resolve;});
+      await earlier;
+      return {query,release};
+    }};
+    const nextRun=new Date(+start+7*86400_000);
+    const overlap=await Promise.all([runPersonalRecurringTasks(nextRun),runPersonalRecurringTasks(nextRun)]);
+    g.nhPool=connection;
+    assert.equal(overlap.reduce((count,row)=>count+row.generated,0),1);
+    assert.equal(overlap.reduce((count,row)=>count+row.failed,0),0);
+    assert.equal((await runPersonalRecurringTasks(nextRun)).generated,0);
+    const recurring=(await (await personal(req('/api/personal','first'))).json()).items
+      .filter((row:{title:string})=>row.title===rule.title);
+    assert.deepEqual(recurring.map((row:{dueOn:string})=>row.dueOn).sort(),[dateNow,addPlanningDays(dateNow,7)]);
+    assert.equal(recurring.every((row:{projectId:string})=>row.projectId===project.id),true);
     const refreshRequest=new URLSearchParams({grant_type:'refresh_token',client_id:client,refresh_token:a.refresh,resource:origin+'/api/one/mcp'});
     const escalated=new URLSearchParams(refreshRequest);
     escalated.set('scope','nuri.workbench offline_access nuri.social.read');

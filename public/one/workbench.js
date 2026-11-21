@@ -3,7 +3,7 @@
   const root=document.getElementById('workbench');
   if(!root)return;
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',activity:'실행 내역',connect:'연결 관리'};
+  const sections={projects:'프로젝트',weekly:'주간 리뷰',schedule:'일정 재계획',approvals:'승인함',activity:'실행 내역',connect:'연결 관리'};
   const categories={business:'사업 운영',content:'콘텐츠',seller:'판매 준비',mail:'메일',drive:'Drive',schedule:'일정',cards:'카드뉴스'};
   const providers={chatgpt:['ChatGPT','플러그인 → 추가 → 사용자 지정 MCP 서버에서 이 주소를 등록하세요. Business·Enterprise·Edu에서 작성 기능을 지원합니다. Pro는 조회 권한으로 연결할 수 있습니다.','https://chatgpt.com/'],claude:['Claude','커넥터에서 사용자 지정 연결을 추가하고 OAuth 클라이언트는 자동 등록을 선택하세요.','https://claude.ai/'],gemini:['Gemini','사용자 지정 연결은 현재 미국의 개인 Google 계정에서 영어로 지원됩니다. 한국에서는 구독 AI의 요청 복사 기능을 사용하세요.','https://gemini.google.com/']};
   const templates={
@@ -15,6 +15,7 @@
   let pane='projects', owner=null, controller=null, data=null, projectId=null, detailId=null, selectedTemplate=null, showHistory=false;
   const home=document.getElementById('personal-resume');
   let homeRead=null,activityData=null,profileData=null,projectFilter='';
+  let weeklyProject='',weeklyStart='',weeklyData=null,weeklyRead=0;
   let running=false, resume=null, channels=null, checkingChannels=false, channelError=false, channelFilter='all';
   const now=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'});
   function today(){return now.format(new Date());}
@@ -35,7 +36,7 @@
         '<div class="workbench-actions">'+action('요청 문장 복사','copy-example',selectedTemplate)+
         '<a class="personal-link" href="#workbench" data-action="connect-pane">AI 연결 확인</a></div></details>':'')+'</section>':'';
     const next=project?'<section class="workbench-narrow"><div class="workbench-heading"><h2>이 프로젝트 이어서 하기</h2>'+
-      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+action('프로젝트 기록','project-records',project.id)+action('할 일 추가','project-task',project.id)+'</div>'+'</div>'+
+      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+action('주간 리뷰 열기','project-weekly',project.id)+action('프로젝트 기록','project-records',project.id)+action('할 일 추가','project-task',project.id)+'</div>'+'</div>'+
       (related.length?'<ul class="workbench-list">'+related.slice(0,6).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+
       '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>':'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
       contentForm(project.id)+'</section>':'';
@@ -195,9 +196,99 @@
         esc(profileData.instructions)+'</textarea></label><div class="workbench-actions"><button class="btn primary" type="submit">선호 저장</button>'+
         (profileData.instructions?action('저장한 선호 복사','copy-profile'):'')+'</div></form>')+'</section>';
   }
-  const renderers={projects,schedule,approvals,activity,connect,preferences};
+  const calendarDay=(date,offset)=>new Date(Date.parse(date+'T00:00:00Z')+offset*86400000).toISOString().slice(0,10);
+  const currentWeek=()=>{const date=today();return calendarDay(date,-((new Date(date+'T00:00:00Z').getUTCDay()+6)%7));};
+  const repeatLabels={daily:'매일',weekly:'매주',monthly:'매월'};
+  const listReview=(rows,body,empty)=>rows.length?'<ul class="workbench-list">'+rows.map(body).join('')+'</ul>':'<p class="personal-empty">'+empty+'</p>';
+  function weekly(){
+    const available=data.projects.some(project=>project.id===weeklyProject);
+    const header='<section class="workbench-narrow"><h2>프로젝트 주간 리뷰</h2>'+
+      '<label class="workbench-week-project">프로젝트<select data-weekly-project>'+selectProject(weeklyProject)+'</select></label>'+
+      '<div class="workbench-actions">'+action('이전 주','review-previous')+action('이번 주','review-current')+action('다음 주','review-next')+'</div>'+
+      '<p class="workbench-muted">'+esc(weeklyStart+' – '+calendarDay(weeklyStart,6))+' · 한국 시간</p></section>';
+    if(!available)return header+'<p>리뷰할 프로젝트를 선택해 주세요.</p>';
+    if(!weeklyData)return header+'<p>주간 기록을 불러오고 있습니다.</p>';
+    if(weeklyData.error)return header+'<p>'+esc(weeklyData.error)+'</p>'+action('다시 조회','review-refresh');
+    const {completed,unfinished,approvals,rules,window:dates}=weeklyData;
+    const earliest=dates.nextStart<today()?today():dates.nextStart;
+    const canCarry=earliest<=dates.nextEnd;
+    const counts='<ul class="workbench-week-counts" aria-label="주간 현황">'+[[completed,'완료'],[unfinished,'미완료'],[approvals,'승인 대기']].map(([rows,label])=>
+      '<li><strong>'+rows.length+'</strong><span>'+label+'</span></li>').join('')+'</ul>';
+    const done='<section><h3>완료</h3>'+listReview(completed,row=>'<li><strong>'+esc(row.title)+'</strong></li>','이 주에 완료한 일이 없습니다.')+'</section>';
+    const pending='<section><h3>승인 대기</h3>'+listReview(approvals,row=>'<li><a class="personal-link" href="?review='+encodeURIComponent(row.id)+'#workbench" data-action="weekly-approval" data-id="'+esc(row.id)+'">'+esc(row.title)+'</a></li>','현재 승인 대기 항목이 없습니다.')+'</section>';
+    const carry='<section><h3>미완료</h3><p class="workbench-muted">이 주까지 마감이거나 마감일이 없는 미완료 할 일입니다.</p>'+
+      '<form class="personal-form" data-form="carry">'+listReview(unfinished,row=>'<li><label class="workbench-check">'+
+        (canCarry?'<input type="checkbox" name="item" value="'+esc(row.id)+'">':'')+'<span>'+esc(row.title)+
+        '<small>'+esc(row.dueOn||'마감일 없음')+'</small></span></label></li>','이월할 일이 없습니다.')+
+      (unfinished.length&&canCarry?'<label>옮길 날짜<input name="target" type="date" value="'+earliest+'" min="'+earliest+'" max="'+dates.nextEnd+'" required></label>'+
+        '<div><button class="btn primary" type="submit">선택한 일 다음 주로 넘기기</button></div>':'')+'</form></section>';
+    const repeats='<section class="workbench-repeat"><h3>반복 업무</h3><p class="workbench-muted">프로젝트에 새 할 일을 생성합니다. 매월 같은 날짜가 없으면 그 달의 마지막 날에 생성합니다.</p>'+
+      listReview(rules,row=>'<li><div><strong>'+esc(row.title)+'</strong><small>'+repeatLabels[row.frequency]+' · '+
+        esc(row.active?'다음 '+row.nextOn:'일시정지')+'</small></div>'+action(row.active?'일시정지':'다시 시작','repeat-state',row.id)+'</li>','등록한 반복 업무가 없습니다.')+
+      '<details><summary>반복 업무 추가</summary><form class="personal-form" data-form="repeat-create">'+
+      '<label>할 일 이름<input name="title" maxlength="160" required></label><div class="workbench-time">'+
+      '<label>주기<select name="frequency"><option value="daily">매일</option><option value="weekly" selected>매주</option><option value="monthly">매월</option></select></label>'+
+      '<label>시작 날짜<input name="startOn" type="date" value="'+today()+'" min="'+today()+'" required></label></div>'+
+      '<div><button class="btn primary" type="submit">반복 설정 저장</button></div></form></details></section>';
+    return header+counts+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
+  }
+  function setupWeekly(){
+    weeklyStart||=currentWeek();
+    if(!data.projects.some(row=>row.id===weeklyProject))weeklyProject=data.projects.find(row=>row.id===projectId)?.id??data.projects[0]?.id??'';
+  }
+  async function weeklyRequest(input){
+    const signal=controller.signal;
+    const query=input?'':'?'+new URLSearchParams({project:weeklyProject,week:weeklyStart});
+    const response=await fetch('/api/personal/project-planning'+query,{
+      signal,cache:'no-store',headers:{'X-Personal-Account':owner,...(input?{'Content-Type':'application/json'}:{})},
+      ...(input?{method:'POST',body:JSON.stringify(input)}:{}),
+    });
+    signal.throwIfAborted();
+    const result=await response.json();
+    signal.throwIfAborted();
+    if(!response.ok)throw Error(result.error||'주간 리뷰를 처리하지 못했습니다.');
+    return result;
+  }
+  async function loadWeekly(message=''){
+    if(!weeklyProject||!controller||pane!=='weekly')return;
+    const ref=++weeklyRead,signal=controller.signal;
+    try{
+      const result=await weeklyRequest();
+      if(ref!==weeklyRead||signal.aborted)return;
+      weeklyData=result;
+    }catch(error){
+      if(ref!==weeklyRead||signal.aborted)return;
+      weeklyData={error:error.message};
+    }
+    if(pane==='weekly'){
+      const focused=root.contains(document.activeElement);
+      render(message||root.querySelector('[data-workbench-status]')?.textContent||'');
+      if(focused)(root.querySelector('[data-weekly-project]')??root.querySelector('[aria-current=page]'))?.focus({preventScroll:true});
+    }
+  }
+  async function writeWeekly(input,message){
+    if(running||!controller)return;
+    const signal=controller.signal;
+    running=true;
+    root.setAttribute('aria-busy','true');
+    root.querySelectorAll('button,input,select').forEach(control=>{control.disabled=true;});
+    try{
+      const result=await weeklyRequest({...input,projectId:weeklyProject,week:weeklyStart});
+      await loadWeekly(input.action==='repeat-create'&&!result.created?'같은 반복 설정이 이미 있습니다.':message);
+      if(input.action==='carry')window.dispatchEvent(new Event('personal-automation-changed'));
+    }catch(error){
+      if(!signal.aborted){
+        status(error.message);
+        root.querySelectorAll('button,input,select').forEach(control=>{control.disabled=false;});
+      }
+    }finally{
+      if(!signal.aborted){running=false;root.removeAttribute('aria-busy');}
+    }
+  }
+  const renderers={projects,schedule,approvals,activity,connect,preferences,weekly};
 
   function render(message=''){
+    if(data&&pane==='weekly')setupWeekly();
     if(data)window.NuriPersonalWorkspace?.syncProjects?.(data.projects);
     root.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries({...sections,preferences:'내 선호'}).map(([id,label])=>
       '<button type="button" data-pane="'+id+'"'+(id===pane?' aria-current="page"':'')+'>'+label+'</button>').join('')+
@@ -231,6 +322,7 @@
   async function loadPane(target,force=false){
     if(!controller)return;
     if(target==='connect'){void loadChannels();return;}
+    if(target==='weekly'){if(!weeklyData||force)void loadWeekly();return;}
     if(target!=='activity'&&target!=='preferences')return;
     const signal=controller.signal;
     try{
@@ -280,6 +372,7 @@
     pane=resume?.owner===owner?resume.pane:'projects';
     const previous=resume?.owner===owner?resume:null;
     channelFilter=previous?.channelFilter??'all';
+    weeklyProject=previous?.weeklyProject??'';weeklyStart=previous?.weeklyStart??'';
     projectId=previous?.projectId??null;detailId=previous?.detailId??null;
     projectFilter=previous?.projectFilter??'';showHistory=previous?.showHistory??false;
     resume=null;
@@ -410,6 +503,19 @@
       try{if(value)await navigator.clipboard.writeText(value);status('복사했습니다.');}catch{status('자동 복사가 안 됩니다.');}
       return;
     }
+    if(key.startsWith('review-')){
+      weeklyStart=key==='review-current'?currentWeek():calendarDay(weeklyStart,key==='review-previous'?-7:key==='review-next'?7:0);
+      weeklyData=null;render();void loadWeekly();return;
+    }
+    if(key==='weekly-approval'){
+      if(review(id)){event.preventDefault();render();focusCurrent();}
+      return;
+    }
+    if(key==='repeat-state'){
+      const rule=weeklyData?.rules?.find(entry=>entry.id===id);
+      if(rule)void writeWeekly({action:key,id,version:rule.version,active:!rule.active},rule.active?'반복 업무를 일시정지했습니다.':'반복 업무를 다시 시작했습니다.');
+      return;
+    }
     if(key==='retry-channels'){void loadChannels();return;}
     if(key==='refresh'){
       const signal=controller.signal;
@@ -420,6 +526,7 @@
       return;
     }
     const project=data.projects.find(row=>row.id===id),decision=data.decisions.find(row=>row.id===id);
+    if(key==='project-weekly'&&project){weeklyProject=project.id;weeklyData=null;switchPane('weekly');return;}
     if(key==='project-records'&&project){window.NuriPersonalWorkspace?.openProjectRecords?.(project.id);return;}
     if(key==='project-task'&&project){window.NuriPersonalWorkspace?.reviewDraft?.('task',{projectId:project.id});return;}
     if(key==='project-chat'&&project){window.NuriPersonalAI?.openProject(project.id,project.name);return;}
@@ -467,11 +574,27 @@
     history.replaceState(history.state,'',current.href);
     if(location.hash==='#workbench')void mount();else location.hash='workbench';
   });
+  root.addEventListener('change',event=>{
+    if(!event.target.matches('[data-weekly-project]')||running)return;
+    weeklyProject=event.target.value;weeklyData=null;weeklyRead++;
+    render();root.querySelector('[data-weekly-project]')?.focus({preventScroll:true});
+    void loadWeekly();
+  });
   root.addEventListener('submit',event=>{
     event.preventDefault();
     const form=event.target;
     const action=form.dataset.form;
-    const payload=Object.fromEntries(new FormData(form));
+    const fields=new FormData(form);
+    const payload=Object.fromEntries(fields);
+    if(action==='carry'){
+      const picked=new Set(fields.getAll('item'));
+      const items=weeklyData.unfinished.filter(row=>picked.has(row.id)).map(({id,version})=>({id,version}));
+      if(!items.length){status('옮길 일을 선택해 주세요.');return;}
+      void writeWeekly({action,target:payload.target,items},items.length+'건을 다음 주로 옮겼습니다.');return;
+    }
+    if(action==='repeat-create'){
+      void writeWeekly({action,...payload},'반복 설정을 저장했습니다.');return;
+    }
     if(action==='project'&&projectId){
       payload.id=projectId;payload.version=data.projects.find(row=>row.id===projectId)?.version;
     }
@@ -486,7 +609,8 @@
     homeRead?.abort();homeRead=null;
     if(home){home.hidden=true;home.replaceChildren();}
     activityData=null;profileData=null;projectFilter='';
-    if(owner)resume={owner,pane,channelFilter,projectId,detailId,projectFilter,showHistory};
+    if(owner)resume={owner,pane,channelFilter,projectId,detailId,projectFilter,showHistory,weeklyProject,weeklyStart};
+    weeklyRead++;weeklyData=null;weeklyProject='';weeklyStart='';
     controller?.abort();controller=null;owner=null;data=null;channels=null;checkingChannels=false;channelError=false;channelFilter='all';pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
     root.removeAttribute('aria-busy');root.replaceChildren();
   }};
