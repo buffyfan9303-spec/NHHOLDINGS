@@ -13,6 +13,7 @@ function fixture() {
       innerHTML:'',textContent:'',hidden:false,open:false,
       setAttribute(){},addEventListener(type,fn){events.set(id+':'+type,fn);},
       focus(){},querySelectorAll(){return [];},close(){this.open=false;},showModal(){this.open=true;},
+      reset(){},replaceChildren(){this.innerHTML='';this.textContent='';},
     });
     return elements.get(id);
   };
@@ -55,11 +56,13 @@ const visible = (fixture,state)=>{
  answer(first.requests.shift(),snapshot('alice'));
  await flush();
  assert.match(first.element('personal-today').innerHTML,/Private alice/);
+ first.element('personal-search-results').innerHTML='Private alice';
  visible(first,'hidden'); visible(first,'visible');
  const stale=first.requests.shift();
  visible(first,'hidden'); visible(first,'visible');
  const current=first.requests.shift();
  assert.equal(stale.options.signal.aborted,true);
+ assert.equal(first.element('personal-search-results').innerHTML,'');
  answer(stale,snapshot('alice'));
  await flush();
  assert(first.classes.has(marker));
