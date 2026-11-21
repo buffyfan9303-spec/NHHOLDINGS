@@ -217,7 +217,8 @@
     const project=data.projects.find(row=>row.id===weeklyProject);
     if(!project)return;
     if(key==='weekly-ai'){
-      if(!window.NuriPersonalAI?.openWeeklyReview(owner,weeklyReport(project,weeklyData,12),trigger)){
+      if(!window.NuriPersonalAI?.openWeeklyReview(owner,weeklyReport(project,weeklyData,12),trigger,
+        {projectId:project.id,...weeklyData.window})){
         status('AI 도우미를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
       }
       return;
@@ -227,6 +228,91 @@
     link.href=url;link.download='nuri-one-weekly-'+weeklyData.window.start+'.txt';
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function parseWeeklyPlan(value){
+    const source=value.trim();
+    const fenced=source.match(/```(?:json)?[ \t]*\r?\n([\s\S]*?)```/i);
+    let rows;
+    try{
+      const parsed=JSON.parse(fenced?.[1]??source);
+      rows=Array.isArray(parsed)?parsed:parsed?.items;
+    }catch{
+      if(fenced||/^[{\[]/.test(source)&&!/^\[(할 일|일정)\]/.test(source))throw Error('AI 답변의 JSON 전체를 붙여넣어 주세요.');
+      let group='';
+      rows=source.split(/\r?\n/).flatMap(line=>{
+        const heading=line.trim().replace(/^#{1,6}\s+|\*\*|:$/g,'');
+        const named=heading.match(/^(?:다음 주\s+)?(할 일|일정)$/);
+        if(named){group=named[1];return [];}
+        if(/^\s*#{1,6}\s/.test(line))group='';
+        const marked=line.match(/^\s*(?:[-*]\s+|\d+[.)]\s+)?\[(할 일|일정)\]\s+(.+)$/);
+        const bullet=group&&line.match(/^\s*(?:[-*]\s+|\d+[.)]\s+)(.+)$/);
+        if(!marked&&!bullet)return [];
+        const kind=(marked?.[1]??group)==='일정'?'schedule':'task';
+        const text=(marked?.[2]??bullet[1]).replace(/^\[[xX ]\]\s+/,'').trim();
+        const when=text.match(/^(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?\s*\|\s*(.+)$/);
+        return [{kind,title:when?.[3]??text,dueOn:when?.[1]??'',dueTime:when?.[2]??''}];
+      });
+    }
+    if(!Array.isArray(rows)||rows.length<1||rows.length>20)throw Error('할 일·일정 1~20개가 담긴 AI 답변을 붙여넣어 주세요.');
+    return rows.map((row,index)=>{
+      if((row?.kind!=='task'&&row?.kind!=='schedule')||typeof row.title!=='string'||!row.title.trim()||row.title.length>160||
+        (row.detail!=null&&(typeof row.detail!=='string'||row.detail.length>1000))||
+        (row.dueOn!=null&&row.dueOn!==''&&(typeof row.dueOn!=='string'||!/^[1-9]\d{3}-\d{2}-\d{2}$/.test(row.dueOn)||
+          !Number.isFinite(Date.parse(row.dueOn+'T00:00:00Z'))||new Date(row.dueOn+'T00:00:00Z').toISOString().slice(0,10)!==row.dueOn))||
+        (row.dueTime!=null&&row.dueTime!==''&&(typeof row.dueTime!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.dueTime)))){
+        throw Error((index+1)+'번째 항목의 제목·유형·날짜·시간을 확인해 주세요.');
+      }
+      return row;
+    });
+  }
+
+  function planItemWhen(item){
+    const label=item.kind==='schedule'?'일정':'할 일';
+    return label+' · '+(item.dueOn?[item.dueOn,item.dueTime].filter(Boolean).join(' '):item.kind==='schedule'?'일정 날짜 필요':'마감일 없음');
+  }
+  function planItemFields(row){
+    return Object.fromEntries(['kind','title','detail','dueOn','dueTime'].map(name=>[name,row.querySelector('[name='+name+']').value]));
+  }
+
+  function planReview(form,dates){
+    const block=form.parentElement;
+    const note=block.querySelector('[data-weekly-plan-status]');
+    const preview=block.querySelector('[data-form="import-plan"]');
+    preview.hidden=true;
+    preview.querySelector('[data-weekly-plan-items]').replaceChildren();
+    try{
+      const rows=parseWeeklyPlan(form.elements.answer.value);
+      const min=dates.nextStart<today()?today():dates.nextStart;
+      const card=row=>
+        '<div class="workbench-plan-item" data-weekly-plan-item>'+
+        '<label class="workbench-check"><input type="checkbox" name="item"><span data-plan-title>'+esc(row.title)+'</span></label>'+
+        '<small data-plan-when>'+esc(planItemWhen(row))+'</small>'+
+        '<details><summary>항목 수정</summary><div class="personal-form">'+
+        '<label>제목<input name="title" maxlength="160" value="'+esc(row.title)+'"></label>'+
+        '<label>유형<select name="kind"><option value="task">할 일</option><option value="schedule"'+(row.kind==='schedule'?' selected':'')+'>일정</option></select></label>'+
+        '<div class="workbench-time"><label>날짜<input name="dueOn" type="date" min="'+esc(min)+'" max="'+esc(dates.nextEnd)+'" value="'+esc(row.dueOn)+'"></label>'+
+        '<label>시간<input name="dueTime" type="time" value="'+esc(row.dueTime)+'"></label></div>'+
+        '<label>메모<textarea name="detail" rows="2" maxlength="1000">'+esc(row.detail)+'</textarea></label></div></details></div>';
+      preview.querySelector('[data-weekly-plan-items]').innerHTML=[['task','할 일'],['schedule','일정']].map(([kind,label])=>{
+        const matches=rows.filter(row=>row.kind===kind);
+        return matches.length?'<section class="workbench-plan-items"><h3>'+label+' '+matches.length+'개</h3>'+matches.map(card).join('')+'</section>':'';
+      }).join('');
+      preview.hidden=false;
+      note.textContent=rows.length+'개 제안을 정리했습니다. 확인 후 등록할 항목을 선택하세요.';
+      preview.querySelector('input[type=checkbox]').focus({preventScroll:true});
+    }catch(error){note.textContent=error.message;}
+  }
+
+  function weeklyImport(dates){
+    return '<details class="workbench-plan-import" data-weekly-plan><summary>AI 다음 주 계획 가져오기</summary>'+
+      '<p class="workbench-muted">'+esc(dates.nextStart)+' – '+esc(dates.nextEnd)+' · 한국 시간</p>'+
+      '<form class="personal-form" data-form="preview-plan">'+
+      '<label>AI 답변<textarea name="answer" rows="5" maxlength="28000" required placeholder="AI의 다음 주 계획 답변을 붙여넣으세요."></textarea></label>'+
+      '<div><button type="submit" class="btn">할 일과 일정 정리</button></div></form>'+
+      '<p class="personal-message" role="status" data-weekly-plan-status></p>'+
+      '<form class="personal-form" data-form="import-plan" novalidate hidden><div class="workbench-plan-items" data-weekly-plan-items></div>'+
+      '<div><button class="btn primary" type="submit">선택한 항목 승인·등록</button></div></form></details>';
   }
 
   function weekly(){
@@ -261,7 +347,7 @@
       '<div><button class="btn primary" type="submit">반복 설정 저장</button></div></form></details></section>';
     const tools='<div class="workbench-actions">'+action('주간 리뷰 내려받기','weekly-download')+
       action('AI로 다음 주 준비','weekly-ai')+'</div>';
-    return header+counts+tools+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
+    return header+counts+tools+(canCarry?weeklyImport(dates):'')+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
   }
   function setupWeekly(){
     weeklyStart||=currentWeek();
@@ -298,19 +384,24 @@
     }
   }
   async function writeWeekly(input,message){
-    if(running||!controller)return;
+    if(running||!controller||owner!==window.NuriPersonalAccount)return;
     const signal=controller.signal;
     running=true;
     root.setAttribute('aria-busy','true');
-    root.querySelectorAll('button,input,select').forEach(control=>{control.disabled=true;});
+    root.querySelectorAll('button,input,select,textarea').forEach(control=>{control.disabled=true;});
     try{
       const result=await weeklyRequest({...input,projectId:weeklyProject,week:weeklyStart});
+      if(input.action==='import-plan'){
+        message=result.created+'개 등록'+(result.skipped?' · 중복 '+result.skipped+'개 건너뜀':'')+'.';
+      }
       await loadWeekly(input.action==='repeat-create'&&!result.created?'같은 반복 설정이 이미 있습니다.':message);
-      if(input.action==='carry')window.dispatchEvent(new Event('personal-automation-changed'));
+      if(input.action==='carry'||input.action==='import-plan')window.dispatchEvent(new Event('personal-automation-changed'));
     }catch(error){
       if(!signal.aborted){
-        status(error.message);
-        root.querySelectorAll('button,input,select').forEach(control=>{control.disabled=false;});
+        const notice=input.action==='import-plan'&&root.querySelector('[data-weekly-plan-status]');
+        if(notice)notice.textContent=error.message;
+        else status(error.message);
+        root.querySelectorAll('button,input,select,textarea').forEach(control=>{control.disabled=false;});
       }
     }finally{
       if(!signal.aborted){running=false;root.removeAttribute('aria-busy');}
@@ -612,10 +703,42 @@
     render();root.querySelector('[data-weekly-project]')?.focus({preventScroll:true});
     void loadWeekly();
   });
+  root.addEventListener('input',event=>{
+    const row=event.target.closest('[data-weekly-plan-item]');
+    if(row){
+      const item=planItemFields(row);
+      row.querySelector('[data-plan-title]').textContent=item.title.trim()||'제목 없음';
+      row.querySelector('[data-plan-when]').textContent=planItemWhen(item);
+    }
+    if(!event.target.matches('[data-form="preview-plan"] textarea'))return;
+    const panel=event.target.closest('[data-weekly-plan]');
+    const preview=panel.querySelector('[data-form="import-plan"]');
+    if(preview.hidden)return;
+    preview.hidden=true;
+    preview.querySelector('[data-weekly-plan-items]').replaceChildren();
+    panel.querySelector('[data-weekly-plan-status]').textContent='수정한 답변을 다시 정리해 주세요.';
+  });
   root.addEventListener('submit',event=>{
     event.preventDefault();
+    if(running||owner!==window.NuriPersonalAccount)return;
     const form=event.target;
     const action=form.dataset.form;
+    if(action==='preview-plan'){planReview(form,weeklyData.window);return;}
+    if(action==='import-plan'){
+      const fields=[...form.querySelectorAll('[data-weekly-plan-item]')].filter(row=>row.querySelector('[name=item]').checked);
+      const note=form.parentElement.querySelector('[data-weekly-plan-status]');
+      if(!fields.length){note.textContent='등록할 항목을 선택해 주세요.';return;}
+      const items=fields.map(planItemFields);
+      const invalid=items.findIndex((item,index)=>!item.title.trim()||(item.kind==='schedule'||item.dueTime)&&!item.dueOn||
+        !fields[index].querySelector('[name=dueOn]').validity.valid);
+      if(invalid>=0){
+        note.textContent='선택한 항목의 제목과 날짜를 확인해 주세요. 날짜는 해당 주의 오늘 이후로 입력할 수 있습니다.';
+        fields[invalid].querySelector('details').open=true;
+        fields[invalid].querySelector(items[invalid].title.trim()?'[name=dueOn]':'[name=title]').focus();
+        return;
+      }
+      void writeWeekly({action,items},'');return;
+    }
     const fields=new FormData(form);
     const payload=Object.fromEntries(fields);
     if(action==='carry'){
@@ -637,7 +760,14 @@
     }
     void mutate({action,...payload},action==='profile'?'업무 선호를 저장했습니다.':action==='revise'?'수정안을 저장했습니다.':action==='project'?'프로젝트 기억을 저장했습니다.':'승인함에 제안을 추가했습니다.');
   });
-  window.NuriWorkbench={mount,loadHome,suspend(){
+  function focusPlanImport(context,focus=true){
+    if(owner!==window.NuriPersonalAccount||pane!=='weekly'||weeklyProject!==context.projectId||weeklyStart!==context.start)return false;
+    const details=root.querySelector('[data-weekly-plan]');
+    if(!details)return false;
+    if(focus){details.open=true;details.querySelector('textarea').focus();}
+    return true;
+  }
+  window.NuriWorkbench={mount,loadHome,focusPlanImport,suspend(){
     homeRead?.abort();homeRead=null;
     if(home){home.hidden=true;home.replaceChildren();}
     activityData=null;profileData=null;projectFilter='';
