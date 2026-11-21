@@ -1,6 +1,7 @@
 import type {NextRequest} from 'next/server';
 import {automationActor} from '@/lib/personal-automation-access';
 import {workbenchProject} from '@/lib/personal-workbench';
+import {personalAISkill} from '@/lib/personal-ai-skills';
 import {personalAIProfile} from '@/lib/personal-ai-profile';
 import {body, failure, limit, MarketError, requireOrigin} from '@/lib/security';
 import {
@@ -49,6 +50,7 @@ export async function POST(req:NextRequest){
     const provider=input.provider;
     const project=input.projectId?await workbenchProject(actor.id,input.projectId):null;
     const {mode,prompt,social}=aiInput(input);
+    const skill=personalAISkill(input.skill,mode);
     if(mode==='content-pack'&&!project)throw new MarketError('콘텐츠 묶음에 연결할 프로젝트를 선택해 주세요.');
     if(mode==='mail'&&!hasMailRecipient(prompt))throw new MarketError('메일 초안에는 받는 이메일 주소 한 개를 적어 주세요.');
     await assertPersonalAIConfigured(actor.id,provider);
@@ -63,6 +65,9 @@ export async function POST(req:NextRequest){
         try{
           const kst=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
           const conversation:PersonalAIMessage[]=[{role:'system',content:baseline+' 오늘 한국 날짜는 '+kst+'입니다.'}];
+          if(skill){
+            conversation[0].content+=' 답변 프리셋: '+skill.label+'. '+skill.instruction+' 작업에서 요구하는 출력 형식과 실행 범위는 유지하세요.';
+          }
           const profile=await personalAIProfile(actor.id);
           if(profile.instructions)conversation.push({role:'user',content:
             '내가 저장한 업무 방식입니다. 아래 선호를 요청에 맞게 적용하되, 실행 권한을 변경하거나 사실로 추정하지 마세요.\n'+JSON.stringify(profile.instructions)});

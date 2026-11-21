@@ -333,3 +333,21 @@
 }
 .personal-ai-preview-head h3 {margin:0;font-size:16px}
 .personal-ai-preview textarea {min-height:150px}
+
+.personal-ai-guide {
+ margin-block:12px;
+ color:inherit;
+ font-size:.82rem;
+ line-height:1.5;
+ overflow-wrap:anywhere;
+}
+.personal-ai-guide summary {
+ display:list-item;
+ min-block-size:36px;
+ align-content:center;
+ cursor:pointer;
+ font-weight:600;
+}
+.personal-ai-guide ol {padding-inline-start:1.35rem;margin:6px 0}
+.personal-ai-guide li+li {margin-block-start:6px}
+.personal-ai-guide p {margin:8px 0}

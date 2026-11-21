@@ -1,0 +1,47 @@
+{
+  "skills": {
+    "brief": {
+      "label": "업무 브리핑",
+      "instruction": "먼저 챙길 일과 기한을 정리하세요. 일정 충돌과 밀린 일은 자료로 확인되는 경우에만 짚으세요."
+    },
+    "weekly": {
+      "label": "주간 리뷰",
+      "instruction": "완료, 미완료, 승인 대기를 나누세요. 다음 주로 넘길 후보와 첫 행동을 제안하세요. 상태나 날짜가 불명확하면 확인할 항목으로 남기세요."
+    },
+    "execution": {
+      "label": "실행 계획",
+      "instruction": "목표에서 거꾸로 계획을 세워 우선순위, 선행 조건, 첫 행동을 정리하세요. 임의로 기한을 확정하지 마세요."
+    },
+    "draft": {
+      "label": "콘텐츠 초안",
+      "instruction": "채널과 독자에 맞춰 첫 문장, 본문, 독자가 취할 다음 행동을 다듬으세요. 출처가 필요한 주장과 확인할 사항을 드러내세요."
+    },
+    "decision": {
+      "label": "의사결정",
+      "instruction": "대안을 같은 기준으로 비교하세요. 추천안의 근거, 고려할 위험, 결정을 바꿀 조건을 설명하세요."
+    },
+    "reply": {
+      "label": "메일 초안",
+      "instruction": "상대와 목적에 맞는 어조로 쓰세요. 답변이나 후속 조치가 필요한 내용을 분명하게 적고, 약속이나 확인되지 않은 사실은 추가하지 마세요."
+    }
+  },
+  "auto": {
+    "mode": {
+      "brief": "brief",
+      "task": "execution",
+      "schedule": "execution",
+      "social": "draft",
+      "mail": "reply",
+      "cards": "draft",
+      "content-pack": "draft"
+    },
+    "purpose": {
+      "plan": "execution",
+      "brief": "brief",
+      "review": "weekly",
+      "decide": "decision",
+      "draft": "draft",
+      "reply": "reply"
+    }
+  }
+}

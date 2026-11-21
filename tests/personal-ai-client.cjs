@@ -20,6 +20,7 @@ async function run(page,width){
  await page.route('**/*',route=>{
   const req=route.request(),url=new URL(req.url());
   if(url.origin!==origin)return route.abort();
+  if(url.pathname==='/one/ai-skills.json')return route.fulfill({json:require('../public/one/ai-skills.json')});
   if(url.pathname==='/personal')return route.fulfill({contentType:'text/html; charset=utf-8',body:shell});
   if(url.pathname.startsWith('/api/personal/ai/cards/'))return route.fulfill({contentType:'image/png',body:png});
   if(!['/api/personal/ai/providers','/api/personal/ai/chat','/api/personal/ai/profile'].includes(url.pathname))return route.abort();
@@ -121,6 +122,7 @@ async function run(page,width){
  assert.equal(await setup.getByLabel('API 키').inputValue(),'');
  assert.equal(await field('provider').inputValue(),'anthropic');
  await field('mode').selectOption('task');
+ await field('skill').getByText('자동 · 실행 계획',{exact:true}).waitFor({state:'attached'});
  await field('prompt').fill('분할 응답');
  await button('보내기').click();
  await dock.getByText('한글 첫 조각',{exact:true}).waitFor();
@@ -129,6 +131,7 @@ async function run(page,width){
  await page.evaluate(()=>window.releaseAIResponse());
  await dock.getByText('한글 첫 조각과 나머지 답변',{exact:true}).waitFor();
  const taskLink=dock.getByRole('link',{name:'할 일 열기',exact:true});
+ assert.equal(requests.at(-1).body.skill,'auto');
  assert.equal(await taskLink.getAttribute('href'),'#tasks','server-provided external URL is ignored');
  await taskLink.click();
  assert.equal(new URL(page.url()).hash,'#tasks');
@@ -189,17 +192,35 @@ async function run(page,width){
  await handoff.getByRole('button',{name:'업무 원칙 저장',exact:true}).click();
  await handoff.getByText('내 업무 원칙을 저장했습니다.',{exact:true}).waitFor();
  await handoff.getByRole('button',{name:'요청 준비',exact:true}).click();
+ await handoff.getByText('AI 사용 가이드',{exact:true}).click();
+ await handoff.getByText('목표와 결과물 형식을 적고 보낼 내용을',{exact:false}).waitFor();
+ await handoff.getByText('AI 사용 가이드',{exact:true}).click();
+ await transfer.getByLabel('목적').selectOption('review');
  await transfer.getByLabel('사용할 AI').selectOption('gemini');
  await transfer.getByLabel('요청',{exact:true}).fill('오늘 무엇부터 해야 할지 정리');
  await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
  const preview=handoff.locator('[data-ai-handoff-text]');
  await preview.waitFor();
+ assert.match(await preview.inputValue(),/프리셋: 주간 리뷰/);
  assert.doesNotMatch(await preview.inputValue(),/모의 오늘 일정|내 일정은 오전부터/);
+ for(const [provider,label,url] of [['openai','ChatGPT','https://chatgpt.com/'],['anthropic','Claude','https://claude.ai/']]){
+  await handoff.getByRole('button',{name:'요청 수정',exact:true}).click();
+  await transfer.getByLabel('사용할 AI').selectOption(provider);
+  await transfer.getByLabel('프리셋').selectOption('decision');
+  await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
+  await preview.waitFor();
+  assert.match(await preview.inputValue(),/프리셋: 의사결정/);
+  assert.equal(await handoff.getByRole('link',{name:label+' 열기 ↗'}).getAttribute('href'),url);
+ }
+
  await handoff.getByRole('button',{name:'요청 수정',exact:true}).click();
-    await transfer.getByLabel('오늘 할 일과 일정 포함').check();
+ await transfer.getByLabel('사용할 AI').selectOption('gemini');
+ await transfer.getByLabel('프리셋').selectOption('none');
+ await transfer.getByLabel('오늘 할 일과 일정 포함').check();
  await transfer.getByLabel('저장된 일하는 방식 포함').check();
  await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
  await preview.waitFor();
+ assert.doesNotMatch(await preview.inputValue(),/프리셋:/);
  assert.match(await preview.inputValue(),/모의 오늘 일정/);
  assert.match(await preview.inputValue(),/내 일정은 오전부터/);
  assert.equal(await handoff.getByRole('link',{name:'Gemini 열기 ↗'}).getAttribute('href'),'https://gemini.google.com/app');
@@ -219,7 +240,7 @@ async function run(page,width){
  for(const [name,engine,options] of engines){
   const browser=await engine.launch({headless:true,...options});
   try{
-   for(const [width,colorScheme] of [[320,'light'],[390,'dark'],[1440,'light']]){
+   for(const [width,colorScheme] of [[320,'light'],[390,'dark'],[440,'light'],[1440,'light'],[1440,'dark']]){
     const page=await browser.newPage({viewport:{width,height:896},colorScheme,reducedMotion:width===320?'reduce':'no-preference'});
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
