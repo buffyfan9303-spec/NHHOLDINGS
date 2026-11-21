@@ -95,3 +95,29 @@
 @media (min-width: 1021px) {
   #workbench .workbench-connections {align-items: stretch}
 }
+
+#workbench .workbench-channel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .75rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: .35rem;
+}
+#workbench .workbench-channel-filters button {
+  min-height: 44px;
+  padding: 0 .15rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+#workbench .workbench-channel-filters button[aria-pressed="true"] {
+  border-bottom-color: var(--accent, #409b80);
+  color: var(--ink);
+}
+#workbench .workbench-channel-filters span {font-variant-numeric: tabular-nums}
+#workbench .workbench-channel-empty {margin-block: .75rem .25rem}

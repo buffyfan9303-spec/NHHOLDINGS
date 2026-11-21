@@ -45,7 +45,7 @@ export async function mailConnection(actor: string) {
   const record = await readRecord(actor);
   const app = appOf(record);
   const connectionId = app && record.connection?.appHash === appHash(app) ? record.connection.id : null;
-  return {configured: !!app, connected: !!connectionId, connectionId, paused: record.paused === true,
+  return {configured: !!app, connected: !!connectionId, connectionId, paused: record.paused === true, hasSavedConnection: !!record.connection,
     clientId: record.app ? app?.clientId ?? '' : '', redirectUri: redirectUri()};
 }
 

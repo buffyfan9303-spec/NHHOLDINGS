@@ -13,7 +13,7 @@
     personal:{label:'개인 업무',name:'내 일과 자료 정리',rules:'마감이 가까운 일부터 정리한다. 문서는 제목, 정리 위치, 다음 할 일만 간단히 적는다. 가족이나 지인의 정보를 별도 승인 없이 공유하지 않는다.',step:'오늘 할 일 → 집중 시간 → 자료 정리 → 확인',prompt:'오늘 업무와 프로젝트 기억을 읽고, 중요한 일 세 가지와 자료 정리 순서를 제안해서 누리원 승인함에 넣어줘.'},
   };
   let pane='projects', owner=null, controller=null, data=null, projectId=null, detailId=null, selectedTemplate=null, showHistory=false;
-  let running=false, resume=null, channels=null, checkingChannels=false, channelError=false;
+  let running=false, resume=null, channels=null, checkingChannels=false, channelError=false, channelFilter='all';
   const now=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'});
   function today(){return now.format(new Date());}
   function connectionURL(){return location.origin+'/api/one/mcp';}
@@ -76,26 +76,57 @@
   }
 
   const serviceNames={instagram:'Instagram',threads:'Threads',youtube:'YouTube',x:'X'};
-  function channelRow(name,state,href,actionLabel,service=''){
-    return '<li><div><strong>'+name+'</strong><p>'+state+'</p></div><a class="btn" href="'+href+'"'+(service?' data-connect-service="'+service+'"':'')+' aria-label="'+name+' '+actionLabel+'">'+actionLabel+'</a></li>';
+  const channelFilters={all:'전체',attention:'조치 필요',setup:'앱 준비'};
+
+  function channelRow({name,state,href,label,service,recover}){
+    const target=service?' data-connect-service="'+service+'"'+(recover?' data-connect-recover':''):'';
+    return '<li><div><strong>'+name+'</strong><p>'+state+'</p></div><a class="btn" href="'+href+'"'+target+
+      ' aria-label="'+name+' '+label+'">'+label+'</a></li>';
+  }
+
+  function storageRow(name,href,channel,readyLabel){
+    const connected=channel?.connected, paused=connected&&channel.paused;
+    const reconnect=!connected&&channel?.hasSavedConnection;
+    const attention=!channel||paused||reconnect;
+    const setup=!!channel&&!channel.configured;
+    const state=!channel?'상태 확인 실패':paused?'발송 일시정지':connected?'계정 연결됨':
+      reconnect?'다시 연결 필요':setup?'운영 앱 준비 필요':'계정 연결 가능';
+    const label=!channel?'화면 확인':paused?'일시정지 확인':connected?readyLabel:
+      reconnect?'다시 연결':setup?'설정 안내':'연결 화면';
+    return {name,href,state,label,attention,setup};
+  }
+
+  function socialRow(name,service,channel){
+    const recover=!!channel?.stale;
+    const attention=!channel||recover||!!channel.paused;
+    const setup=!!channel&&!channel.configured;
+    const state=!channel?'상태 확인 실패':channel.connected?channel.connected+'개 연결'+(channel.paused?' · '+channel.paused+'개 일시정지':'')+
+      (recover?' · '+channel.stale+'개 재연결 필요':''):recover?'다시 연결 필요':setup?'운영 앱 준비 필요':'계정 연결 가능';
+    const label=!channel?'화면 확인':recover?'다시 연결':channel.paused?'일시정지 확인':
+      channel.connected?'계정 보기':setup?'설정 안내':'연결 화면';
+    return {name,state,label,service,recover,attention,setup,href:'#social'};
   }
 
   function channelOverview(){
     if(!channels)return '<p role="status" class="workbench-muted">'+(channelError?'연결 상태를 불러오지 못했습니다.':'연결 상태를 확인하고 있습니다.')+'</p>'+
       (channelError?action('상태 다시 확인','retry-channels'):'');
     const {social,mail,drive}=channels;
-    const driveState=!drive?'확인할 수 없음':drive.connected?'계정 연결됨':drive.hasSavedConnection?'다시 연결 필요':drive.configured?'계정 연결 가능':'운영 앱 준비 필요';
-    const mailState=!mail?'확인할 수 없음':mail.connected?(mail.paused?'발송 일시정지':'계정 연결됨'):mail.configured?'계정 연결 가능':'운영 앱 준비 필요';
-    return '<ul class="workbench-list workbench-channel-list">'+
-      channelRow('Google Drive',driveState,'#files',drive?.connected?'저장소 열기':drive?.configured?'연결 화면':'설정 안내')+
-      channelRow('Gmail',mailState,'#mail',mail?.connected?'메일 열기':mail?.configured?'연결 화면':'설정 안내')+
-      '</ul><h3>SNS</h3><ul class="workbench-list workbench-channel-list">'+
-      Object.entries(serviceNames).map(([id,name])=>{
-        const channel=social?.find(row=>row.id===id);
-        const state=!channel?'확인할 수 없음':channel.connected?channel.connected+'개 연결'+(channel.paused?' · '+channel.paused+'개 일시정지':'')+(channel.stale?' · '+channel.stale+'개 재연결 필요':''):
-          channel.stale?'다시 연결 필요':channel.configured?'계정 연결 가능':'운영 앱 준비 필요';
-        return channelRow(name,state,'#social',channel?.connected?'계정 보기':channel?.configured?'연결 화면':'설정 안내',id);
-      }).join('')+'</ul>';
+    const work=[storageRow('Google Drive','#files',drive,'저장소 열기'),storageRow('Gmail','#mail',mail,'메일 열기')];
+    const sns=Object.entries(serviceNames).map(([id,name])=>socialRow(name,id,social?.find(row=>row.id===id)));
+    const counts={all:work.length+sns.length,attention:0,setup:0};
+    for(const item of [...work,...sns]){
+      if(item.attention)counts.attention++;
+      if(item.setup)counts.setup++;
+    }
+    const show=item=>channelFilter==='all'||item[channelFilter];
+    const list=rows=>'<ul class="workbench-list workbench-channel-list">'+rows.map(channelRow).join('')+'</ul>';
+    const workRows=work.filter(show),snsRows=sns.filter(show);
+    return '<div class="workbench-channel-filters" role="group" aria-label="작업 채널 상태 필터">'+
+      Object.entries(channelFilters).map(([id,label])=>'<button type="button" data-channel-filter="'+id+'" aria-pressed="'+
+        (channelFilter===id)+'">'+label+' <span>'+counts[id]+'</span></button>').join('')+'</div>'+
+      (workRows.length?list(workRows):'')+(snsRows.length?'<h3>SNS</h3>'+list(snsRows):'')+
+      (!counts[channelFilter]?'<p class="workbench-muted workbench-channel-empty" role="status">'+
+        (channelFilter==='attention'?'다시 연결하거나 확인할 작업 채널이 없습니다.':'앱 설정을 기다리는 작업 채널이 없습니다.')+'</p>':'');
   }
 
   function connect(){
@@ -149,6 +180,7 @@
     }
     owner=window.NuriPersonalAccount;
     pane=resume?.owner===owner?resume.pane:'projects';
+    channelFilter=resume?.owner===owner?resume.channelFilter:'all';
     resume=null;
     controller=new AbortController();
     const signal=controller.signal;
@@ -204,8 +236,16 @@
   }
   root.addEventListener('click',async event=>{
     const channel=event.target.closest('[data-connect-service]');
-    if(channel&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&window.NuriPersonalAutomation?.focusProvider(channel.dataset.connectService)){
+    if(channel&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&window.NuriPersonalAutomation?.focusProvider(channel.dataset.connectService,channel.hasAttribute('data-connect-recover'))){
       event.preventDefault();return;
+    }
+    const filter=event.target.closest('[data-channel-filter]');
+    if(filter&&Object.hasOwn(channelFilters,filter.dataset.channelFilter)){
+      channelFilter=filter.dataset.channelFilter;
+      const panel=root.querySelector('[data-channel-overview]');
+      panel.innerHTML=channelOverview();
+      panel.querySelector('[aria-pressed="true"]').focus({preventScroll:true});
+      return;
     }
     const trigger=event.target.closest('[data-action],[data-pane]');
     if(!trigger||running)return;
@@ -266,8 +306,8 @@
     void mutate({action,...payload},action==='project'?'프로젝트 기억을 저장했습니다.':'승인함에 제안을 추가했습니다.');
   });
   window.NuriWorkbench={mount,suspend(){
-    if(owner)resume={owner,pane};
-    controller?.abort();controller=null;owner=null;data=null;channels=null;checkingChannels=false;channelError=false;pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
+    if(owner)resume={owner,pane,channelFilter};
+    controller?.abort();controller=null;owner=null;data=null;channels=null;checkingChannels=false;channelError=false;channelFilter='all';pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
     root.removeAttribute('aria-busy');root.replaceChildren();
   }};
 })();

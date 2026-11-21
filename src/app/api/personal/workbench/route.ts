@@ -20,7 +20,7 @@ async function respond(req:NextRequest,write:boolean) {
       ]);
       return Response.json({
         social:social.status==='fulfilled'?social.value:null,
-        mail:mail.status==='fulfilled'?{configured:mail.value.configured,connected:mail.value.connected,paused:mail.value.paused}:null,
+        mail:mail.status==='fulfilled'?{configured:mail.value.configured,connected:mail.value.connected,paused:mail.value.paused,hasSavedConnection:mail.value.hasSavedConnection}:null,
         drive:drive.status==='fulfilled'?drive.value:null,
       },{headers});
     }
