@@ -17,15 +17,14 @@ export async function automationActor(req: NextRequest) {
   return {id:user.id,email:user.email!.toLowerCase(),owner:access === 'owner'};
 }
 
-export async function canRunPersonalAutomation(actor: string, email: string) {
+export async function canRunPersonalAutomation(actor: string, email: string, transaction?: Pick<ReturnType<typeof pool>,'query'>) {
   if (!uuidPattern.test(actor)) return false;
   if (
     actor===process.env.OPERATOR_USER_ID&&email===process.env.OPERATOR_EMAIL?.trim().toLowerCase()||
     actor===process.env.SECOND_OPERATOR_USER_ID&&email===process.env.SECOND_OPERATOR_EMAIL?.trim().toLowerCase()
   )return true;
-  const db = pool();
-  const result = await db.query(
-    "SELECT 1 FROM nh_documents WHERE workspace='live' AND kind='access' AND id=$1 AND data->>'status'='approved' AND data->>'scope'='personal' AND data->>'email'=$2",
+  const result = await (transaction??pool()).query(
+    "SELECT 1 FROM nh_documents WHERE workspace='live' AND kind='access' AND id=$1 AND data->>'status'='approved' AND data->>'scope'='personal' AND data->>'email'=$2"+(transaction?" FOR SHARE":""),
     [actor,email],
   );
   return result.rows.length === 1;

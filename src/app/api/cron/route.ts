@@ -6,6 +6,7 @@ import {equal} from '@/lib/security';
 import {getDB} from '@/lib/db';
 import {runMaintenance} from '@/lib/commerce';
 import {runPersonalMail} from '@/lib/personal-mail';
+import {runPersonalRecurringTasks} from '@/lib/personal-project-planning';
 import {runPersonalSocial} from '@/lib/personal-social';
 
 export const dynamic = 'force-dynamic';
@@ -21,13 +22,14 @@ export async function GET(req: NextRequest) {
   try {
     const publishJob = controller({collect}).then(app => app.tick());
     const followupJob = publishJob.catch(() => undefined).then(async () => (await controller({collect})).followup());
-    const [sources, publishing, maintenance, followup, personalMail, personalSocial] = await Promise.allSettled([
+    const [sources, publishing, maintenance, followup, personalMail, personalSocial, recurringTasks] = await Promise.allSettled([
       controller({collect,probe:probeWebsite}).then(app => app.refresh()),
       publishJob,
       getDB().then(runMaintenance),
       followupJob,
       runPersonalMail(),
       runPersonalSocial(),
+      runPersonalRecurringTasks(),
     ]);
     const stages = {
       sources: sources.status === 'fulfilled',
@@ -36,6 +38,7 @@ export async function GET(req: NextRequest) {
       followup: followup.status === 'fulfilled',
       personalMail: personalMail.status === 'fulfilled',
       personalSocial: personalSocial.status === 'fulfilled',
+      recurringTasks: recurringTasks.status === 'fulfilled' && recurringTasks.value.failed===0,
     };
     const ok = Object.values(stages).every(Boolean);
     const finishedAt = new Date().toISOString();
@@ -47,13 +50,14 @@ export async function GET(req: NextRequest) {
       followup: followup.status === 'fulfilled' ? followup.value : null,
       personalMail: personalMail.status === 'fulfilled' ? personalMail.value : null,
       personalSocial: personalSocial.status === 'fulfilled' ? personalSocial.value : null,
+      recurringTasks: recurringTasks.status === 'fulfilled' ? recurringTasks.value : null,
     };
     await (await getDB()).query(
       "INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','system','cron',$1) ON CONFLICT(workspace,kind,id) DO UPDATE SET data=nh_documents.data||excluded.data,updated=now() WHERE nh_documents.data->>'startedAt' IS NULL OR nh_documents.data->>'startedAt' <= excluded.data->>'startedAt'",
       [JSON.stringify(payload)],
     );
     return Response.json({ok, error, stages, publishing: payload.publishing, maintenance: payload.maintenance, followup: payload.followup,
-      personalMail:payload.personalMail,personalSocial:payload.personalSocial}, {status: ok ? 200 : 500});
+      personalMail:payload.personalMail,personalSocial:payload.personalSocial,recurringTasks:payload.recurringTasks}, {status: ok ? 200 : 500});
   } catch {
     return Response.json({error: '예약 실행 상태를 확인해주세요.'}, {status: 500});
   }
