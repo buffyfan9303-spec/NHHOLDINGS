@@ -208,7 +208,7 @@ export async function startPersonalSocialOAuth(req: NextRequest, actor: Actor, i
     const accountId = input.accountId === undefined || input.accountId === '' ? randomUUID() : recordId(input.accountId);
     const account = await store.get<Account>(kinds.account, accountId);
     if (input.accountId && (!account || account.data.provider !== provider)) throw noAccount();
-    const label = textValue(input.label ?? account?.data.label, '계정 이름', 120);
+    const label = textValue(input.label ?? account?.data.label ?? '', '계정 이름', 120, true);
     const old = await store.get<Flow>(kinds.flow, provider);
     const url = personalAuthorization(provider, authorization(provider, settings.config, {state, verifier, redirectUri: callback(provider)}));
     await store.put<Flow>(kinds.flow, provider, {
@@ -218,6 +218,8 @@ export async function startPersonalSocialOAuth(req: NextRequest, actor: Actor, i
     return {provider, url, cookie: seal(JSON.stringify({actor: actor.id, provider, session: sessionId, state, verifier, expiresAt}))};
   });
 }
+
+export class PersonalSocialAccountMismatch extends Error {}
 
 export async function finishPersonalSocialOAuth(req: NextRequest, actor: Actor, provider: PersonalProvider) {
   if (req.nextUrl.origin !== marketOrigin()) throw new Error('Invalid OAuth origin');
@@ -255,9 +257,10 @@ export async function finishPersonalSocialOAuth(req: NextRequest, actor: Actor, 
     if (latest?.data.version !== flow.data.version || latestApp?.fingerprint !== settings.fingerprint ||
         (old?.data.version ?? null) !== flow.data.accountVersion || old && old.data.provider !== provider ||
         !(await workerAllowed(db, actor))) throw new Error('OAuth configuration changed');
+    if (old && old.data.userId !== profile.userId) throw new PersonalSocialAccountMismatch();
     await ensureIdle(store, post => post.accountId === flow.data.accountId);
     await store.put<Account>(kinds.account, flow.data.accountId, {
-      ...profile, ownerId: actor.id, version: 1, provider, label: flow.data.label,
+      ...profile, ownerId: actor.id, version: 1, provider, label: flow.data.label || Array.from(profile.username.trim()).slice(0,100).join('') || providers[provider].name,
       connectedAt: new Date().toISOString(), paused: old?.data.paused ?? false,
       connectionId: randomUUID(), appFingerprint: settings.fingerprint, secret: seal(JSON.stringify(token)),
     }, old?.data.version);

@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {marketOrigin} from '@/lib/security';
-import {finishPersonalSocialOAuth, personalSocialActor, personalSocialCookie, socialProvider} from '@/lib/personal-social';
+import {PersonalSocialAccountMismatch, finishPersonalSocialOAuth, personalSocialActor, personalSocialCookie, socialProvider} from '@/lib/personal-social';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -19,7 +19,9 @@ export async function GET(req: NextRequest, {params}: {params: Promise<{provider
   try {
     await finishPersonalSocialOAuth(req, await personalSocialActor(req, false), provider);
     status = 'connected';
-  } catch {}
+  } catch (error) {
+    if (error instanceof PersonalSocialAccountMismatch) status = 'wrong-account';
+  }
   const response = NextResponse.redirect(new URL('/personal?sns=' + status + '#social', origin), {headers});
   response.cookies.set(personalSocialCookie(provider), '', {
     httpOnly: true, sameSite: 'lax', secure: req.nextUrl.protocol === 'https:', path: '/api/personal/social/' + provider, maxAge: 0,

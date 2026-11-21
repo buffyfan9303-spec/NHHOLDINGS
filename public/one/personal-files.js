@@ -36,7 +36,8 @@
       </header>
       <details class="personal-file-setup" data-files-setup hidden>
         <summary>Google Drive 연결 설정</summary>
-        <p>Google 웹 애플리케이션에서 Drive API를 활성화한 뒤 승인된 리디렉션 주소를 등록하세요.</p>
+        <p>운영자가 제공한 앱을 이용할 수 있으면 위에서 바로 계정을 연결하세요. 직접 설정하려면 Google Cloud에서 Drive API를 활성화하고 아래 주소를 등록하세요.</p>
+        <p><a class="personal-link" href="https://developers.google.com/workspace/drive/api/guides/api-specific-auth" target="_blank" rel="noopener noreferrer">Google Drive 권한 가이드</a></p>
         <div class="personal-file-callback">
           <label for="personal-drive-callback">승인된 리디렉션 주소</label>
           <input type="text" id="personal-drive-callback" readonly>
@@ -275,7 +276,7 @@
         connect.classList.toggle('primary', !data.connected);
         more.hidden = !nextPage;
         if (!data.configured) {
-          message('Google Drive 앱 정보를 저장한 뒤 계정을 연결하세요.');
+          message('Google Drive 앱 준비가 필요합니다. 아래 연결 설정에서 등록 방법을 확인하세요.');
           return;
         }
         if (!data.connected) {

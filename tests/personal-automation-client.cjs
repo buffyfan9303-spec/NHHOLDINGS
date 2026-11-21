@@ -148,7 +148,8 @@ async function scenario(page) {
  await filter.selectOption('threads-a');
  assert.equal(await social.getByText('재승인할 게시물',{exact:true}).count(),0);
  await filter.selectOption('');
- await setup.locator('summary').click();
+ await setup.locator(':scope > summary').click();
+ await instagramSetup.getByText('개발자 앱 설정',{exact:true}).click();
  await button(instagramSetup,'앱 설정').click();
  assert.equal(await dialog.getByLabel('Client ID').inputValue(),'123456');
  assert.equal(await dialog.getByLabel('Instagram API 버전').inputValue(),'v24.0');
@@ -249,7 +250,7 @@ async function scenario(page) {
 
  await view('mail');
  const gmail=root('mail');
- await expectText(gmail,'미연결');
+ await expectText(gmail,'앱 준비 필요');
  await button(gmail,'새 초안').click();
  await dialog.getByLabel('받는 사람').fill('mock-recipient@example.invalid');
  await dialog.getByLabel('제목').fill('가상 Gmail 초안');
@@ -322,6 +323,7 @@ async function scenario(page) {
  await instagramLink.waitFor();
  assert.equal(await instagramLink.getAttribute('href'),canonical+'/personal#social');
  assert.equal(await button(instagram,'계정 연결').count(),0);
+ await instagramSetup.getByText('개발자 앱 설정',{exact:true}).click();
  await button(instagramSetup,'앱 설정').click();
  assert.equal(await dialog.locator('code').innerText(),canonical+'/api/personal/social/instagram');
  await button(dialog,'닫기').click();
@@ -345,11 +347,10 @@ async function scenario(page) {
  assert.equal(await connected.locator('.auto-account').count(),0);
  await expectText(connected,'연결된 SNS 계정이 없습니다.');
  assert.equal(await setup.getAttribute('open'),null,'the other user starts from their own collapsed setup');
- await setup.locator('summary').click();
+ await setup.locator(':scope > summary').click();
  await button(setup.getByRole('region',{name:'Threads'}),'계정 연결').click();
- await dialog.getByLabel('계정 이름').fill('다른 개인 Threads');
- await submit('승인 화면 열기');
  await page.waitForURL('https://threads.com/oauth/authorize?state=mock');
+ assert.deepEqual(action('social','connect'),{action:'connect',provider:'threads'});
  await page.getByRole('heading',{name:'Mock OAuth consent'}).waitFor();
 }
 
