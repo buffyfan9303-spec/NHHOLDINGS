@@ -29,7 +29,7 @@
  </header>
  <nav id="personal-owner-links" class="personal-owner-links" aria-label="운영 공간 이동" hidden>
   <a class="personal-link" href="/dashboard" id="personal-owner">운영 대시보드</a>
-  <a class="personal-link" href="/dashboard#connections/integrations">기존 운영 연동</a>
+  <a class="personal-link" href="/dashboard#connections/integrations">운영 설정 · 연결</a>
  </nav>
  <div class="personal-workspace">
   <nav class="personal-mobile-nav" aria-label="내 업무 빠른 메뉴">
@@ -39,18 +39,27 @@
    <button type="button" id="personal-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="personal-menu">더보기</button>
   </nav>
   <nav class="personal-nav" aria-label="내 업무 메뉴">
-   <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
-   <a href="#tasks" data-personal-link="tasks">할 일</a>
-   <a href="#schedule" data-personal-link="schedule">일정</a>
-   <a href="#notes" data-personal-link="notes">메모</a>
-   <a href="#links" data-personal-link="links">바로가기</a>
-   <a href="#sites" data-personal-link="sites">내 웹사이트</a>
-   <a href="#social" data-personal-link="social">내 SNS</a>
-   <a href="#mail" data-personal-link="mail">메일 예약</a>
-   <a href="#files" data-personal-link="files">비공개 저장소</a>
-   <a href="#revenue" data-personal-link="revenue">수익 대시보드</a>
-   <a href="#getting-started" data-personal-link="getting-started">시작 가이드</a>
-   <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
+   <div class="personal-nav-group" data-menu-group>
+    <p>업무</p>
+    <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
+    <a href="#tasks" data-personal-link="tasks">할 일</a>
+    <a href="#schedule" data-personal-link="schedule">일정</a>
+    <a href="#notes" data-personal-link="notes">메모</a>
+    <a href="#links" data-personal-link="links">바로가기</a>
+   </div>
+   <div class="personal-nav-group" data-menu-group>
+    <p>콘텐츠 · 웹사이트</p>
+    <a href="#sites" data-personal-link="sites">내 웹사이트</a>
+    <a href="#social" data-personal-link="social">내 SNS</a>
+    <a href="#mail" data-personal-link="mail">메일 예약</a>
+    <a href="#revenue" data-personal-link="revenue">수익 대시보드</a>
+   </div>
+   <div class="personal-nav-group" data-menu-group>
+    <p>자료 · 가이드</p>
+    <a href="#files" data-personal-link="files">비공개 저장소</a>
+    <a href="#getting-started" data-personal-link="getting-started">시작 가이드</a>
+    <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
+   </div>
   </nav>
   <main id="personal-main" tabindex="-1" class="personal-main" aria-busy="true">
    <div class="personal-title"><div><time id="personal-date"></time><h1 id="personal-title" tabindex="-1">오늘의 업무</h1></div>

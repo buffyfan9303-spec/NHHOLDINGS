@@ -106,7 +106,7 @@ async function main(){
   await page.getByRole('button',{name:'상세 닫기',exact:true}).click();
   await page.goto(base+'/dashboard#connections');
   await page.locator('.setup-health').waitFor();
-  for(const label of ['계정 승인','쇼핑몰 운영','API · 게시 계정','시스템 · 보안']){
+  for(const label of ['계정 승인','판매 준비 점검','API · 게시 계정','시스템 · 보안']){
    await page.getByRole('button',{name:label,exact:true}).click();
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Settings overflow: '+label);
    await page.screenshot({path:'artifacts/layout/settings-'+label.replaceAll(' · ','-')+'.png',fullPage:false});
@@ -115,11 +115,15 @@ async function main(){
   await page.goto(base+'/dashboard?sample=1#overview');
   await page.getByRole('button',{name:'메뉴 열기',exact:true}).click();
   await page.locator('.sidebar.open').waitFor();
-  const group=page.locator('#category-status');
+  const group=page.locator('#category-automation');
   if(await group.getAttribute('open')===null)await group.locator('summary').click();
-  await page.locator('.nav-item[data-publish="instagram"]').click();
-  await page.waitForURL('**#publish/instagram');
+  await group.locator('[data-page="publish"]').click();
+  await page.waitForURL(/#publish\/all(?:\/tistory)?$/);
   assert.equal(await page.locator('.sidebar.open').count(),0,'Mobile navigation closes');
+  await page.locator('#channel-tab-instagram').click();
+  await page.waitForURL(/#publish\/instagram(?:\/tistory)?$/);
+  await page.reload();
+  await page.locator('#channel-tab-instagram[aria-selected="true"]').waitFor();
   assert.deepEqual(errors,[]);
   const report={at:new Date().toISOString(),base,screens:results.length,consoleErrors:errors.length,pass:true,results};
   fs.writeFileSync('artifacts/layout/report.json',JSON.stringify(report,null,2));

@@ -20,10 +20,14 @@
   const quickViews = new Set(['home','tasks','schedule']);
 
   more.addEventListener('click', () => {
-    const links = [...document.querySelectorAll('.personal-nav [data-personal-link]')]
-      .filter(link => !quickViews.has(link.dataset.personalLink))
-      .map(link => link.cloneNode(true));
-    menuLinks.replaceChildren(...links);
+    const groups = [...document.querySelectorAll('.personal-nav [data-menu-group]')].map(group => {
+      const copy = group.cloneNode(true);
+      for (const link of copy.querySelectorAll('[data-personal-link]')) {
+        if (quickViews.has(link.dataset.personalLink)) link.remove();
+      }
+      return copy;
+    });
+    menuLinks.replaceChildren(...groups);
     menu.showModal();
     more.setAttribute('aria-expanded','true');
   });
