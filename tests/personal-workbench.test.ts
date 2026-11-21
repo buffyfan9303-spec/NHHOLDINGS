@@ -100,11 +100,15 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     const exchange=(code:string,code_verifier=verifier)=>new URLSearchParams({client_id:client,redirect_uri:redirect,grant_type:'authorization_code',code,code_verifier,resource:origin+'/api/one/mcp'});
     assert.equal((await connect(req(url+'authorize?'+params,'pending'),step('authorize'))).status,403);
     async function connectAccount(who:'first'|'second'){
-      const view=await connect(req(url+'authorize?'+params,who),step('authorize'));
+      const request=new URLSearchParams(params);
+      if(who==='second')request.set('scope','nuri.workbench offline_access nuri.social.read');
+      const view=await connect(req(url+'authorize?'+request,who),step('authorize'));
       assert.equal(view.status,200);
       assert.equal(view.headers.get('Referrer-Policy'),'same-origin');
       assert.match(view.headers.get('Content-Security-Policy')??'',/form-action 'self' https:\/\/chatgpt\.com/);
-      const ticket=(await view.text()).match(/name="ticket" value="([^"]+)"/)?.[1];
+      const consentHtml=await view.text();
+      assert.equal(consentHtml.includes('내가 연결한 SNS'),who==='second');
+      const ticket=consentHtml.match(/name="ticket" value="([^"]+)"/)?.[1];
       assert.ok(ticket);
       const consent=new URLSearchParams({ticket,decision:'allow'});
       const other=who==='first'?'second':'first';
@@ -125,6 +129,12 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     const a=await connectAccount('first'),b=await connectAccount('second');
     const rpc=(token:string,name:string,args:object={})=>call(req('/api/one/mcp',undefined,{jsonrpc:'2.0',method:'tools/call',id:1,params:{name,arguments:args}},undefined,token));
     assert.equal((await rpc('', 'list_projects')).status,401);
+    const deniedSocial=await rpc(a.access,'list_connected_social');
+    assert.equal(deniedSocial.status,403);
+    assert.match(deniedSocial.headers.get('WWW-Authenticate')??'',/nuri\.social\.read/);
+    assert.deepEqual((await (await rpc(b.access,'list_connected_social')).json()).result.structuredContent,{accounts:[]});
+    const operation=(await snapshot('second')).connections[0];
+    assert.equal(operation.socialRead,true);
     assert.equal((await (await rpc(a.access,'project_memory',{projectId:project.id})).json()).result.structuredContent.rules,project.rules);
     assert.equal((await (await rpc(b.access,'project_memory',{projectId:project.id})).json()).result.isError,true);
     assert.equal((await (await rpc(b.access,'propose_draft',{projectId:project.id,category:'seller',title:'격리 확인',text:'격리 확인'})).json()).result.isError,true);
@@ -146,6 +156,9 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     assert.equal(imported.status,'pending');
     assert.equal((await post('first',{action:'approve',id:imported.id})).status,404);
     const refreshRequest=new URLSearchParams({grant_type:'refresh_token',client_id:client,refresh_token:a.refresh,resource:origin+'/api/one/mcp'});
+    const escalated=new URLSearchParams(refreshRequest);
+    escalated.set('scope','nuri.workbench offline_access nuri.social.read');
+    assert.equal((await connectPost(req(url+'token',undefined,escalated),step('token'))).status,400);
     const refreshed=await connectPost(req(url+'token',undefined,refreshRequest),step('token'));
     assert.equal(refreshed.status,200);
     const newAccess=(await refreshed.json()).access_token as string;

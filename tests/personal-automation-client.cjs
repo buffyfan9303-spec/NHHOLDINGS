@@ -28,6 +28,7 @@ const initialAccounts=[
  {id:'x-a',provider:'x',label:'개인 X',ready:true,paused:false},
 ];
 const initialPosts=[
+ {id:'past-link',accountId:'removed-account',provider:'x',title:'연결이 해제된 계정의 기록',body:'이전 초안',status:'draft',version:1},
  {id:'own-review',accountId:'ig-a',provider:'instagram',title:'재승인할 게시물',body:'복구 가능한 검토',status:'review',version:2,uncertain:false},
  {id:'uncertain',accountId:'ig-a',provider:'instagram',title:'확인 필요한 게시물',body:'응답 미확인',status:'review',version:2,uncertain:true},
 ];
@@ -135,8 +136,20 @@ async function scenario(page) {
  await view('social');
  const social=root('social');
  await expectText(social,'재승인할 게시물');
- const instagram=social.getByRole('region',{name:'Instagram'});
- await button(instagram,'앱 설정').click();
+ const connected=social.locator('[data-auto-accounts]');
+ const setup=social.locator('[data-auto-setup]');
+ const instagram=connected.getByRole('region',{name:'Instagram'});
+ const instagramSetup=setup.getByRole('region',{name:'Instagram'});
+ assert.equal(await setup.getAttribute('open'),null,'available channels are collapsed');
+ assert.equal(await social.getByText('연결이 해제된 계정의 기록',{exact:true}).count(),0);
+ const filter=social.locator('[data-auto-account-filter]');
+ await filter.selectOption('history');
+ await expectText(social,'연결이 해제된 계정의 기록');
+ await filter.selectOption('threads-a');
+ assert.equal(await social.getByText('재승인할 게시물',{exact:true}).count(),0);
+ await filter.selectOption('');
+ await setup.locator('summary').click();
+ await button(instagramSetup,'앱 설정').click();
  assert.equal(await dialog.getByLabel('Client ID').inputValue(),'123456');
  assert.equal(await dialog.getByLabel('Instagram API 버전').inputValue(),'v24.0');
  assert.equal(await dialog.getByLabel('Client Secret').inputValue(),'');
@@ -174,7 +187,7 @@ async function scenario(page) {
  await submit('예약 취소');
  await expectText(socialRow,'예약 취소');
  assert(action('social','cancel').version>action('social','schedule').version);
- const igSection=social.getByRole('region',{name:'Instagram'});
+ const igSection=connected.getByRole('region',{name:'Instagram'});
  await button(igSection,'게시 일시정지').click();
  await button(igSection,'게시 재개').waitFor();
  assert.equal(action('social','pause').accountId,'ig-a');
@@ -309,7 +322,7 @@ async function scenario(page) {
  await instagramLink.waitFor();
  assert.equal(await instagramLink.getAttribute('href'),canonical+'/personal#social');
  assert.equal(await button(instagram,'계정 연결').count(),0);
- await button(instagram,'앱 설정').click();
+ await button(instagramSetup,'앱 설정').click();
  assert.equal(await dialog.locator('code').innerText(),canonical+'/api/personal/social/instagram');
  await button(dialog,'닫기').click();
  redirectOrigin=source;
@@ -329,7 +342,11 @@ async function scenario(page) {
  assert.equal(await social.getByText('다음 모의 YouTube 영상',{exact:true}).count(),0);
  assert.equal(await gmail.getByText('가상 Gmail 초안',{exact:true}).count(),0,'a hidden tab cannot retain another account’s records');
  assert(requests.some(request=>request.owner===nextActor&&request.kind==='social'&&request.body===null));
- await button(social.getByRole('region',{name:'Threads'}),'계정 연결').click();
+ assert.equal(await connected.locator('.auto-account').count(),0);
+ await expectText(connected,'연결된 SNS 계정이 없습니다.');
+ assert.equal(await setup.getAttribute('open'),null,'the other user starts from their own collapsed setup');
+ await setup.locator('summary').click();
+ await button(setup.getByRole('region',{name:'Threads'}),'계정 연결').click();
  await dialog.getByLabel('계정 이름').fill('다른 개인 Threads');
  await submit('승인 화면 열기');
  await page.waitForURL('https://threads.com/oauth/authorize?state=mock');

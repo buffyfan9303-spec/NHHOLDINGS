@@ -140,14 +140,30 @@ function postView({id, data}: RecordOf<Post>) {
 
 const callback = (provider: PersonalProvider) => marketOrigin() + '/api/personal/social/' + provider;
 
-export async function personalSocialState(actor: Actor) {
-  const store = socialStore(actor.id);
-  const configured = new Map<PersonalProvider, App | null>(await Promise.all(
+async function configuredApps(store:Store) {
+  return new Map<PersonalProvider, App | null>(await Promise.all(
     personalProviders.map(async provider => [provider, await app(store, provider).catch(error => {
       if (error instanceof MarketError) return null;
       throw error;
     })] as const),
   ));
+}
+
+function connectedAccountView({id,data}:RecordOf<Account>,configured:Awaited<ReturnType<typeof configuredApps>>) {
+  const {provider,label,username,connectedAt,paused,appFingerprint}=data;
+  return {id,provider,label,username,connectedAt,paused,ready:configured.get(provider)?.fingerprint===appFingerprint};
+}
+
+export async function listConnectedPersonalSocial(owner:string) {
+  const store=socialStore(owner);
+  const [configured,accounts]=await Promise.all([configuredApps(store),store.list<Account>(kinds.account)]);
+  return accounts.map(account=>connectedAccountView(account,configured)).filter(account=>account.ready)
+    .map(({id,provider,label,paused})=>({id,provider,label,paused}));
+}
+
+export async function personalSocialState(actor: Actor) {
+  const store = socialStore(actor.id);
+  const configured = await configuredApps(store);
   const [accounts, posts] = await Promise.all([store.list<Account>(kinds.account), store.list<Post>(kinds.post)]);
   return {
     providers: personalProviders.map(id => {
@@ -156,10 +172,7 @@ export async function personalSocialState(actor: Actor) {
       return {id, name: providers[id].name, configured: !!saved, appSource: saved?.source ?? null,
         redirectUri: callback(id), ...(own ? {clientId: own.clientId, ...(own.version ? {version: own.version} : {})} : {})};
     }),
-    accounts: accounts.map(({id, data}) => {
-      const {provider, label, username, connectedAt, paused, appFingerprint} = data;
-      return {id, provider, label, username, connectedAt, paused, ready: configured.get(provider)?.fingerprint === appFingerprint};
-    }),
+    accounts: accounts.map(account=>connectedAccountView(account,configured)),
     posts: posts.map(postView),
   };
 }
