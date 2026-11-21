@@ -289,6 +289,34 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
       await earlier;
       return {query,release};
     }};
+    const task={kind:'task',title:'다음 주 콘텐츠 자료 정리',detail:'검수용 메모',dueOn:null};
+    const appointment={kind:'schedule',title:'회의 참석',dueOn:nextWeek,dueTime:'09:30'};
+    const planImport={action:'import-plan',week,items:[task,appointment]};
+    assert.equal((await writeReview('second',planImport)).status,404);
+    assert.equal((await writeReview('pending',planImport)).status,403);
+    assert.equal((await writeReview('first',{...planImport,items:[task,{...appointment,dueOn:week}]})).status,400);
+    assert.equal((await writeReview('first',{...planImport,items:[task,{...appointment,dueOn:null}]})).status,400);
+    const beforeImport=await (await personal(req('/api/personal','first'))).json();
+    assert.equal(beforeImport.items.some((row:{title:string})=>row.title===task.title),false);
+    const preexisting={kind:'task',title:'기존 항목',dueOn:null};
+    assert.equal((await save(req('/api/personal','first',{...preexisting,action:'create',projectId:project.id}))).status,200);
+    const parallel=await Promise.all([
+      writeReview('first',{...planImport,items:[...planImport.items,preexisting,{...task,title:'다음 주   콘텐츠 자료 정리'}]}),
+      writeReview('first',{...planImport,items:[appointment,task]}),
+    ]);
+    assert.deepEqual(parallel.map(r=>r.status),[200,200]);
+    const results=await Promise.all(parallel.map(r=>r.json()));
+    assert.equal(results.reduce((n,r)=>n+r.created,0),2);
+    assert.equal(results.reduce((n,r)=>n+r.skipped,0),4);
+    assert.deepEqual(await (await writeReview('first',planImport)).json(),{created:0,skipped:2});
+    const afterImport=await (await personal(req('/api/personal','first'))).json();
+    const savedPlan=afterImport.items.filter((row:{title:string})=>[task.title,appointment.title].includes(row.title.replace(/\s+/g,' ')));
+    assert.equal(savedPlan.length,2);
+    assert.ok(savedPlan.every((row:{projectId:string})=>row.projectId===project.id));
+    assert.equal(savedPlan.find((row:{kind:string})=>row.kind==='schedule').dueTime,'09:30');
+    const otherAccount=await (await personal(req('/api/personal','second'))).text();
+    assert.doesNotMatch(otherAccount,/다음 주 콘텐츠 자료 정리|회의 참석/);
+
     const nextRun=new Date(+start+7*86400_000);
     const overlap=await Promise.all([runPersonalRecurringTasks(nextRun),runPersonalRecurringTasks(nextRun)]);
     g.nhPool=connection;

@@ -94,8 +94,63 @@ export async function projectPlanning(owner:string,selected:unknown,week:unknown
   return {window,completed,unfinished,approvals,rules};
 }
 
+type PlanItem={kind:'task'|'schedule';title:string;detail:string;dueOn:string|null;dueTime:string|null};
+
+function planKey({kind,title,dueOn,dueTime}:PlanItem){
+  return JSON.stringify([kind,title.normalize('NFKC').toLowerCase().trim().replace(/\s+/g,' '),dueOn||null,dueTime||null]);
+}
+
+function planItem(value:unknown,window:ReturnType<typeof reviewWeek>):PlanItem{
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new MarketError('가져올 항목을 확인해 주세요.');
+  const {kind,title,detail,dueOn,dueTime}=value as Record<string,unknown>;
+  if(kind!=='task'&&kind!=='schedule')throw new MarketError('할 일이나 일정을 선택해 주세요.');
+  const date=dueOn==null||dueOn===''?null:validDay(dueOn);
+  const time=dueTime==null||dueTime===''?null:dueTime;
+  if(kind==='schedule'&&!date)throw new MarketError('일정에는 날짜가 필요합니다.');
+  if(date&&(date<window.nextStart||date>window.nextEnd||date<today())){
+    throw new MarketError('날짜는 리뷰 다음 주의 오늘 이후로 선택해 주세요.');
+  }
+  if(time!==null&&(!date||typeof time!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time))){
+    throw new MarketError('날짜와 시간을 확인해 주세요.');
+  }
+  return {kind,title:textValue(title,'제목',160),detail:textValue(detail??'','메모',1000,true),dueOn:date,dueTime:time};
+}
+
+async function importPlan(actor:Actor,projectId:string,input:Record<string,unknown>){
+  const window=reviewWeek(input.week);
+  if(window.nextEnd<today())throw new MarketError('다음 주가 지난 리뷰는 가져올 수 없습니다.');
+  if(!Array.isArray(input.items)||!input.items.length||input.items.length>20){
+    throw new MarketError('등록할 할 일과 일정을 1~20개 선택해 주세요.');
+  }
+  const selected=input.items.map(row=>planItem(row,window));
+  return transaction(async client=>{
+    if(!await lockProject(client,actor.id,projectId))throw missing();
+    const {rows}=await client.query<{data:PlanItem}>(
+      "SELECT data FROM nh_documents WHERE workspace='live' AND kind='personal-item' AND id LIKE $1||':%' AND data->>'ownerId'=$1 "+
+      "AND data->>'projectId'=$2 AND data->>'kind' IN ('task','schedule')",[actor.id,projectId],
+    );
+    const known=new Set(rows.map(row=>planKey(row.data)));
+    // A stable insert order prevents two overlapping imports from locking identical rows in reverse order.
+    const pending=selected.map(item=>({item,key:planKey(item)})).sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
+    const stamp=new Date().toISOString();
+    let created=0;
+    for(const {item,key} of pending){
+      if(known.has(key))continue;
+      known.add(key);
+      const recordId=actor.id+':'+deterministicId(JSON.stringify(['weekly-plan',projectId,key]));
+      const result=await client.query(
+        "INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-item',$1,$2) ON CONFLICT DO NOTHING RETURNING id",
+        [recordId,JSON.stringify({...item,ownerId:actor.id,projectId,done:false,createdAt:stamp,updatedAt:stamp,version:1})],
+      );
+      created+=result.rows.length;
+    }
+    return {created,skipped:selected.length-created};
+  });
+}
+
 export async function changeProjectPlanning(actor:Actor,input:Record<string,unknown>) {
   const projectId=id(input.projectId);
+  if(input.action==='import-plan')return importPlan(actor,projectId,input);
   if(input.action==='carry'){
     const window=reviewWeek(input.week), target=validDay(input.target);
     if(target<window.nextStart||target>window.nextEnd||target<today())throw new MarketError('다음 주의 오늘 이후 날짜를 선택해 주세요.');

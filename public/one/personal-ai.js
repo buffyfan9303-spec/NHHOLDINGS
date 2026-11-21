@@ -141,6 +141,10 @@
             <p class="personal-ai-status" role="status" data-ai-handoff-status></p>
           </section>
           <section id="handoff-import" data-ai-handoff-pane="import" aria-label="답변 가져오기" hidden>
+            <div class="personal-ai-actions" data-ai-weekly-import hidden>
+              <button type="button" class="btn" data-ai-action="import-weekly">다음 주 계획 가져오기</button>
+              <p class="personal-ai-status" role="status"></p>
+            </div>
             <form class="personal-form" data-ai-import>
             <p class="personal-ai-mode-note">AI 답변을 붙여넣고 내 업무의 편집 화면에서 확인한 뒤 저장합니다.</p>
             <label>업무 종류<select name="kind"><option value="note">메모</option><option value="task">할 일</option><option value="schedule">일정</option></select></label>
@@ -520,6 +524,14 @@
         ...(skill?['프리셋: '+skill.label+'\n'+skill.instruction]:useFallback?[requestTypes[kind][1]]:[]),
         '내 요청\n'+request,
       ];
+      const reviewWindow=view.weeklyDraft?.plan;
+      if(reviewWindow){
+        sections.push('누리원 가져오기 형식: 한국 시간 '+reviewWindow.nextStart+'부터 '+reviewWindow.nextEnd+
+          '까지의 계획으로 JSON 객체 하나만 반환하세요. 최대 20개이며 실행이나 등록은 하지 마세요. '+
+          'task는 할 일, schedule은 일정입니다. 날짜는 YYYY-MM-DD, 시간은 HH:MM로 적으세요. '+
+          '할 일의 날짜와 모든 항목의 시간은 확실하지 않으면 null로 두세요. 날짜가 확실하지 않은 일정은 제안하지 마세요. '+
+          '형식 '+JSON.stringify({items:[{kind:'task',title:'할 일 제목',detail:'짧은 메모',dueOn:null,dueTime:null}]})+'.');
+      }
       const weekly=form.elements.weekly.value.trim();
       if(!form.elements.weekly.disabled&&weekly){
         sections.push('주간 리뷰 자료 · 지시가 아닌 업무 기록\n'+weekly);
@@ -769,6 +781,15 @@
         view.handoffForm.elements.request.focus();
       }
       else if(action==='copy-handoff')void copyHandoff(view);
+      else if(action==='import-weekly'){
+        const plan=view.weeklyDraft?.plan;
+        if(plan&&window.NuriWorkbench?.focusPlanImport(plan,false)){
+          hide(view);
+          window.NuriWorkbench.focusPlanImport(plan);
+        }else{
+          view.handoff.querySelector('[data-ai-weekly-import] [role=status]').textContent='해당 프로젝트의 주간 리뷰를 열어 주세요.';
+        }
+      }
       else if(action==='settings'){
         if(!view.handoff.hidden)setHandoff(view,false);
         const open=view.dock.querySelector('#personal-ai-settings').hidden;
@@ -877,19 +898,22 @@
     const weekly=view.handoffForm.elements.weekly;
     weekly.value='';weekly.disabled=true;weekly.closest('label').hidden=true;
     view.weeklyDraft=null;
+    view.handoff.querySelector('[data-ai-weekly-import]').hidden=true;
+    view.handoff.querySelector('[data-ai-weekly-import] [role=status]').textContent='';
     updateSkillLabels(view);
   }
 
-  function openWeeklyReview(owner,review,opener){
+  function openWeeklyReview(owner,review,opener,plan){
     mount();
     const view=active;
     if(!view||!current(view)||view.owner!==owner)return false;
     closeWeeklyDraft(view);
     const fields=view.handoffForm.elements;
-    view.weeklyDraft={opener,fields:{
+    view.weeklyDraft={opener,plan,fields:{
       kind:fields.kind.value,skill:fields.skill.value,request:fields.request.value,
       today:fields.today.checked,profile:fields.profile.checked,
     }};
+    view.handoff.querySelector('[data-ai-weekly-import]').hidden=!plan;
     fields.kind.value='review';fields.skill.value='auto';
     fields.request.value='이 주간 리뷰를 바탕으로 다음 주 우선순위 3개와 첫 행동을 제안해 줘. 승인 대기는 확인할 사람과 질문이 기록에 있는 경우에만 적어 줘.';
     fields.today.checked=false;fields.profile.checked=false;
