@@ -96,7 +96,7 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     const register=(redirect_uris:string[])=>connectPost(req(url+'register',undefined,{redirect_uris}),step('register'));
     assert.equal((await register(['https://example.invalid/'])).status,400);
     const client=(await (await register([redirect])).json()).client_id as string;
-    const params=new URLSearchParams({client_id:client,redirect_uri:redirect,code_challenge:challenge,code_challenge_method:'S256',response_type:'code',state:'provider-request',resource:origin+'/api/one/mcp'});
+    const params=new URLSearchParams({client_id:client,redirect_uri:redirect,code_challenge:challenge,code_challenge_method:'S256',response_type:'code',state:'provider-request',resource:origin+'/api/one/mcp',scope:'nuri.workbench offline_access'});
     const exchange=(code:string,code_verifier=verifier)=>new URLSearchParams({client_id:client,redirect_uri:redirect,grant_type:'authorization_code',code,code_verifier,resource:origin+'/api/one/mcp'});
     assert.equal((await connect(req(url+'authorize?'+params,'pending'),step('authorize'))).status,403);
     async function connectAccount(who:'first'|'second'){
@@ -138,6 +138,11 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     const {decision:approvedCard}=await (await post('first',{action:'approve',id:cardDraft.id})).json();
     assert.equal((await getPersonalCard(first.id,approvedCard.cardId)).slides[0].body,'검토할 원고');
     await assert.rejects(getPersonalCard(second.id,approvedCard.cardId),{status:404});
+    assert.equal((await post('second',{action:'cards-import',projectId:project.id,text:'{"title":"대신 작성","slides":[{"headline":"가져온 장"}]}'})).status,404);
+    const imported=(await (await post('second',{action:'cards-import',text:'{"title":"직접 가져오기","slides":[{"headline":"가져온 장"}]}'})).json()).decision;
+    assert.equal(imported.category,'cards');
+    assert.equal(imported.status,'pending');
+    assert.equal((await post('first',{action:'approve',id:imported.id})).status,404);
     const refreshRequest=new URLSearchParams({grant_type:'refresh_token',client_id:client,refresh_token:a.refresh,resource:origin+'/api/one/mcp'});
     const refreshed=await connectPost(req(url+'token',undefined,refreshRequest),step('token'));
     assert.equal(refreshed.status,200);
