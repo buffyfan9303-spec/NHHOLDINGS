@@ -61,6 +61,7 @@ async function run(page,width){
    body:events('delta',{text:'한글 첫 조각'})+events('delta',{text:'과 나머지 답변'})+events('done',{message})});
  });
  await page.goto(origin+'/personal');
+ await page.addScriptTag({path:'public/one/theme.js'});
  for(const content of css)await page.addStyleTag({content});
  await page.evaluate(owner=>{
   window.NuriPersonalAccount=owner;
@@ -233,6 +234,38 @@ async function run(page,width){
  await imported.getByRole('button',{name:'내 업무에서 검토',exact:true}).click();
  assert.deepEqual(await page.evaluate(()=>window.aiDraft),{kind:'task',title:'회의 요약',detail:'내일 합의한 안건을 정리한다.'});
 
+ const report='프로젝트 주간 리뷰 · 검수 프로젝트\n- 테스트 업무';
+ assert.equal(await page.evaluate(({owner,report})=>window.NuriPersonalAI.openWeeklyReview(owner,report),{owner:a,report}),false);
+ assert.equal(await page.evaluate(({owner,report})=>window.NuriPersonalAI.openWeeklyReview(owner,report),{owner:b,report}),true);
+ assert.equal(await transfer.getByLabel('목적').inputValue(),'review');
+ assert.equal(await transfer.getByLabel('첨부한 주간 리뷰').inputValue(),report);
+ assert.equal(await transfer.getByLabel('오늘 할 일과 일정 포함').isChecked(),false);
+ assert.equal(await transfer.getByLabel('저장된 일하는 방식 포함').isChecked(),false);
+ const counts=requests.length;
+ await transfer.getByLabel('첨부한 주간 리뷰').fill('공유할 업무 한 줄');
+ await transfer.getByRole('button',{name:'요청 미리보기',exact:true}).click();
+ await preview.waitFor();
+ assert.match(await preview.inputValue(),/공유할 업무 한 줄/);
+ assert.doesNotMatch(await preview.inputValue(),/테스트 업무|모의 오늘 일정|내 일정은 오전부터/);
+ assert.equal(requests.slice(counts).filter(request=>request.method==='POST').length,0);
+ await button('구독 AI').click();
+ await button('구독 AI').click();
+ assert.equal(await transfer.getByLabel('요청',{exact:true}).inputValue(),'오늘 무엇부터 해야 할지 정리');
+ assert.equal(await transfer.locator('[name=weekly]').isVisible(),false);
+ assert.equal(await transfer.locator('[name=weekly]').inputValue(),'');
+ await page.evaluate(({owner,report})=>window.NuriPersonalAI.openWeeklyReview(owner,report),{owner:b,report});
+ await page.evaluate(owner=>{
+  window.NuriPersonalAI.suspend();
+  window.NuriPersonalAccount=owner;
+  window.NuriPersonalAI.mount();
+ },a);
+ assert.equal(await dock.count(),0);
+ await toggle.click();
+ await button('구독 AI').click();
+ assert.equal(await transfer.locator('[name=weekly]').isVisible(),false);
+ assert.equal(await transfer.locator('[name=weekly]').inputValue(),'');
+
+
 }
 
 (async()=>{
@@ -242,6 +275,7 @@ async function run(page,width){
   try{
    for(const [width,colorScheme] of [[320,'light'],[390,'dark'],[440,'light'],[1440,'light'],[1440,'dark']]){
     const page=await browser.newPage({viewport:{width,height:896},colorScheme,reducedMotion:width===320?'reduce':'no-preference'});
+    await page.addInitScript(theme=>localStorage.setItem('nuri-one-theme',theme),colorScheme);
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     await run(page,width);
