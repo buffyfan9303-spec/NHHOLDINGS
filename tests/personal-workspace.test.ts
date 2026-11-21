@@ -299,6 +299,26 @@ test('personal scope is explicit, account data stays private, and a revoke stops
       }
     }
 
+    const week = (who: string, date = '2026-11-23', expectedId = account(who)?.id) =>
+      list(req('/api/personal?week=' + date, who, undefined, origin, expectedId));
+    const putBooking = (ownerId: string, title: string, scheduledAt: string, kind = 'personal-mail-item') =>
+      query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live',$1,$2,$3)",
+        [kind, ownerId + ':' + title, JSON.stringify({ownerId, subject:title, title, body:'Private body', to:'private@example.invalid', status:'scheduled', scheduledAt})]);
+    await putBooking(users.first.id,'직전 주 예약','2026-11-22T14:59:59.999Z');
+    await putBooking(users.first.id,'주간 시작','2026-11-22T15:00:00.000Z');
+    await putBooking(users.first.id,'일요일 예약','2026-11-29T14:59:59.999Z','personal-social-post');
+    await putBooking(users.first.id,'다음 주 예약','2026-11-29T15:00:00.000Z');
+    await putBooking(users.second.id,'다른 계정 일정','2026-11-22T15:00:00.000Z');
+    const weekly = await week('first');
+    assert.equal(weekly.status,200);
+    assert.equal(weekly.headers.get('Cache-Control'),'private, no-store');
+    const weeklyData=await weekly.json();
+    assert.deepEqual(weeklyData.agenda.map((row:{title:string})=>row.title),['주간 시작','일요일 예약']);
+    assert.ok(weeklyData.agenda.every((row:object)=>!Object.hasOwn(row,'to')&&!Object.hasOwn(row,'body')));
+    assert.deepEqual((await (await week('second')).json()).agenda.map((row:{title:string})=>row.title),['다른 계정 일정']);
+    assert.equal((await week('first','2026-11-24')).status,400);
+    assert.equal((await week('first','2026-11-23',users.second.id)).status,409);
+    assert.equal((await week('')).status,401);
     const revoked = await moderate('revoke', 'first');
     assert.equal(revoked.status, 200);
     assert.equal((await personalGet('first')).status, 403);
