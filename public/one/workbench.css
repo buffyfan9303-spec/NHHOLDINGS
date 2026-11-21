@@ -16,7 +16,6 @@
 .workbench-list p{margin:0}
 .workbench-list button[data-action="review"],.workbench-list button[data-action="edit"]{text-align:start;justify-content:start}
 .workbench-time{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
-.workbench-address{display:block;margin:.65rem 0 .4rem}
 .workbench-detail{border-inline-start:2px solid var(--line,#a3a9a4);padding-inline-start:1rem}
 #workbench details{margin-block:.5rem}
 #workbench summary{cursor:pointer}
@@ -39,11 +38,60 @@
   #workbench .workbench-detail [data-action="close-review"]{display:inline-flex;margin-bottom:.55rem}
   #workbench .workbench-review[data-detail-open] .workbench-detail{border-top:0;padding-top:0}
 }
-#workbench .workbench-channel-list li {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  align-items:center;
-  gap:.25rem .75rem;
-  padding-block:.45rem;
+#workbench .workbench-connections {
+  --workbench-action-width: 6.5rem;
+  align-items: start;
 }
-#workbench .workbench-channel-list p {font-size:.83rem;color:var(--muted)}
+#workbench .workbench-connection-panel {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(.75rem, 1.5vw, 1.25rem);
+}
+#workbench .workbench-connection-panel h2 {margin-top: 0}
+#workbench .workbench-channel-list {margin: 0 0 .75rem}
+#workbench .workbench-channel-list:last-child {margin-bottom: 0}
+#workbench .workbench-channel-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--workbench-action-width);
+  align-items: center;
+  gap: .25rem .625rem;
+  padding-block: .5rem;
+}
+#workbench .workbench-channel-list li:last-child {border-bottom: 0}
+#workbench .workbench-channel-list p,
+#workbench .workbench-provider-heading span {font-size: .83rem; color: var(--muted)}
+#workbench .workbench-channel-list .btn {
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+}
+#workbench .workbench-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--workbench-action-width);
+  align-items: center;
+  gap: .625rem;
+}
+#workbench .workbench-address {margin-block: .75rem}
+#workbench .workbench-address p {margin: 0 0 .25rem; font-size: .875rem}
+#workbench .workbench-copy code {
+  display: grid;
+  align-content: center;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  min-height: 44px;
+  padding: .375rem .5rem;
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  background: var(--inset);
+  color: inherit;
+  font: inherit;
+}
+#workbench .workbench-copy .btn {width: 100%; justify-content: center}
+#workbench .workbench-provider-list li {gap: .35rem; padding-block: .6rem}
+#workbench .workbench-provider-heading {display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem .625rem}
+#workbench .workbench-provider-list .workbench-actions {margin-top: .125rem}
+#workbench .workbench-provider-list .btn {min-width: 7.25rem; justify-content: center}
+@media (min-width: 1021px) {
+  #workbench .workbench-connections {align-items: stretch}
+}
