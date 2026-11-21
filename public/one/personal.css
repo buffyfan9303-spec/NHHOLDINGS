@@ -75,7 +75,11 @@ button:disabled {opacity:.55;cursor:default}
 html:has(#personal-menu[open]) {overflow:hidden}
 .personal-menu-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .personal-menu-head h2 {margin:0;font-size:1.1rem}
-#personal-menu-links {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}
+.personal-nav-group {display:grid;gap:2px}
+.personal-nav-group > p {margin:7px 8px 2px;color:var(--muted);font-size:12px;font-weight:650}
+#personal-menu-links {display:grid;gap:4px}
+#personal-menu-links .personal-nav-group {grid-template-columns:repeat(2,minmax(0,1fr));column-gap:6px}
+#personal-menu-links .personal-nav-group > p {grid-column:1/-1}
 #personal-menu-links a {
   display:flex;align-items:center;min-height:44px;padding:7px 8px;border-radius:7px;
   text-decoration:none;word-break:keep-all;overflow-wrap:anywhere;
