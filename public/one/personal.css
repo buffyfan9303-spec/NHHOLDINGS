@@ -101,7 +101,11 @@ html:has(#personal-menu[open]) {overflow:hidden}
 .personal-title {display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:22px}
 .personal-title time {font-size:13px;color:var(--muted);font-weight:550}
 h1,h2 {margin:0;font-weight:680;line-height:1.28;letter-spacing:-.025em}
-.personal-title h1 {font-size:clamp(28px,5vw,42px);margin-top:4px}
+.personal-title > div {min-inline-size:0}
+.personal-title h1 {font-size:clamp(24px,2.3vw,30px);margin-top:4px;line-height:1.3;text-wrap:balance}
+.personal-main :where(h1,h2,h3,.personal-hint,.personal-message) {
+  word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty;
+}
 #personal-title:focus {outline:none}
 h2 {font-size:17px}
 .personal-home {display:grid;grid-template-areas:'today quick' 'today links';grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:min-content 1fr;align-items:start;align-content:start;gap:16px}

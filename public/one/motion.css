@@ -1,6 +1,6 @@
 /* Shared workspace rhythm; data refreshes never replay an entrance. */
 :root{--ease-out:cubic-bezier(.23,1,.32,1);--surface:#181c20;--line:#2b3238;--teal:#91d4b9;--muted:#a4afb8;--radius:10px}
-#content{animation:none;view-transition-name:nuri-content}
+#content{animation:none}
 .sidebar{background:#11171a;border-right-color:#293238}
 .topbar{background:#131a1e}
 /* Korean labels wrap at words, including anonymous text inside flex buttons. */
@@ -415,14 +415,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
  tbody tr:hover,.publishing-board tbody tr:hover{background:#202a30}
  .btn:not(.primary):not(.text):hover{background:#26333a;border-color:#52646c}
 }
-/* Root calls startViewTransition only for deliberate navigation. */
-::view-transition-group(root){animation:none}
-::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
-::view-transition-group(nuri-content){animation-duration:200ms;animation-timing-function:var(--ease-out)}
-::view-transition-old(nuri-content){animation:one-leave 120ms var(--ease-out) both;mix-blend-mode:normal;pointer-events:none}
-::view-transition-new(nuri-content){animation:one-enter 200ms var(--ease-out) both;mix-blend-mode:normal}
-@keyframes one-leave{to{opacity:0;transform:translateY(-3px)}}
-@keyframes one-enter{from{opacity:.58;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* Keep the shared navigation interactive during document transitions. */
+::view-transition{pointer-events:none}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
  .site-card:hover,.channel-tile:hover,.setup-shortcuts a:hover,.btn:active{transform:none!important}
