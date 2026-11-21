@@ -40,8 +40,17 @@ export async function readWorkbench(owner:string) {
   return publicState(rows[0]?.data??blank());
 }
 
+export async function readWorkbenchProjects(owner:string){
+  const {rows}=await pool().query<{projects:Project[]}>(
+    "SELECT data->'projects' AS projects FROM nh_documents WHERE "+workspaceKind,[owner],
+  );
+  return rows[0]?.projects??[];
+}
+
 export async function workbenchProject(owner:string,id:unknown){
-  return ownedProject(await readWorkbench(owner),id);
+  const project=(await readWorkbenchProjects(owner)).find(row=>row.id===id);
+  if(!project)throw missing();
+  return project;
 }
 
 async function change<T>(owner:string, fn:(state:Workbench, client:PoolClient)=>Promise<T>) {

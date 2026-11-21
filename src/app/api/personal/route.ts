@@ -1,5 +1,5 @@
 import {NextRequest} from 'next/server';
-import {readWorkbench,workbenchProject} from '@/lib/personal-workbench';
+import {readWorkbenchProjects,workbenchProject} from '@/lib/personal-workbench';
 import {personalAgenda} from '@/lib/personal-agenda';
 import {accessStatus, canUsePersonalWorkspace, identity} from '@/lib/auth';
 import {body, failure, integer, MarketError, requireOrigin, textValue} from '@/lib/security';
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
       const until = new Date(+from + 7 * 86400_000 - 1);
       return Response.json({agenda:await personalAgenda(account.id,{from:from.toISOString(),until:until.toISOString()})},{headers});
     }
-    const [items,agenda,{projects}]=await Promise.all([workspace.list(),personalAgenda(account.id),readWorkbench(account.id)]);
+    const [items,agenda,projects]=await Promise.all([workspace.list(),personalAgenda(account.id),readWorkbenchProjects(account.id)]);
     return Response.json({account,items,agenda,projects:projects.map(({id,name})=>({id,name}))}, {headers});
   } catch (error) {
     return rejected(error);
