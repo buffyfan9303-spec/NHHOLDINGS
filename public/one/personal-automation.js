@@ -622,13 +622,24 @@
     const pending=providerJump;
     if(!pending||view.kind!=='social'||pending.owner!==view.owner)return;
     const connected=view.root.querySelector('[data-auto-accounts] [data-auto-provider="'+pending.id+'"]');
-    const section=connected??view.root.querySelector('[data-auto-catalog] [data-auto-provider="'+pending.id+'"]');
+    const catalog=view.root.querySelector('[data-auto-catalog] [data-auto-provider="'+pending.id+'"]');
+    const section=(!pending.recover&&connected)||catalog;
     providerJump=null;
     if(!section)return;
-    if(!connected)view.root.querySelector('[data-auto-setup]').open=true;
-    const first=section.querySelector('strong');
-    first.tabIndex=-1;
-    first.focus({preventScroll:true});
+    if(section===catalog)view.root.querySelector('[data-auto-setup]').open=true;
+    let target=pending.recover?section.querySelector('[data-auto-action="reconnect"], .auto-account-list a.personal-link'):null;
+    if(pending.recover&&!target){
+      const settings=section.querySelector('.auto-advanced');
+      if(settings){
+        settings.open=true;
+        target=settings.querySelector('summary');
+      }
+    }
+    if(!target){
+      target=section.querySelector('strong');
+      target.tabIndex=-1;
+    }
+    target.focus({preventScroll:true});
     section.scrollIntoView({block:'start',behavior:'instant'});
   }
 
@@ -662,10 +673,10 @@
     return true;
   }
 
-  function focusProvider(id){
+  function focusProvider(id,recover=false){
     const owner=window.NuriPersonalAccount;
     if(!owner||id==='mail'||!Object.hasOwn(providerNames,id))return false;
-    providerJump={owner,id};
+    providerJump={owner,id,recover};
     if(location.hash!=='#social')location.hash='social';
     else mount('social');
     return true;

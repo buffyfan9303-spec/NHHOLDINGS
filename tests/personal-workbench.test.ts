@@ -76,8 +76,8 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
     const firstChannels=await (await workbench(req(channelsRoute,'first'))).json();
     const secondChannels=await (await workbench(req(channelsRoute,'second'))).json();
     assert.equal(firstChannels.social.length,4);
-    assert.deepEqual(firstChannels.mail,{configured:true,connected:false,paused:false});
-    assert.deepEqual(secondChannels.mail,{configured:false,connected:false,paused:false});
+    assert.deepEqual(firstChannels.mail,{configured:true,connected:false,paused:false,hasSavedConnection:false});
+    assert.deepEqual(secondChannels.mail,{configured:false,connected:false,paused:false,hasSavedConnection:false});
     assert.doesNotMatch(JSON.stringify(firstChannels),/test-app|credential|connectionId|redirectUri/);
 
     assert.equal((await workbench(req('/api/personal/workbench','pending'))).status,403);
