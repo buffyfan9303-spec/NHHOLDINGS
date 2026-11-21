@@ -142,3 +142,5 @@
   .workbench-nav button{min-width:0;white-space:normal;word-break:keep-all;text-wrap:pretty}
   .workbench-nav button[data-action="refresh"]{grid-column:4;margin:0;justify-self:end;padding-inline:8px}
 }
+#workbench .workbench-check{display:flex;align-items:center;gap:8px;min-height:44px}
+#workbench .workbench-check input{width:18px;height:18px;flex:none;margin:0}

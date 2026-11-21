@@ -19,6 +19,7 @@ function personalWorkspace(ownerId) {
     dueOn: data.dueOn,
     dueTime: data.dueTime,
     done: data.done,
+    ...(data.projectId ? {projectId:data.projectId} : {}),
     ...(data.focusOn && data.focusTime ? {focusOn:data.focusOn,focusTime:data.focusTime} : {}),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,

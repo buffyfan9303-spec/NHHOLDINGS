@@ -95,8 +95,8 @@ function userEmail(prompt:string){
   return addresses.size===1?[...addresses][0]:'';
 }
 
-async function saveWork(actor:Actor,kind:'task'|'schedule'|'note',title:string,detail:string,dueOn:string|null,dueTime:string|null=null):Promise<AIAction>{
-  const item=await personalWorkspace(actor.id).create({kind,title,detail,dueOn,dueTime,done:false});
+async function saveWork(actor:Actor,kind:'task'|'schedule'|'note',title:string,detail:string,dueOn:string|null,dueTime:string|null=null,projectId?:string):Promise<AIAction>{
+  const item=await personalWorkspace(actor.id).create({kind,title,detail,dueOn,dueTime,done:false,...(projectId?{projectId}:{})});
   if(!item)throw new MarketError('업무를 저장하지 못했습니다.',409);
   return {id:item.id,kind,title:item.title,href:'/personal#'+(kind==='task'?'tasks':kind==='schedule'?'schedule':'notes')};
 }
@@ -124,13 +124,13 @@ export async function applyPersonalAI(actor:Actor, mode:AIMode, prompt:string, s
     if(!date||time!==null&&(typeof time!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))){
       throw new MarketError('일정을 추가하려면 날짜와 한국 시각을 확인해 주세요.',422);
     }
-    const action=await saveWork(actor,'schedule',title,detail,date,time);
+    const action=await saveWork(actor,'schedule',title,detail,date,time,projectId);
     return {action,response:'내 일정에 추가했습니다.\n'+title+' · '+date+(time?' '+time+' KST':'')+(detail?'\n'+detail:'')};
   }
   if(mode==='task'||mode==='note'){
     const title=textValue(draft.title,'제목',160);
     const detail=textValue(draft.detail??'','내용',4000,true);
-    const action=await saveWork(actor,mode,title,detail,mode==='task'?dateValue(draft.dueOn):null);
+    const action=await saveWork(actor,mode,title,detail,mode==='task'?dateValue(draft.dueOn):null,null,projectId);
     return {action,response:(mode==='task'?'할 일을 추가했습니다. ':'메모를 저장했습니다. ')+title+(detail?'\n\n'+detail:'')};
   }
   if(mode==='cards'){
@@ -159,7 +159,7 @@ export async function applyPersonalAI(actor:Actor, mode:AIMode, prompt:string, s
         };
       }catch(error){if(!(error instanceof MarketError))throw error;}
     }
-    const action=await saveWork(actor,'note',title,content,null);
+    const action=await saveWork(actor,'note',title,content,null,null,projectId);
     return {action,response:'게시 원고를 메모에 저장했습니다. 내 SNS에서 채널 계정, 미디어와 게시 조건을 확인한 뒤 사용하세요.\n\n'+content};
   }
   throw new MarketError('만들 작업을 확인해 주세요.');

@@ -12,11 +12,11 @@ type Move = {id:string; title:string; version:number; day:string; time:string};
 type Decision = {
   id:string; title:string; text:string; category:Category|'schedule'|'cards'; projectId:string|null;
   pack?:{id:string; topic:string; format:string}; revision?:number; originalText?:string;
-  card?:PersonalCardBlueprint; cardId?:string; projectVersion?:number; moves?:Move[]; start?:string; end?:string; source:string;
+  card?:PersonalCardBlueprint; cardId?:string; projectVersion?:number; projectOnly?:boolean; moves?:Move[]; start?:string; end?:string; source:string;
   status:'pending'|'applied'|'declined'|'undone'; created:string; decided?:string;
 };
 type Workbench = {projects: Project[]; decisions:Decision[]};
-type TimedItem = {title:string; kind:string; dueOn:string|null; dueTime:string|null; done:boolean; focusOn?:string|null; focusTime?:string|null; version:number; updatedAt:string};
+type TimedItem = {projectId?:string; title:string; kind:string; dueOn:string|null; dueTime:string|null; done:boolean; focusOn?:string|null; focusTime?:string|null; version:number; updatedAt:string};
 const workspaceKind = "workspace='live' AND kind='personal-workbench' AND id=$1 AND data->>'ownerId'=$1";
 const personalItems = "workspace='live' AND kind='personal-item' AND data->>'ownerId'=$1 AND id LIKE $1||':%'";
 const kstDay = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'});
@@ -40,8 +40,17 @@ export async function readWorkbench(owner:string) {
   return publicState(rows[0]?.data??blank());
 }
 
+export async function readWorkbenchProjects(owner:string){
+  const {rows}=await pool().query<{projects:Project[]}>(
+    "SELECT data->'projects' AS projects FROM nh_documents WHERE "+workspaceKind,[owner],
+  );
+  return rows[0]?.projects??[];
+}
+
 export async function workbenchProject(owner:string,id:unknown){
-  return ownedProject(await readWorkbench(owner),id);
+  const project=(await readWorkbenchProjects(owner)).find(row=>row.id===id);
+  if(!project)throw missing();
+  return project;
 }
 
 async function change<T>(owner:string, fn:(state:Workbench, client:PoolClient)=>Promise<T>) {
@@ -91,7 +100,7 @@ function agendaOn(client:PoolClient,owner:string,day:string) {
 
 type Item = Awaited<ReturnType<typeof items>>[number];
 type Agenda = Awaited<ReturnType<typeof personalAgenda>>;
-export function proposeMoves(all:Item[], events:Agenda, day:string, start:string, end:string, now=new Date()) {
+export function proposeMoves(all:Item[], events:Agenda, day:string, start:string, end:string, now=new Date(), projectId?:string) {
   const boundary = day===kstDay.format(now) ? Math.max(minutes(start),Math.ceil((minutes(kstTime.format(now))+1)/30)*30) : minutes(start);
   const busy = all.filter(item=>!item.done&&item.dueOn===day&&item.dueTime&&clock(item.dueTime)).map(item=>minutes(item.dueTime!));
   for (const item of all) {
@@ -101,7 +110,7 @@ export function proposeMoves(all:Item[], events:Agenda, day:string, start:string
     const at = Date.parse(event.scheduledAt);
     if (Number.isFinite(at)&&kstDay.format(at)===day) busy.push(minutes(kstTime.format(at)));
   }
-  const eligible = all.filter(item=>item.kind==='task'&&!item.done&&!item.focusOn&&!!item.dueOn&&item.dueOn<=day&&(item.dueOn<day||!item.dueTime))
+  const eligible = all.filter(item=>(!projectId||item.projectId===projectId)&&item.kind==='task'&&!item.done&&!item.focusOn&&!!item.dueOn&&item.dueOn<=day&&(item.dueOn<day||!item.dueTime))
     .sort((a,b)=>a.dueOn!.localeCompare(b.dueOn!)||Number(!!b.dueTime)-Number(!!a.dueTime)||a.id.localeCompare(b.id));
   const moves:Move[]=[];
   for (let slot=boundary;slot+30<=minutes(end)&&moves.length<Math.min(8,eligible.length);slot+=30) {
@@ -249,10 +258,12 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
     const start=input.start as string,end=input.end as string;
     return change(owner,async(state,client)=>{
       const project=input.projectId?ownedProject(state,input.projectId):null;
+      const projectOnly=input.projectOnly===true;
+      if(projectOnly&&!project)throw new MarketError('할 일을 배치할 프로젝트를 선택해 주세요.');
       const events=await agendaOn(client,owner,day);
-      const moves=proposeMoves(await items(client,owner),events,day,start,end);
+      const moves=proposeMoves(await items(client,owner),events,day,start,end,new Date(),projectOnly?project?.id:undefined);
       if (!moves.length) throw new MarketError('배치할 할 일이나 빈 30분이 없습니다.',422);
-      return {decision:putDecision(state,{title:day+' 집중 시간',text:'기한이 이른 순서대로 기존 일정과 예약을 피해 30분씩 배치합니다.',category:'schedule',projectId:project?.id??null,projectVersion:project?.version,moves,start,end,source:'일정 재계획'})};
+      return {decision:putDecision(state,{title:day+' 집중 시간',text:(projectOnly?'선택한 프로젝트의 할 일만 대상으로 합니다. ':'')+'기한이 이른 순서대로 기존 일정과 예약을 피해 30분씩 배치합니다.',category:'schedule',projectId:project?.id??null,projectVersion:project?.version,projectOnly,moves,start,end,source:'일정 재계획'})};
     });
   }
   if (!['approve','decline','undo'].includes(String(input.action))) throw new MarketError('실행할 작업을 확인해 주세요.');
@@ -267,7 +278,8 @@ export async function updateWorkbench(owner:string,input:Record<string,unknown>)
       const all=await items(client,owner);
       if (!undo) {
         const day=date(row.moves?.[0]?.day);
-        const next=proposeMoves(all,await agendaOn(client,owner,day),day,row.start!,row.end!);
+        const projectId=row.projectOnly?ownedProject(state,row.projectId).id:undefined;
+        const next=proposeMoves(all,await agendaOn(client,owner,day),day,row.start!,row.end!,new Date(),projectId);
         if (next.length!==row.moves?.length||next.some((move,index)=>{
           const saved=row.moves![index];
           return move.id!==saved.id||move.version!==saved.version||move.time!==saved.time||move.day!==saved.day;

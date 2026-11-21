@@ -10,7 +10,7 @@
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
   const day = () => dayFormatter.format(new Date());
   const timeFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-  let items = [], agenda = [], view = '', currentItem = null, editorKind = null, accountId = null, ready = false, saving = false;
+  let projects = [], items = [], agenda = [], view = '', currentItem = null, editorKind = null, accountId = null, ready = false, saving = false;
   let checkNumber = 0, activeCheck = null, suspendedEditor = false, editRevision = 0, openAssistant = new URLSearchParams(location.search).has('ai');
   const editor = el('personal-editor');
   const form = el('personal-form');
@@ -71,6 +71,27 @@
     return result;
   }
 
+  const projectName = id => projects.find(project=>project.id===id)?.name ?? '';
+  function projectChoices(field,selected,empty,label) {
+    const unknown=selected&&!projectName(selected);
+    field.innerHTML='<option value="">'+empty+'</option>'+projects.map(project=>
+      '<option value="'+esc(project.id)+'">'+esc(project.name)+'</option>').join('')+
+      (unknown?'<option value="'+esc(selected)+'">삭제된 프로젝트</option>':'');
+    field.value=selected||'';
+    field.hidden=el(label).hidden=!projects.length&&!unknown;
+  }
+  function syncProjects(value) {
+    if (!ready||!Array.isArray(value))return;
+    projects=value;
+    const filter=searchForm.elements?.projectId;
+    if(filter)projectChoices(filter,projectName(filter.value)?filter.value:'','모든 프로젝트','personal-search-project-label');
+    if(editor.open){
+      const field=form.elements.projectId;
+      projectChoices(field,field.value,'연결 안 함','personal-item-project-label');
+    }
+    if(view==='search')paintSearch();
+  }
+
   const description = item => item.dueOn?
     '<time datetime="'+esc(item.dueOn)+'">'+esc(item.dueOn.replaceAll('-','.'))+'</time>'+
     (item.dueTime?' <span class="personal-time">'+esc(item.dueTime)+'</span>':'')
@@ -93,7 +114,7 @@
         '" data-personal-action="toggle" data-item="'+item.id+'"><span aria-hidden="true">'+(item.done?'✓':'')+'</span></button>':'';
       const late = !item.done&&item.dueOn&&item.dueOn<day()&&isTask?' <span class="personal-late">기한 지남</span>':'';
       return '<li class="personal-row'+(item.done?' is-done':'')+'">'+toggle+'<div class="personal-row-text"><strong>'+
-        primary+'</strong>'+details+'<div class="personal-row-meta">'+description(item)+late+(item.focusOn?' <span>집중 '+esc(item.focusOn)+' '+esc(item.focusTime)+'</span>':'')+'</div></div>'+
+        primary+'</strong>'+details+'<div class="personal-row-meta">'+description(item)+late+(projectName(item.projectId)?' <span>'+esc(projectName(item.projectId))+'</span>':'')+(item.focusOn?' <span>집중 '+esc(item.focusOn)+' '+esc(item.focusTime)+'</span>':'')+'</div></div>'+
         (controls?'<div class="personal-row-actions">'+controls+'</div>':'')+'</li>';
     }).join('')+'</ul>';
   }
@@ -151,7 +172,8 @@
     const rows=planned.filter(row=>row.dueOn===selectedDay);
     el('personal-day-events').innerHTML=rows.length?'<ul class="personal-plan-results">'+rows.map(row=>
       '<li><span>'+esc(row.dueTime||planLabel[row.kind])+'</span><div>'+recordTitle(row)+(row.dueTime?
-        '<small>'+esc(planLabel[row.kind])+'</small>':'')+'</div></li>').join('')+'</ul>':
+        '<small>'+esc(planLabel[row.kind])+'</small>':'')+
+      (projectName(row.projectId)?'<small>'+esc(projectName(row.projectId))+'</small>':'')+'</div></li>').join('')+'</ul>':
       '<p class="personal-empty">이날 예정된 업무가 없습니다.</p>';
     week.querySelector('[data-week-action="export"]').disabled=!items.some(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
   }
@@ -190,10 +212,11 @@
     if(!ready||view!=='search')return;
     const terms=searchText(searchForm.elements.query.value).trim().split(/\s+/).filter(Boolean);
     const kind=searchForm.elements.kind.value;
-    const available=items.filter(item=>kind==='all'||item.kind===kind);
+    const project=searchForm.elements.projectId.value;
+    const available=items.filter(item=>(kind==='all'||item.kind===kind)&&(!project||item.projectId===project));
     const matches=available.filter(item=>{
       if(!terms.length)return true;
-      const source=searchText(item.title+' '+item.detail);
+      const source=searchText(item.title+' '+item.detail+' '+projectName(item.projectId));
       return terms.every(term=>source.includes(term));
     }).sort(recent);
     el('personal-search-status').textContent=matches.length?
@@ -201,7 +224,7 @@
       terms.length?'일치하는 업무가 없습니다.':'저장한 항목이 없습니다.';
     el('personal-search-results').innerHTML=matches.length?'<ul class="personal-plan-results">'+
       matches.slice(0,30).map(item=>'<li><span>'+esc(itemLabel[item.kind])+'</span><div>'+recordTitle(item)+
-        (item.dueOn?'<small>'+description(item)+'</small>':'')+'</div></li>').join('')+'</ul>':'';
+        (item.dueOn||projectName(item.projectId)?'<small>'+description(item)+' '+esc(projectName(item.projectId))+'</small>':'')+'</div></li>').join('')+'</ul>':'';
   }
 
   const calendarText = value => String(value).replaceAll('\\','\\\\').replace(/\r\n|\r|\n/g,'\\n')
@@ -349,6 +372,7 @@
       ready = true;
       document.body.classList.remove('personal-revalidating');
       el('personal-message').textContent = '';
+      syncProjects(result.projects||[]);
       route();
       if(suspendedEditor&&!saving){
         suspendedEditor=false;
@@ -369,6 +393,7 @@
     editorKind = kind;
     form.reset();
     form.elements.title.value = draft?.title||'';
+    projectChoices(form.elements.projectId,draft?.projectId,'연결 안 함','personal-item-project-label');
     form.elements.dueOn.value = draft?.dueOn||(kind==='schedule'?day():'');
     form.elements.dueOn.required = kind==='schedule';
     form.elements.dueTime.value = draft?.dueTime||'';
@@ -417,7 +442,7 @@
       const dueTime = kind==='schedule'?values.get('dueTime')||null:null;
       const change = currentItem?{action:'update',id:currentItem.id,version:currentItem.version,done:currentItem.done}:
         {action:'create',id:crypto.randomUUID()};
-      saveLocal(await api({...change,kind,title,detail,dueOn,dueTime}));
+      saveLocal(await api({...change,kind,title,detail,dueOn,dueTime,projectId:values.get('projectId')||null}));
       editor.close();
       (el('personal-add').hidden?week.querySelector('[data-week-action=add]'):el('personal-add')).focus();
     } catch(error) {el('personal-editor-message').textContent = error.message;}
@@ -498,6 +523,7 @@
       mask();
       items=[];
       agenda=[];
+      projects=[];
       window.NuriPersonalAccount=null;
       paintItems();
       location.assign('/login');
@@ -544,7 +570,16 @@
     openEditor(null,kind,draft);
     return true;
   }
-  window.NuriPersonalWorkspace={activate(){
+  function openProjectRecords(id){
+    if(!ready||!projectName(id))return false;
+    if(location.hash!=='#search')history.pushState(null,'','#search');
+    searchForm.elements.query.value='';
+    searchForm.elements.kind.value='all';
+    searchForm.elements.projectId.value=id;
+    route(true);
+    return true;
+  }
+  window.NuriPersonalWorkspace={syncProjects,openProjectRecords,activate(){
     openAssistant=new URLSearchParams(location.search).has('ai');
     checkAccount();
   },reviewDraft,deactivate(){

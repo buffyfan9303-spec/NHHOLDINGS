@@ -1,4 +1,5 @@
 import {NextRequest} from 'next/server';
+import {readWorkbenchProjects,workbenchProject} from '@/lib/personal-workbench';
 import {personalAgenda} from '@/lib/personal-agenda';
 import {accessStatus, canUsePersonalWorkspace, identity} from '@/lib/auth';
 import {body, failure, integer, MarketError, requireOrigin, textValue} from '@/lib/security';
@@ -55,7 +56,13 @@ function calendarDate(value: unknown) {
   throw new MarketError('날짜를 확인해주세요.');
 }
 
-function draftFrom(input: Record<string, unknown>, previous?: PersonalDraft): PersonalDraft {
+async function draftFrom(owner: string, input: Record<string, unknown>, previous?: PersonalDraft): Promise<PersonalDraft> {
+  let projectId = previous?.projectId;
+  if (input.projectId !== undefined && input.projectId !== projectId) {
+    projectId = input.projectId === null || input.projectId === ''
+      ? undefined
+      : (await workbenchProject(owner, recordId(input.projectId))).id;
+  }
   const kind = input.kind === undefined ? previous?.kind : input.kind;
   if (typeof kind !== 'string' || !kinds.has(kind)) throw new MarketError('개인 항목 유형을 확인해주세요.');
   const title = textValue(input.title === undefined ? previous?.title : input.title, '제목', 160);
@@ -72,6 +79,7 @@ function draftFrom(input: Record<string, unknown>, previous?: PersonalDraft): Pe
     detail: kind === 'link' ? webLink(detail) : detail,
     dueOn,
     dueTime,
+    ...(projectId ? {projectId} : {}),
     done: flag(input.done === undefined ? previous?.done ?? false : input.done),
   };
 }
@@ -94,8 +102,8 @@ export async function GET(req: NextRequest) {
       const until = new Date(+from + 7 * 86400_000 - 1);
       return Response.json({agenda:await personalAgenda(account.id,{from:from.toISOString(),until:until.toISOString()})},{headers});
     }
-    const [items,agenda]=await Promise.all([workspace.list(),personalAgenda(account.id)]);
-    return Response.json({account,items,agenda}, {headers});
+    const [items,agenda,projects]=await Promise.all([workspace.list(),personalAgenda(account.id),readWorkbenchProjects(account.id)]);
+    return Response.json({account,items,agenda,projects:projects.map(({id,name})=>({id,name}))}, {headers});
   } catch (error) {
     return rejected(error);
   }
@@ -111,7 +119,7 @@ export async function POST(req: NextRequest) {
     const input = await body(req);
     if (input.action === 'create') {
       const id = input.id === undefined ? undefined : recordId(input.id);
-      const item = await workspace.create(draftFrom(input), id);
+      const item = await workspace.create(await draftFrom(account.id,input), id);
       if (!item) throw changed();
       return Response.json({item}, {headers});
     }
@@ -130,7 +138,7 @@ export async function POST(req: NextRequest) {
       return Response.json({id}, {headers});
     }
     const fields = input.action === 'complete' ? {done: input.done === undefined ? true : flag(input.done)} : input;
-    const item = await workspace.update(previous, draftFrom(fields, previous));
+    const item = await workspace.update(previous, await draftFrom(account.id,fields,previous));
     if (!item) throw changed();
     return Response.json({item}, {headers});
   } catch (error) {
