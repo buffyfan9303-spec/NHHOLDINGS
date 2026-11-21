@@ -200,6 +200,7 @@ function sync(){
  const hideFilters=summary||state.page==='connections';
  const filters=document.querySelector('.heading-controls');
  filters.hidden=hideFilters;
+ $('data-status').parentElement.hidden=state.page==='connections';
  $('scope').closest('label').hidden=hideFilters||state.page==='market-operations'||automationPage();
  const periodLabel=$('period').closest('label');
  periodLabel.hidden=hideFilters;
