@@ -39,3 +39,11 @@
   #workbench .workbench-detail [data-action="close-review"]{display:inline-flex;margin-bottom:.55rem}
   #workbench .workbench-review[data-detail-open] .workbench-detail{border-top:0;padding-top:0}
 }
+#workbench .workbench-channel-list li {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:.25rem .75rem;
+  padding-block:.45rem;
+}
+#workbench .workbench-channel-list p {font-size:.83rem;color:var(--muted)}

@@ -8,6 +8,7 @@ import {GET as workbench,POST as change} from '../src/app/api/personal/workbench
 import {GET as personal,POST as save} from '../src/app/api/personal/route';
 import {GET as connect,POST as connectPost} from '../src/app/api/one/connect/[step]/route';
 import {POST as call} from '../src/app/api/one/mcp/route';
+import {saveMailApp} from '../src/lib/personal-mail-auth';
 import {getPersonalCard} from '../src/lib/personal-cards';
 import {proposeMoves} from '../src/lib/personal-workbench';
 
@@ -68,6 +69,17 @@ test('workbench routes and OAuth enforce two authorized account boundaries and r
       [user.id,JSON.stringify({email:user.email,scope:'personal',status:name==='pending'?'pending':'approved'})],
     );
     assert.equal((await workbench(req('/api/personal/workbench'))).status,401);
+    const channelsRoute='/api/personal/workbench?view=channels';
+    assert.equal((await workbench(req(channelsRoute,'pending'))).status,403);
+    assert.equal((await workbench(req(channelsRoute,'first',undefined,second.id))).status,409);
+    await saveMailApp(first.id,{clientId:'test-app.apps.googleusercontent.com',clientSecret:'fixture-only-credential'});
+    const firstChannels=await (await workbench(req(channelsRoute,'first'))).json();
+    const secondChannels=await (await workbench(req(channelsRoute,'second'))).json();
+    assert.equal(firstChannels.social.length,4);
+    assert.deepEqual(firstChannels.mail,{configured:true,connected:false,paused:false});
+    assert.deepEqual(secondChannels.mail,{configured:false,connected:false,paused:false});
+    assert.doesNotMatch(JSON.stringify(firstChannels),/test-app|credential|connectionId|redirectUri/);
+
     assert.equal((await workbench(req('/api/personal/workbench','pending'))).status,403);
     assert.equal((await post('first',{action:'project',name:'Test',rules:'Test'},second.id)).status,409);
     const {projects:[project]}=await (await post('first',{action:'project',name:'개인 제작',rules:'첫 번째 계정의 비공개 업무 원칙'})).json();

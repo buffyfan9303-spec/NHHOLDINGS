@@ -3,7 +3,7 @@
   const root=document.getElementById('workbench');
   if(!root)return;
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',connect:'AI 연결'};
+  const sections={projects:'프로젝트',schedule:'일정 재계획',approvals:'승인함',connect:'연결 관리'};
   const categories={business:'사업 운영',content:'콘텐츠',seller:'판매 준비',mail:'메일',drive:'Drive',schedule:'일정',cards:'카드뉴스'};
   const providers={chatgpt:['ChatGPT','플러그인 → 추가 → 사용자 지정 MCP 서버에서 이 주소를 등록하세요. Business·Enterprise·Edu에서 작성 기능을 지원합니다. Pro는 조회 권한으로 연결할 수 있습니다.','https://chatgpt.com/'],claude:['Claude','커넥터에서 사용자 지정 연결을 추가하고 OAuth 클라이언트는 자동 등록을 선택하세요.','https://claude.ai/'],gemini:['Gemini','사용자 지정 연결은 현재 미국의 개인 Google 계정에서 영어로 지원됩니다. 한국에서는 구독 AI의 요청 복사 기능을 사용하세요.','https://gemini.google.com/']};
   const templates={
@@ -13,7 +13,7 @@
     personal:{label:'개인 업무',name:'내 일과 자료 정리',rules:'마감이 가까운 일부터 정리한다. 문서는 제목, 정리 위치, 다음 할 일만 간단히 적는다. 가족이나 지인의 정보를 별도 승인 없이 공유하지 않는다.',step:'오늘 할 일 → 집중 시간 → 자료 정리 → 확인',prompt:'오늘 업무와 프로젝트 기억을 읽고, 중요한 일 세 가지와 자료 정리 순서를 제안해서 누리원 승인함에 넣어줘.'},
   };
   let pane='projects', owner=null, controller=null, data=null, projectId=null, detailId=null, selectedTemplate=null, showHistory=false;
-  let running=false, resume=null;
+  let running=false, resume=null, channels=null, checkingChannels=false, channelError=false;
   const now=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'});
   function today(){return now.format(new Date());}
   function connectionURL(){return location.origin+'/api/one/mcp';}
@@ -75,14 +75,37 @@
       '<div><button type="submit" class="btn primary">카드뉴스 검토 요청</button></div></form></details></section>'+details+'</div>';
   }
 
+  const serviceNames={instagram:'Instagram',threads:'Threads',youtube:'YouTube',x:'X'};
+  function channelRow(name,state,href,actionLabel,service=''){
+    return '<li><div><strong>'+name+'</strong><p>'+state+'</p></div><a class="btn" href="'+href+'"'+(service?' data-connect-service="'+service+'"':'')+' aria-label="'+name+' '+actionLabel+'">'+actionLabel+'</a></li>';
+  }
+
+  function channelOverview(){
+    if(!channels)return '<p role="status" class="workbench-muted">'+(channelError?'연결 상태를 불러오지 못했습니다.':'연결 상태를 확인하고 있습니다.')+'</p>'+
+      (channelError?action('상태 다시 확인','retry-channels'):'');
+    const {social,mail,drive}=channels;
+    const driveState=!drive?'확인할 수 없음':drive.connected?'계정 연결됨':drive.hasSavedConnection?'다시 연결 필요':drive.configured?'계정 연결 가능':'운영 앱 준비 필요';
+    const mailState=!mail?'확인할 수 없음':mail.connected?(mail.paused?'발송 일시정지':'계정 연결됨'):mail.configured?'계정 연결 가능':'운영 앱 준비 필요';
+    return '<ul class="workbench-list workbench-channel-list">'+
+      channelRow('Google Drive',driveState,'#files',drive?.connected?'저장소 열기':drive?.configured?'연결 화면':'설정 안내')+
+      channelRow('Gmail',mailState,'#mail',mail?.connected?'메일 열기':mail?.configured?'연결 화면':'설정 안내')+
+      '</ul><h3>SNS</h3><ul class="workbench-list workbench-channel-list">'+
+      Object.entries(serviceNames).map(([id,name])=>{
+        const channel=social?.find(row=>row.id===id);
+        const state=!channel?'확인할 수 없음':channel.connected?channel.connected+'개 연결'+(channel.paused?' · '+channel.paused+'개 일시정지':'')+(channel.stale?' · '+channel.stale+'개 재연결 필요':''):
+          channel.stale?'다시 연결 필요':channel.configured?'계정 연결 가능':'운영 앱 준비 필요';
+        return channelRow(name,state,'#social',channel?.connected?'계정 보기':channel?.configured?'연결 화면':'설정 안내',id);
+      }).join('')+'</ul>';
+  }
+
   function connect(){
-    return '<section class="workbench-narrow"><h2>본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
+    return '<div class="workbench-body"><section aria-labelledby="workbench-channels-title"><h2 id="workbench-channels-title">내 작업 채널</h2><div data-channel-overview>'+channelOverview()+'</div></section><section><h2>본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
       '<label class="workbench-address">누리원 서버 주소<input readonly value="'+esc(connectionURL())+'"></label>'+action('주소 복사','copy-url')+
       '<ul class="workbench-list">'+Object.entries(providers).map(([id,[name,instructions,link]])=>{
         const active=data.connections?.find(c=>c.provider===id&&c.active);
         return '<li><strong>'+name+'</strong><p>'+instructions+'</p><div class="workbench-actions"><a href="'+link+'" target="_blank" rel="noopener noreferrer">'+name+' 열기</a>'+
           (active?'<span>연결됨</span><span>'+(active.socialRead?'SNS 목록 조회 허용':'SNS 목록 조회는 AI 앱에서 다시 연결')+'</span>'+action('연결 끊기','disconnect',id):'<span>연결 필요</span>')+'</div></li>';
-      }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p><h3>내 작업 채널</h3><div class="workbench-actions"><a class="btn" href="#social">내 SNS 연결</a><a class="btn" href="#mail">Gmail 연결</a><a class="btn" href="#files">Google Drive 연결</a></div></section>';
+      }).join('')+'</ul><p>누리원 AI 비서의 API 연결과 구독 AI로 요청을 보내는 기능도 사용할 수 있습니다.</p></section></div>';
   }
   const renderers={projects,schedule,approvals,connect};
   function render(message=''){
@@ -91,9 +114,9 @@
       (data?action('새로고침','refresh'):'')+'</nav><p class="personal-message" data-workbench-status role="status">'+esc(message)+'</p>'+
       (data?renderers[pane]():'<p class="workbench-muted">업무 작업대를 불러오는 중입니다.</p>');
   }
-  async function api(input){
+  async function api(input,query=''){
     const signal=controller.signal;
-    const response=await fetch('/api/personal/workbench',{signal,cache:'no-store',headers:{'X-Personal-Account':owner,
+    const response=await fetch('/api/personal/workbench'+query,{signal,cache:'no-store',headers:{'X-Personal-Account':owner,
       ...(input?{'Content-Type':'application/json'}:{})},...(input?{method:'POST',body:JSON.stringify(input)}:{})});
     signal.throwIfAborted();
     const result=await response.json();
@@ -101,8 +124,26 @@
     if(!response.ok)throw Error(result.error||'작업을 처리하지 못했습니다.');
     return result;
   }
+  async function loadChannels(){
+    if(checkingChannels||!controller)return;
+    const signal=controller.signal;
+    checkingChannels=true;
+    try{channels=await api(undefined,'?view=channels');channelError=false;}
+    catch{if(!signal.aborted){channels=null;channelError=true;}}
+    finally{
+      if(!signal.aborted){
+        checkingChannels=false;
+        const panel=root.querySelector('[data-channel-overview]');
+        if(panel)panel.innerHTML=channelOverview();
+      }
+    }
+  }
   async function mount(){
-    if(!window.NuriPersonalAccount||controller)return;
+    if(!window.NuriPersonalAccount)return;
+    if(controller){
+      if(data&&pane==='connect')void loadChannels();
+      return;
+    }
     owner=window.NuriPersonalAccount;
     pane=resume?.owner===owner?resume.pane:'projects';
     resume=null;
@@ -115,7 +156,7 @@
       history.replaceState(history.state,'',url.href);
     }
     render();
-    try{data=await api();render();}
+    try{data=await api();render();if(pane==='connect')void loadChannels();}
     catch(error){if(!signal.aborted){controller=null;root.innerHTML='<p role="status">'+esc(error.message)+'</p>'+action('다시 불러오기','retry');}}
   }
   async function mutate(input,message){
@@ -154,18 +195,26 @@
     const heading=root.querySelector(pane==='approvals'&&detailId?'.workbench-detail h3':'h2');
     if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   }
-  function switchPane(next){pane=next;render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});}
+  function switchPane(next){
+    pane=next;render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
+    if(next==='connect')void loadChannels();
+  }
   root.addEventListener('click',async event=>{
+    const channel=event.target.closest('[data-connect-service]');
+    if(channel&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&window.NuriPersonalAutomation?.focusProvider(channel.dataset.connectService)){
+      event.preventDefault();return;
+    }
     const trigger=event.target.closest('[data-action],[data-pane]');
     if(!trigger||running)return;
     const {action:key,id,pane:next}=trigger.dataset;
     if(key==='retry'){void mount();return;}
     if(!data)return;
     if(next){switchPane(next);return;}
+    if(key==='retry-channels'){void loadChannels();return;}
     if(key==='refresh'){
       const signal=controller.signal;
       running=true;
-      try{data=await api();render('최신 상태를 불러왔습니다.');root.querySelector('[data-action="refresh"]').focus({preventScroll:true});}
+      try{data=await api();render('최신 상태를 불러왔습니다.');if(pane==='connect')void loadChannels();root.querySelector('[data-action="refresh"]').focus({preventScroll:true});}
       catch(error){if(!signal.aborted)status(error.message);}
       finally{if(!signal.aborted)running=false;}
       return;
@@ -215,7 +264,7 @@
   });
   window.NuriWorkbench={mount,suspend(){
     if(owner)resume={owner,pane};
-    controller?.abort();controller=null;owner=null;data=null;pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
+    controller?.abort();controller=null;owner=null;data=null;channels=null;checkingChannels=false;channelError=false;pane='projects';projectId=null;detailId=null;selectedTemplate=null;showHistory=false;running=false;
     root.removeAttribute('aria-busy');root.replaceChildren();
   }};
 })();

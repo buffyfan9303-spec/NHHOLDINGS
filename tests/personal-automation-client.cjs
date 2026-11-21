@@ -347,7 +347,9 @@ async function scenario(page) {
  assert.equal(await connected.locator('.auto-account').count(),0);
  await expectText(connected,'연결된 SNS 계정이 없습니다.');
  assert.equal(await setup.getAttribute('open'),null,'the other user starts from their own collapsed setup');
- await setup.locator(':scope > summary').click();
+ await page.evaluate(()=>window.NuriPersonalAutomation.focusProvider('threads'));
+ assert.equal(await setup.getAttribute('open'),'');
+ assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Threads');
  await button(setup.getByRole('region',{name:'Threads'}),'계정 연결').click();
  await page.waitForURL('https://threads.com/oauth/authorize?state=mock');
  assert.deepEqual(action('social','connect'),{action:'connect',provider:'threads'});

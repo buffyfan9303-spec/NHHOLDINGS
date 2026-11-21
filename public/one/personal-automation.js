@@ -23,7 +23,7 @@
   const views=new Map();
   const cardIdPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
   const imageProviders=['instagram','threads'];
-  let socialCard=null, approvedDraft=null;
+  let socialCard=null, approvedDraft=null, providerJump=null;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const safeLink=value=>{
     try {
@@ -199,7 +199,7 @@
     if(!providers.length)return '<p class="personal-empty">'+(catalog?'연결할 수 있는 채널이 없습니다.':'연결된 SNS 계정이 없습니다.')+'</p>';
     return providers.map(provider=>{
       const accounts=groupAccounts(provider);
-      return `<section class="auto-account" aria-label="${escape(provider.name||providerNames[provider.id])}">
+      return `<section class="auto-account" aria-label="${escape(provider.name||providerNames[provider.id])}" data-auto-provider="${provider.id}">
         <strong>${escape(provider.name||providerNames[provider.id])}</strong>
         <p>${catalog?(provider.configured?'계정 연결 가능':'앱 준비 필요'):accounts.length+'개 계정'}</p>
         ${accounts.length?`<ul class="auto-account-list">${accounts.map(account=>`<li>
@@ -618,9 +618,24 @@
     if(secret)secret.value='';
   }
 
+  function scrollToProvider(view){
+    const pending=providerJump;
+    if(!pending||view.kind!=='social'||pending.owner!==view.owner)return;
+    const connected=view.root.querySelector('[data-auto-accounts] [data-auto-provider="'+pending.id+'"]');
+    const section=connected??view.root.querySelector('[data-auto-catalog] [data-auto-provider="'+pending.id+'"]');
+    providerJump=null;
+    if(!section)return;
+    if(!connected)view.root.querySelector('[data-auto-setup]').open=true;
+    const first=section.querySelector('strong');
+    first.tabIndex=-1;
+    first.focus({preventScroll:true});
+    section.scrollIntoView({block:'start',behavior:'instant'});
+  }
+
   function openPendingDraft(view) {
     if(!current(view)||!view.data||view.loading||view.busy||view.dialog.open||
        document.visibilityState==='hidden'||location.hash!=='#'+view.kind)return;
+    scrollToProvider(view);
     if(approvedDraft?.owner===view.owner&&approvedDraft.kind===view.kind){
       const seed=approvedDraft;
       approvedDraft=null;
@@ -644,6 +659,15 @@
     approvedDraft={kind,title,text,owner};
     if(location.hash!=='#'+kind)location.hash=kind;
     else mount(kind);
+    return true;
+  }
+
+  function focusProvider(id){
+    const owner=window.NuriPersonalAccount;
+    if(!owner||id==='mail'||!Object.hasOwn(providerNames,id))return false;
+    providerJump={owner,id};
+    if(location.hash!=='#social')location.hash='social';
+    else mount('social');
     return true;
   }
 
@@ -715,7 +739,7 @@
   }
 
   function suspend() {
-    approvedDraft=null;
+    approvedDraft=null;providerJump=null;
     for(const view of views.values())suspendView(view);
   }
   window.addEventListener('personal-automation-changed',event=>{
@@ -726,5 +750,5 @@
   });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')suspend();});
   window.addEventListener('pagehide',suspend);
-  window.NuriPersonalAutomation={mount,suspend,selectSocialCard,reviewApprovedDraft};
+  window.NuriPersonalAutomation={mount,suspend,selectSocialCard,reviewApprovedDraft,focusProvider};
 })();
