@@ -11,6 +11,8 @@
   const requestTypes={
     plan:['실행 계획','우선순위와 첫 행동을 정리하고, 마감은 제공된 사실만 사용하세요.'],
     brief:['오늘 브리핑','오늘 반드시 확인할 일, 일정 충돌, 밀린 일을 구분하세요. 자료가 없으면 없다고 표시하세요.'],
+    review:['주간 리뷰','완료, 미완료, 승인 대기와 다음 주 할 일을 정리하세요.'],
+    reply:['메일 초안','받는 사람과 목적에 맞게 초안을 작성하세요.'],
     decide:['의사결정','선택지별 기준, 근거, 리스크와 결정을 바꿀 조건을 정리하세요.'],
     draft:['초안 작성','대상과 목적에 맞는 초안을 작성하고 확인이 필요한 사실을 표시하세요.'],
   };
@@ -26,6 +28,47 @@
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const selectOptions=entries=>Object.entries(entries).map(([key,label])=>'<option value="'+key+'">'+escape(label)+'</option>').join('');
   const node=(tag,css,text)=>{const el=document.createElement(tag);if(css)el.className=css;if(text)el.textContent=text;return el;};
+
+  function skillField(){
+    return '<label>프리셋<select name="skill"><option value="auto">자동 선택</option><option value="none">사용 안 함</option></select></label>';
+  }
+
+  function selectedSkill(view,form,kind,key){
+    const selected=form.elements.skill.value;
+    const id=selected==='auto'?view.skillCatalog?.auto[kind][key]:selected;
+    return view.skillCatalog?.skills[id];
+  }
+
+  function updateSkillLabels(view){
+    for(const [form,kind,key] of [
+      [view.compose,'mode',view.compose.elements.mode.value],
+      [view.handoffForm,'purpose',view.handoffForm.elements.kind.value],
+    ]){
+      const auto=view.skillCatalog?.skills[view.skillCatalog.auto[kind][key]];
+      form.elements.skill.options[0].textContent=auto?'자동 · '+auto.label:'자동 선택';
+    }
+  }
+
+  async function loadSkills(view){
+    if(view.skillCatalog||view.skillLoad)return;
+    const check=new AbortController();
+    view.skillLoad=check;
+    try{
+      const response=await fetch('/one/ai-skills.json',{signal:check.signal});
+      if(!response.ok)return;
+      const catalog=await response.json();
+      if(!current(view)||check.signal.aborted||!catalog.skills||!catalog.auto?.mode||!catalog.auto?.purpose)return;
+      view.skillCatalog=catalog;
+      for(const form of [view.compose,view.handoffForm]){
+        for(const [id,skill] of Object.entries(catalog.skills))form.elements.skill.add(new Option(skill.label,id));
+      }
+      updateSkillLabels(view);
+    }catch{
+      // The built-in request modes remain usable if the shared catalog fails to load.
+    }finally{
+      view.skillLoad=null;
+    }
+  }
 
   function layout(){
     return `<dialog id="personal-ai-dock" class="personal-ai-dock" aria-labelledby="personal-ai-title">
@@ -65,7 +108,7 @@
             <label>사용할 AI<select name="provider">${selectOptions(Object.fromEntries(Object.entries(subscriptionSites).map(([key,value])=>[key,value.label])))}</select></label>
             <label>목적<select name="kind">${selectOptions(Object.fromEntries(Object.entries(requestTypes).map(([key,value])=>[key,value[0]])))}</select></label>
           </div>
-          <div data-ai-project hidden><div class="personal-ai-actions"><strong></strong><button type="button" class="btn" data-ai-action="leave-project">일반 대화</button></div></div>
+              ${skillField()}
         <label>요청<textarea name="request" rows="3" required maxlength="6000" placeholder="예: 오전 회의 전까지 처리할 일의 순서를 짜줘"></textarea></label>
           <fieldset class="personal-ai-context"><legend>요청에 포함할 자료</legend>
           <label class="personal-ai-check"><input type="checkbox" name="today"> 오늘 할 일과 일정 포함</label>
@@ -73,6 +116,15 @@
           </fieldset>
           <div><button type="submit" class="btn primary" data-ai-preview>요청 미리보기</button></div>
         </form>
+            <details class="personal-ai-guide">
+              <summary>AI 사용 가이드</summary>
+              <ol>
+                <li>ChatGPT, Claude, Gemini 중 로그인한 서비스를 선택하세요. 목적마다 추천 프리셋이 표시되고, 다른 프리셋으로 바꿀 수 있습니다.</li>
+                <li>목표와 결과물 형식을 적고 보낼 내용을 미리 확인하세요. 필요한 자료만 포함한 뒤 복사해서 AI 채팅에 붙여넣으세요.</li>
+                <li>AI 답변은 ‘답변 가져오기’에서 메모, 할 일, 일정으로 검토한 뒤 저장할 수 있습니다.</li>
+              </ol>
+              <p>누리원 안에서 바로 답을 받으려면 API 설정에서 본인 키를 연결하세요. 구독과 API 요금은 별도이며, 키를 요청 내용에 넣지 마세요.</p>
+            </details>
             <section class="personal-form personal-ai-preview" data-ai-handoff-output hidden aria-label="복사할 요청">
               <div class="personal-ai-preview-head">
                 <h3>보낼 내용 확인</h3>
@@ -112,6 +164,7 @@
           <label>응답 모델<select name="provider" required></select></label>
           <label>작업<select name="mode">${selectOptions(modes)}</select></label>
         </div>
+        ${skillField()}
         <label data-ai-social-field hidden>SNS 채널<select name="socialProvider">${selectOptions(socialProviders)}</select></label>
         <p class="personal-ai-mode-note" data-ai-mode-note hidden></p>
         <div data-ai-project hidden><div class="personal-ai-actions"><strong></strong><button type="button" class="btn" data-ai-action="leave-project">일반 대화</button></div></div>
@@ -158,6 +211,7 @@
       view.compose.elements.socialProvider.value==='youtube'?'작성한 YouTube 원고를 메모에서 확인할 수 있어요.':'초안은 내 SNS에서 검토하고 예약할 수 있어요.'
     ):'';
     note.hidden=!note.textContent;
+    updateSkillLabels(view);
   }
 
   function providerState(view){
@@ -181,6 +235,7 @@
     view.compose.elements.prompt.disabled=composing;
     view.compose.elements.provider.disabled=composing;
     view.compose.elements.mode.disabled=composing;
+    view.compose.elements.skill.disabled=composing;
     view.compose.elements.socialProvider.disabled=composing||view.compose.elements.mode.value!=='social';
     const configuring=view.loading||view.configuring||waiting;
     for(const field of view.setup.elements)field.disabled=configuring;
@@ -456,9 +511,12 @@
     view.handoffCheck=check;
     submit.disabled=true;
     try{
+      const skill=selectedSkill(view,form,'purpose',kind);
+      const useFallback=form.elements.skill.value==='auto'&&!view.skillCatalog;
       const sections=[
         '아래 요청을 한국어로 처리하세요. 근거가 없는 사실은 추정으로 표시하고, 외부 동작을 실행한 것처럼 말하지 마세요.',
-        '목적: '+requestTypes[kind][0]+'\n'+requestTypes[kind][1],
+        '목적: '+requestTypes[kind][0],
+        ...(skill?['프리셋: '+skill.label+'\n'+skill.instruction]:useFallback?[requestTypes[kind][1]]:[]),
         '내 요청\n'+request,
       ];
       if(form.elements.profile.checked&&view.profile?.instructions)sections.push('내가 일하는 방식\n'+view.profile.instructions);
@@ -562,7 +620,7 @@
     const values=Object.fromEntries(new FormData(view.compose)),prompt=values.prompt?.trim()||'';
     if(!prompt||!view.providers.some(provider=>provider.id===values.provider&&provider.configured))return;
     const mode=Object.hasOwn(modes,values.mode)?values.mode:'chat';
-    const request={provider:values.provider,prompt,mode,...(view.project?{projectId:view.project.id}:{}),...(mode==='social'?{socialProvider:values.socialProvider}:{})};
+    const request={provider:values.provider,prompt,mode,skill:values.skill,...(view.project?{projectId:view.project.id}:{}),...(mode==='social'?{socialProvider:values.socialProvider}:{})};
     const check=new AbortController();
     view.stream=check;
     view.pending={provider:values.provider,prompt,response:''};
@@ -675,6 +733,7 @@
     view.toggle.setAttribute('aria-expanded','true');
     if(focus)view.dock.querySelector('[data-ai-action="settings"]').focus({preventScroll:true});
     if(!view.ready)void hydrate(view);
+    void loadSkills(view);
   }
 
   function hide(view,restore=false){
@@ -725,6 +784,7 @@
     view.setup.addEventListener('submit',event=>{event.preventDefault();void changeProvider(view);});
     view.setup.elements.provider.addEventListener('change',()=>providerState(view));
     view.handoffForm.addEventListener('input',()=>refreshHandoff(view));
+    view.handoffForm.elements.kind.addEventListener('change',()=>updateSkillLabels(view));
     view.handoff.querySelector('[data-ai-handoff-link]').addEventListener('click',()=>{view.externalAI=true;});
     view.handoffForm.addEventListener('submit',event=>void prepareHandoff(view,event));
     view.profileForm.addEventListener('submit',event=>void saveWorkStyle(view,event));
@@ -736,6 +796,7 @@
     view.configCheck?.abort();
     view.profileCheck?.abort();
     view.handoffCheck?.abort();
+    view.skillLoad?.abort();
     view.stream?.abort();
     view.toggle.disabled=true;
     hide(view);
@@ -778,11 +839,12 @@
       view.loadingCheck?.abort();
       view.loadingCheck=null;view.loading=false;view.ready=false;
       view.messages=[];view.project=project;
-      const label=view.dock.querySelector('[data-ai-project]');
+      const label=view.compose.querySelector('[data-ai-project]');
       label.hidden=!project;
       label.querySelector('strong').textContent=project?.name??'';
       view.compose.elements.prompt.value='';
       view.compose.elements.mode.value='chat';
+      view.compose.elements.skill.value='auto';
       modeChanged(view);paintHistory(view);
     }
     show(view,true);

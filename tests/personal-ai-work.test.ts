@@ -33,6 +33,7 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
   }};
 
   let calls=0;
+  let providerInput='';
   t.mock.method(globalThis,'fetch',async (input:string,init?:RequestInit)=>{
     if(input===auth+'/auth/v1/user'){
       const token=new Headers(init?.headers).get('Authorization')?.slice(7)||'';
@@ -42,7 +43,8 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
     assert.equal(input,'https://api.openai.com/v1/responses');
     assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer api-fixture-one');
     calls++;
-    const payload=JSON.parse(String(init?.body));
+    providerInput=String(init?.body);
+    const payload=JSON.parse(providerInput);
     if(payload.stream){
       assert.match(JSON.stringify(payload),/표로 요약하는 편을 선호합니다/);
       return new Response('data: '+JSON.stringify({type:'response.output_text.delta',delta:'다듬은 일정입니다.'})+'\n\ndata: {"type":"response.completed"}\n\n',
@@ -81,12 +83,13 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
   assert.doesNotMatch(personalContext,/외부 요청에는 포함하지 않는 본문|표로 요약/);
   assert.doesNotMatch(await (await getProfile(request(profilePath+'?today=1',ids[1]))).text(),/사용자 A의 업무/);
   assert.equal(calls,0);
-  const ask=(mode:string,prompt:string,id=ids[0])=>chat(request('/api/personal/ai/chat',id,{method:'POST',body:{mode,prompt,provider:'openai'}}));
+  const ask=(mode:string,prompt:string,id=ids[0],skill?:string)=>chat(request('/api/personal/ai/chat',id,{method:'POST',body:{mode,prompt,provider:'openai',skill}}));
   assert.equal((await ask('chat','연결 없는 계정',ids[1])).status,409);
   assert.equal((await ask('mail','구분되지 않은 받는 주소')).status,400);
+  assert.equal((await ask('chat','알 수 없는 프리셋',ids[0],'__proto__')).status,400);
   assert.equal(calls,0);
-  async function run(mode:string,prompt:string){
-    const response=await ask(mode,prompt);
+  async function run(mode:string,prompt:string,skill?:string){
+    const response=await ask(mode,prompt,ids[0],skill);
     assert.equal(response.status,200);
     assert(response.headers.get('Content-Type')?.startsWith('text/event-stream'));
     const text=await response.text();
@@ -95,11 +98,15 @@ test('approved cloud AI streams responses and writes only explicitly selected pr
     assert(record);
     return JSON.parse(record.slice(6)).message;
   }
-  assert.equal((await run('chat','안녕')).response,'다듬은 일정입니다.');
+  assert.equal((await run('chat','안녕','weekly')).response,'다듬은 일정입니다.');
+  assert.match(providerInput,/답변 프리셋: 주간 리뷰/);
+  assert.equal((await personalWorkspace(ids[0]).list()).length,1,'a chat skill does not create tasks');
   assert.equal((await run('task','회의 준비 할 일을 추가')).action.kind,'task');
+  assert.match(providerInput,/답변 프리셋: 실행 계획/);
   assert((await personalWorkspace(ids[0]).list()).some(task=>task.title==='회의 준비'));
   assert.equal((await personalWorkspace(ids[1]).list()).length,0);
-  assert.equal((await run('schedule','일정 테스트')).action.kind,'schedule');
+  assert.equal((await run('schedule','일정 테스트','none')).action.kind,'schedule');
+  assert.doesNotMatch(providerInput,/답변 프리셋:/);
   assert((await personalWorkspace(ids[0]).list()).some(item=>item.title==='고객 미팅'&&item.dueTime==='14:20'));
   const result=await run('cards','카드 테스트');
   assert.equal(result.action.slides,1);
