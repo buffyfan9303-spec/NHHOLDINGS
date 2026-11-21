@@ -143,6 +143,7 @@
       }
     }
     if(ready) paintItems();
+    if(view==='home'&&ready)void window.NuriWorkbench?.loadHome();
     if(view==='workbench'&&ready)void window.NuriWorkbench.mount();
     if(view==='revenue'&&ready)void window.NuriPersonalRevenue?.mount?.();
     if(visible==='sites'&&ready)void window.NuriPersonalSites?.mount?.();

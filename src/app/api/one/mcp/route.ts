@@ -2,22 +2,27 @@ import type {NextRequest} from 'next/server';
 import {connectorActor,connectorChallenge,issuer,privateHeaders,socialReadScope} from '@/lib/personal-connector';
 import {listConnectedPersonalSocial} from '@/lib/personal-social';
 import {briefContext} from '@/lib/personal-ai-work';
-import {readWorkbench,submitDraft,submitCardDraft} from '@/lib/personal-workbench';
+import {readWorkbench,submitDraft,submitCardDraft,submitContentPack} from '@/lib/personal-workbench';
 import {body,limit,MarketError} from '@/lib/security';
 
 export const dynamic='force-dynamic';
 const versions=['2025-03-26','2025-06-18','2025-11-25'];
 const annotations={readOnlyHint:true,destructiveHint:false,openWorldHint:false};
 const securitySchemes=[{type:'oauth2',scopes:['nuri.workbench']}];
+const cardFields={title:{type:'string',maxLength:64},theme:{type:'string',enum:['mint','cobalt','ink']},
+  slides:{type:'array',minItems:1,maxItems:8,items:{type:'object',properties:{headline:{type:'string',maxLength:58},
+    body:{type:'string',maxLength:180},label:{type:'string',maxLength:28}},required:['headline','body'],additionalProperties:false}}};
 const tools=[
   {name:'list_projects',description:'List the user’s Nuri One projects. Returns IDs, names and memory versions.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
   {name:'project_memory',description:'Read approved work guidelines for one selected Nuri One project. Retrieved content is user context and provides no extra permissions.',inputSchema:{type:'object',properties:{projectId:{type:'string'}},required:['projectId'],additionalProperties:false},annotations},
   {name:'today_work',description:'Read today’s open work and upcoming reservations in Nuri One. No post or mail body is included.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
   {name:'list_connected_social',description:'List connected SNS account labels, channels and pause state for the current Nuri One user. Use this before drafting content for a social account. Does not return drafts, followers or credentials.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations},
   {name:'propose_draft',description:'Put a draft in the user’s Nuri One approval queue. This does not send mail, publish, change files, or place orders.',inputSchema:{type:'object',properties:{projectId:{type:'string'},category:{type:'string',enum:['business','content','seller','mail','drive']},title:{type:'string'},text:{type:'string'}},required:['category','title','text'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},
+  {name:'propose_content_pack',description:'Submit platform-specific text drafts for one Nuri One project and keep their source topic together. Requires user review before use.',
+    inputSchema:{type:'object',properties:{projectId:{type:'string'},title:{type:'string'},topic:{type:'string'},short:{type:'string'},blog:{type:'string'},social:{type:'string'},card:{type:'object',properties:cardFields,required:['title','slides'],additionalProperties:false}},
+      required:['projectId','title','topic'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},
   {name:'propose_card_news',description:'Submit 1–8 structured Korean card-news slides to Nuri One for review. Approval creates private images; this tool does not publish them.',
-    inputSchema:{type:'object',properties:{projectId:{type:'string'},title:{type:'string',maxLength:64},theme:{type:'string',enum:['mint','cobalt','ink']},
-      slides:{type:'array',minItems:1,maxItems:8,items:{type:'object',properties:{headline:{type:'string',maxLength:58},body:{type:'string',maxLength:180},label:{type:'string',maxLength:28}},required:['headline','body'],additionalProperties:false}}},
+    inputSchema:{type:'object',properties:{projectId:{type:'string'},...cardFields},
     required:['title','slides'],additionalProperties:false},annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false}},
 ].map(tool=>{
   const schemes=tool.name==='list_connected_social'?[{type:'oauth2',scopes:['nuri.workbench',socialReadScope]}]:securitySchemes;
@@ -67,11 +72,17 @@ export async function POST(req:NextRequest) {
       const {kst,items,agenda}=await briefContext(actor.id);
       return json({result:toolContent({date:kst,items,agenda})});
     }
+    if(params.name==='propose_content_pack'){
+      limit('nuri-connector:'+actor.id,8);
+      const {decisions}=await submitContentPack(actor.id,args,actor.provider);
+      return json({result:toolContent({drafts:decisions.map(({id,title,status})=>({id,title,status,
+        url:issuer()+'/personal?review='+encodeURIComponent(id)+'#workbench'}))})});
+    }
     if(params.name==='propose_draft'||params.name==='propose_card_news'){
       limit('nuri-connector:'+actor.id,8);
       const submit=params.name==='propose_card_news'?submitCardDraft:submitDraft;
       const {id,title,status}=await submit(actor.id,args,actor.provider);
-      return json({result:toolContent({id,title,status,url:issuer()+'/personal#workbench'})});
+      return json({result:toolContent({id,title,status,url:issuer()+'/personal?review='+encodeURIComponent(id)+'#workbench'})});
     }
     return json({error:{code:-32602,message:'Unknown tool'}});
   } catch(error) {

@@ -9,7 +9,7 @@ type MailStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'review' | 'cance
 type MailDraft = {to: string; subject: string; body: string};
 type MailItem = MailDraft & {
   id: string; ownerId: string; ownerEmail:string; version: number; status: MailStatus; createdAt: string; updatedAt: string;
-  scheduledAt: string | null; connectionId: string | null; sentAt?: string | null; reason?: string | null; messageId?: string | null;
+  scheduledAt: string | null; connectionId: string | null; retryable?: boolean; sentAt?: string | null; reason?: string | null; messageId?: string | null;
 };
 
 const documentScope = "workspace='live' AND kind='personal-mail-item'";
@@ -85,13 +85,13 @@ export async function editPersonalMail(actor:string,input:Record<string,unknown>
     if(!['draft','cancelled'].includes(previous.status))throw new MarketError('발송을 준비 중이거나 결과가 있는 메일은 복사해 새 초안으로 작성해 주세요.',409);
     patch={...mailDraft(input),status:'draft',reason:null,scheduledAt:null,connectionId:null};
   }else if(action==='schedule'){
-    if(!['draft','cancelled'].includes(previous.status))throw new MarketError('현재 상태에서 예약할 수 없습니다.',409);
+    if(!['draft','cancelled'].includes(previous.status)&&!(previous.status==='review'&&previous.retryable===true))throw new MarketError('현재 상태에서 예약할 수 없습니다.',409);
     if(input.approved!==true)throw new MarketError('받는 주소, 제목, 본문과 발송 시각을 확인해 주세요.');
     const stamp=typeof input.at==='string'?Date.parse(input.at):NaN;
     if(!Number.isFinite(stamp)||stamp<=Date.now())throw new MarketError('앞으로의 발송 시각을 선택해 주세요.');
     const connection=await mailConnection(actor);
     if(!connection.connected||connection.paused||!connection.connectionId)throw new MarketError('Gmail을 연결하고 자동화를 켜 주세요.',409);
-    patch={status:'scheduled',scheduledAt:new Date(stamp).toISOString(),connectionId:connection.connectionId,reason:null};
+    patch={status:'scheduled',scheduledAt:new Date(stamp).toISOString(),connectionId:connection.connectionId,reason:null,retryable:false};
   }else{
     if(previous.status!=='scheduled')throw new MarketError('예약 중인 메일만 취소할 수 있습니다.',409);
     patch={status:'cancelled',scheduledAt:null,connectionId:null,reason:null};
@@ -135,7 +135,7 @@ export async function runPersonalMail({canRun=canRunPersonalAutomation,token=mai
   );
   let review=0;
   for(const {data:item} of overdue.rows){
-    if(await changeItem(item,{status:'review',reason:'이전 발송 결과를 확인하세요.'}))review++;
+    if(await changeItem(item,{status:'review',retryable:false,reason:'이전 발송 결과를 확인하세요.'}))review++;
   }
   const due=await db.query<{data:MailItem}>(
     "SELECT data FROM nh_documents WHERE "+documentScope+" AND data->>'status'='scheduled' AND data->>'scheduledAt'<=$1 ORDER BY data->>'scheduledAt',id LIMIT 4",
@@ -162,7 +162,7 @@ export async function runPersonalMail({canRun=canRunPersonalAutomation,token=mai
       if(await changeItem(claim,{status:'sent',sentAt:iso(),messageId:result.id.slice(0,160),reason:null}))sent++;
     }catch{
       const reason=submitted?'Gmail의 보낸편지함에서 발송 여부를 확인하세요.':'계정 승인 또는 Gmail 연결을 다시 확인하세요.';
-      if(await changeItem(claim,{status:'review',reason}))review++;
+      if(await changeItem(claim,{status:'review',retryable:!submitted,reason}))review++;
     }
   }
   return {checked,sent,review};

@@ -23,7 +23,7 @@
   const views=new Map();
   const cardIdPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
   const imageProviders=['instagram','threads'];
-  let socialCard=null, approvedDraft=null, providerJump=null;
+  let socialCard=null, approvedDraft=null, providerJump=null, activityJump=null;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const safeLink=value=>{
     try {
@@ -113,7 +113,7 @@
   }
 
   function approvalAvailable(view,item) {
-    if(!editAllowed(view,item))return false;
+    if(!editAllowed(view,item)&&!(view.kind==='mail'&&item?.status==='review'&&item.retryable===true))return false;
     if(view.kind==='mail')return view.data.connection?.connected===true&&!view.data.connection.paused;
     const connection=connectionFor(view,item);
     return !!connection&&connection.ready===true&&!connection.paused;
@@ -149,10 +149,10 @@
       const review=item.status==='review'?(item.uncertain?' 실제 채널에서 처리 결과를 먼저 확인해 주세요.':' 연결 상태와 원고를 확인해 주세요.'):'';
       const link=view.kind==='social'&&item.status==='published'?safeLink(item.link):'';
       const buttons=[editAllowed(view,item)?actionButton('편집','edit',item.id):'',
-        approvalAvailable(view,item)?actionButton(item.status==='scheduled'?'예약 변경':'원고 승인 및 예약','schedule',item.id):'',
+        approvalAvailable(view,item)?actionButton(item.status==='scheduled'?'예약 변경':item.status==='review'&&view.kind==='mail'?'다시 승인 및 예약':'원고 승인 및 예약','schedule',item.id):'',
         item.status==='scheduled'?actionButton('예약 취소','cancel',item.id):'',
       ].join('');
-      return `<li class="personal-row auto-row"><div class="personal-row-text">
+      return `<li class="personal-row auto-row" data-auto-item="${escape(item.id)}"><div class="personal-row-text">
         <div class="auto-row-heading"><strong>${escape(title)}</strong><span class="auto-state" data-state="${escape(item.status)}">${statusLabel(item.status)}</span></div>
         <div class="personal-row-meta auto-meta"><span>${escape(channel||'채널 미확인')}</span>${item.cardId?'<span>'+escape((item.cardTitle||'카드뉴스')+' · '+(item.cardSlide+1)+'장')+'</span>':''}${validTime(item.scheduledAt)}</div>
         ${review?`<p class="auto-review">${escape(item.error||item.reason||review.trim())}</p>`:''}
@@ -496,6 +496,9 @@
       const result=await request(view,body);
       if(!current(view)||epoch!==view.epoch)return;
       if(provider) {
+        if(view.recoveryId){
+          try{sessionStorage.setItem('nuri-personal-activity-return',JSON.stringify({owner:view.owner,kind:view.kind,id:view.recoveryId}));}catch{}
+        }
         followOAuth(provider,result.url);
         return;
       }
@@ -627,7 +630,8 @@
     providerJump=null;
     if(!section)return;
     if(section===catalog)view.root.querySelector('[data-auto-setup]').open=true;
-    let target=pending.recover?section.querySelector('[data-auto-action="reconnect"], .auto-account-list a.personal-link'):null;
+    let target=pending.accountId?Array.from(section.querySelectorAll('[data-auto-action="reconnect"],[data-auto-action="pause"]')).find(button=>button.dataset.id===pending.accountId):null;
+    target??=pending.recover?section.querySelector('[data-auto-action="reconnect"], .auto-account-list a.personal-link'):null;
     if(pending.recover&&!target){
       const settings=section.querySelector('.auto-advanced');
       if(settings){
@@ -643,10 +647,62 @@
     section.scrollIntoView({block:'start',behavior:'instant'});
   }
 
+  function focusActivity(kind,id){
+    const owner=window.NuriPersonalAccount;
+    if(!owner||!['mail','social'].includes(kind)||typeof id!=='string'||!cardIdPattern.test(id))return false;
+    activityJump={kind,id,owner};
+    if(location.hash!=='#'+kind)location.hash=kind;
+    else mount(kind);
+    return true;
+  }
+
+  function restoreActivity(view){
+    try{
+      const key='nuri-personal-activity-return';
+      const raw=sessionStorage.getItem(key);
+      if(!raw)return;
+      const pending=JSON.parse(raw);
+      if(pending.owner!==view.owner){sessionStorage.removeItem(key);return;}
+      if(pending.kind!==view.kind)return;
+      sessionStorage.removeItem(key);
+      if(cardIdPattern.test(pending.id))activityJump=pending;
+    }catch{}
+  }
+
+  function showActivity(view){
+    if(activityJump?.owner!==view.owner||activityJump.kind!==view.kind)return;
+    const {id}=activityJump;
+    activityJump=null;
+    const item=view.data.items.find(row=>row.id===id);
+    if(!item){note(view,'작업을 찾을 수 없습니다. 실행 내역을 새로 확인해 주세요.',true);return;}
+    view.recoveryId=item.status==='review'?id:null;
+    if(view.kind==='social'){
+      view.filter=connectionFor(view,item)?.ready?item.accountId:'history';
+      paintItems(view);
+    }
+    const row=Array.from(view.root.querySelectorAll('[data-auto-item]')).find(node=>node.dataset.autoItem===id);
+    if(!row)return;
+    row.tabIndex=-1;
+    row.focus({preventScroll:true});
+    row.scrollIntoView({block:'nearest',behavior:'instant'});
+    if(item.status!=='review'||(view.kind==='social'?item.uncertain!==false:item.retryable!==true))return;
+    if(!approvalAvailable(view,item)){
+      const account=connectionFor(view,item);
+      if(view.kind==='social'&&item.provider){
+        providerJump={owner:view.owner,id:item.provider,recover:!account?.ready,accountId:item.accountId};
+        scrollToProvider(view);
+      }else{
+        const connection=view.root.querySelector('[data-auto-action="connect"],[data-auto-action="pause"],[data-auto-action="configure"]');
+        connection?.focus();
+      }
+    }
+  }
+
   function openPendingDraft(view) {
     if(!current(view)||!view.data||view.loading||view.busy||view.dialog.open||
        document.visibilityState==='hidden'||location.hash!=='#'+view.kind)return;
     scrollToProvider(view);
+    showActivity(view);
     if(approvedDraft?.owner===view.owner&&approvedDraft.kind===view.kind){
       const seed=approvedDraft;
       approvedDraft=null;
@@ -746,11 +802,13 @@
         root.querySelector('[data-auto-account-filter]')?.focus({preventScroll:true});
       }
     };
-    void load(view,oauthNotice(kind));
+    const notice=oauthNotice(kind);
+    if(notice)restoreActivity(view);
+    void load(view,notice);
   }
 
   function suspend() {
-    approvedDraft=null;providerJump=null;
+    approvedDraft=null;providerJump=null;activityJump=null;
     for(const view of views.values())suspendView(view);
   }
   window.addEventListener('personal-automation-changed',event=>{
@@ -761,5 +819,5 @@
   });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')suspend();});
   window.addEventListener('pagehide',suspend);
-  window.NuriPersonalAutomation={mount,suspend,selectSocialCard,reviewApprovedDraft,focusProvider};
+  window.NuriPersonalAutomation={mount,suspend,selectSocialCard,reviewApprovedDraft,focusProvider,focusActivity};
 })();

@@ -6,18 +6,19 @@ import {personalAgenda} from '@/lib/personal-agenda';
 import {changePersonalSocial,personalSocialState} from '@/lib/personal-social';
 import {editPersonalMail} from '@/lib/personal-mail';
 import {createPersonalCard} from '@/lib/personal-cards';
+import {submitCardDraft,submitContentPack,submitDraft} from '@/lib/personal-workbench';
 import type {PersonalAIProvider} from '@/lib/personal-ai-providers';
 
-export type AIMode = 'chat'|'brief'|'task'|'schedule'|'note'|'social'|'mail'|'cards';
+export type AIMode = 'chat'|'brief'|'task'|'schedule'|'note'|'social'|'mail'|'cards'|'content-pack';
 export type AIAction = {kind:string;id:string;title:string;href:string;slides?:number};
 export type AIMessage = {
   id:string; provider:PersonalAIProvider; mode:AIMode; prompt:string; response:string;
-  createdAt:string; action?:AIAction;
+  createdAt:string; projectId?:string; action?:AIAction;
 };
 type Actor = {id:string;email:string};
 type Social = 'instagram'|'threads'|'youtube'|'x';
 
-const modes=new Set<AIMode>(['chat','brief','task','schedule','note','social','mail','cards']);
+const modes=new Set<AIMode>(['chat','brief','task','schedule','note','social','mail','cards','content-pack']);
 const socialProviders=new Set<Social>(['instagram','threads','youtube','x']);
 const scope="workspace='live' AND kind='personal-ai-message'";
 
@@ -30,16 +31,16 @@ export function aiInput(value:Record<string,unknown>){
   return {mode:mode as AIMode,prompt,social};
 }
 
-export async function personalAIHistory(actor:string){
+export async function personalAIHistory(actor:string,projectId?:string){
   const rows=await pool().query<{data:AIMessage & {ownerId:string}}>(
-    "SELECT data FROM nh_documents WHERE "+scope+" AND id LIKE $1 AND data->>'ownerId'=$2 ORDER BY updated DESC,id LIMIT 40",
-    [actor+':%',actor],
+    "SELECT data FROM nh_documents WHERE "+scope+" AND id LIKE $1 AND data->>'ownerId'=$2 AND COALESCE(data->>'projectId','')=$3 ORDER BY updated DESC,id LIMIT 40",
+    [actor+':%',actor,projectId??''],
   );
   return rows.rows.reverse().map(({data:{ownerId,...record}})=>record);
 }
 
-export function aiRecord(provider:PersonalAIProvider,mode:AIMode,prompt:string,response:string,action?:AIAction):AIMessage {
-  return {id:randomUUID(),provider,mode,prompt,response,createdAt:new Date().toISOString(),...(action?{action}:{})};
+export function aiRecord(provider:PersonalAIProvider,mode:AIMode,prompt:string,response:string,action?:AIAction,projectId?:string):AIMessage {
+  return {id:randomUUID(),provider,mode,prompt,response,createdAt:new Date().toISOString(),...(action?{action}:{}),...(projectId?{projectId}:{})};
 }
 
 export async function savePersonalAIMessage(actor:string,record:AIMessage){
@@ -65,6 +66,7 @@ export function actionInstructions(mode:AIMode,social:Social|null){
     case 'note':return '메모 하나를 JSON으로 작성하세요. 키는 title(1~160자), detail(최대 4000자)입니다.';
     case 'social':return '채널 '+social+'의 게시용 초안을 JSON으로 작성하세요. 키는 title(최대 100자), body입니다. X는 가중 280자 이내, Threads는 500자 이내, Instagram은 2200자 이내로 작성하세요. 임의 주소나 미디어 ID를 만들지 마세요.';
     case 'mail':return '발송할 메일 초안을 JSON으로 작성하세요. 키는 subject(1~160자), body(최대 16000자)입니다. 실제 전송하거나 받는 주소를 추측하지 마세요.';
+    case 'content-pack':return '하나의 주제로 콘텐츠 묶음을 작성하세요. JSON 키는 title(80자), topic(사용자가 제공한 원본 요약, 2000자), short(숏폼 대본), blog(블로그 초안), social(SNS 문구), card(카드뉴스 객체)입니다. 각 텍스트 초안은 4000자 이하. card는 title(64자), theme(mint/cobalt/ink), slides(1~8장)로 구성하며 각 장의 headline(58자), body(130자), label(20자)은 한국어로 작성하세요. 사용자가 요구하는 형식만 포함해도 됩니다.';
     case 'cards':return '세로형 카드뉴스를 JSON으로 작성하세요. 키는 title(최대 64자), theme(mint,cobalt,ink 중 하나), slides 배열입니다. slides는 1~8개이며 각각 headline(최대 58자), body(최대 130자), label(최대 20자)을 갖습니다. 카드당 한 가지 내용을 다루고, Markdown을 넣지 마세요.';
     default:throw new MarketError('만들 작업을 확인해 주세요.');
   }
@@ -99,8 +101,22 @@ async function saveWork(actor:Actor,kind:'task'|'schedule'|'note',title:string,d
   return {id:item.id,kind,title:item.title,href:'/personal#'+(kind==='task'?'tasks':kind==='schedule'?'schedule':'notes')};
 }
 
-export async function applyPersonalAI(actor:Actor, mode:AIMode, prompt:string, social:Social|null, output:string){
+export async function applyPersonalAI(actor:Actor, mode:AIMode, prompt:string, social:Social|null, output:string,projectId?:string){
   const draft=jsonDraft(output);
+  if(mode==='content-pack'){
+    if(!projectId)throw new MarketError('콘텐츠 묶음에 연결할 프로젝트를 선택해 주세요.');
+    const {decisions}=await submitContentPack(actor.id,{...draft,topic:prompt.slice(0,2000),projectId},'누리원 AI 비서');
+    const row=decisions[0];
+    const action={id:row.id,kind:'approval',title:row.title,href:'/personal?review='+encodeURIComponent(row.id)+'#workbench'};
+    return {action,response:'콘텐츠 초안 '+decisions.length+'개를 프로젝트 승인함에 추가했습니다.'};
+  }
+  if(projectId&&(mode==='cards'||mode==='social')){
+    const row=mode==='cards'
+      ? await submitCardDraft(actor.id,{...draft,projectId},'누리원 AI 비서')
+      : await submitDraft(actor.id,{projectId,category:'content',title:draft.title,text:draft.body},'누리원 AI 비서');
+    const action={id:row.id,kind:'approval',title:row.title,href:'/personal?review='+encodeURIComponent(row.id)+'#workbench'};
+    return {action,response:'프로젝트 승인함에 초안을 추가했습니다.'};
+  }
   if(mode==='schedule'){
     const title=textValue(draft.title,'제목',160),detail=textValue(draft.detail??'','내용',4000,true);
     const date=dateValue(draft.dueOn);

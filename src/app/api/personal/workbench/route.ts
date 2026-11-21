@@ -1,6 +1,6 @@
 import type {NextRequest} from 'next/server';
 import {automationActor} from '@/lib/personal-automation-access';
-import {readWorkbench,updateWorkbench} from '@/lib/personal-workbench';
+import {readWorkbench,readDeliveryActivity,updateWorkbench} from '@/lib/personal-workbench';
 import {connectorStatus,disconnectConnector} from '@/lib/personal-connector';
 import {driveConnectionOverview} from '@/lib/personal-files';
 import {mailConnection} from '@/lib/personal-mail-auth';
@@ -22,6 +22,18 @@ async function respond(req:NextRequest,write:boolean) {
         social:social.status==='fulfilled'?social.value:null,
         mail:mail.status==='fulfilled'?{configured:mail.value.configured,connected:mail.value.connected,paused:mail.value.paused,hasSavedConnection:mail.value.hasSavedConnection}:null,
         drive:drive.status==='fulfilled'?drive.value:null,
+      },{headers});
+    }
+    const view=req.nextUrl.searchParams.get('view');
+    if(!write&&view==='activity')return Response.json({activity:await readDeliveryActivity(actor.id)},{headers});
+    if(!write&&view==='resume'){
+      const [{decisions,projects},activity]=await Promise.all([readWorkbench(actor.id),readDeliveryActivity(actor.id)]);
+      const pending=decisions.filter(row=>row.status==='pending');
+      return Response.json({
+        pending:pending.length,
+        reviews:activity.filter(row=>row.status==='review').length,
+        latest:pending.slice(0,3).map(({id,title,projectId})=>({id,title,project:projects.find(row=>row.id===projectId)?.name??null})),
+        firstRun:projects.length===0,
       },{headers});
     }
     const input=write?await body(req):null;
