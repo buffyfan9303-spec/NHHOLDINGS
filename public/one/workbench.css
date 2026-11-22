@@ -145,22 +145,35 @@
 #workbench .workbench-check{display:flex;align-items:center;gap:8px;min-height:44px}
 #workbench .workbench-check input{width:18px;height:18px;flex:none;margin:0}
 
-#workbench .workbench-week-project{display:grid;gap:4px;max-inline-size:24rem;margin-block:8px 10px}
+#workbench .workbench-week-project{display:grid;gap:4px;max-inline-size:24rem;margin-block:8px 4px}
 #workbench .workbench-week-project select{min-height:44px;padding:7px 36px 7px 10px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--surface);appearance:none;background-image:linear-gradient(45deg,transparent 43%,var(--muted) 44% 59%,transparent 60%),linear-gradient(-45deg,transparent 43%,var(--muted) 44% 59%,transparent 60%);background-position:right 20px center,right 15px center;background-repeat:no-repeat;background-size:6px 6px}
-.workbench-week-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin-block:12px;padding:8px 0;border-block:1px solid var(--line)}
-.workbench-week-counts li{display:grid;gap:2px;padding-inline:10px;min-width:0}
-.workbench-week-counts li+li{border-inline-start:1px solid var(--line)}
+.workbench-week-navigation{display:flex;align-items:center;flex-wrap:wrap;column-gap:16px}
+.workbench-week-navigation p{margin-block:0}
+#workbench :is(.workbench-week-navigation,.workbench-week-tools) .btn,
+#workbench .workbench-quiet{min-inline-size:44px;min-block-size:44px;padding:0;background:none;border:0;border-radius:0;color:var(--teal);font:inherit;font-size:.875rem;cursor:pointer;text-underline-offset:.22em}
+#workbench :is(.workbench-week-navigation,.workbench-week-tools) .btn:hover,
+#workbench .workbench-quiet:hover,
+#workbench .workbench-quiet[aria-expanded="true"]{text-decoration:underline}
+#workbench .workbench-quiet:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.workbench-week-counts{display:flex;flex-wrap:wrap;gap:4px 20px;list-style:none;margin:4px 0;padding:8px 0;border-block:1px solid var(--line)}
+.workbench-week-counts li{display:flex;align-items:baseline;gap:6px;min-width:0}
 .workbench-week-counts strong{font-variant-numeric:tabular-nums}
 .workbench-week-counts span{font-size:.85rem;color:var(--muted)}
 .workbench-week-details>section{min-width:0}
 .workbench-week-details .workbench-check small,.workbench-repeat li small{display:block}
 .workbench-week-details .workbench-check span{min-width:0;overflow-wrap:anywhere}
 
-.workbench-plan-import {margin-block:12px 18px}
+#workbench .workbench-plan-import {margin-block:0 16px;border-block-end:1px solid var(--line)}
 .workbench-plan-import summary {cursor:pointer;min-block-size:44px;align-content:center;font-weight:600}
+.workbench-plan-import>p {margin-block:0 8px}
+.workbench-plan-import [data-weekly-plan-status]:empty {display:none}
+.workbench-plan-import[open] {padding-block-end:12px}
 .workbench-plan-import .personal-form {min-width:0}
 .workbench-plan-items {display:grid;gap:12px}
-.workbench-plan-item {min-inline-size:0;padding-block:6px;border-block-end:1px solid var(--line);overflow-wrap:anywhere}
-.workbench-plan-item .workbench-check {font-weight:600}
-.workbench-plan-item small {display:block;color:var(--muted)}
-.workbench-plan-item summary {font-size:.85rem;font-weight:500}
+#workbench .workbench-plan-items h3{margin:0}
+.workbench-plan-item {display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;min-inline-size:0;padding-block-end:6px;border-block-end:1px solid var(--line);overflow-wrap:anywhere}
+#workbench .workbench-plan-item .workbench-check {grid-column:1;grid-row:1;align-items:flex-start;font-weight:600}
+#workbench .workbench-plan-item .workbench-check :is(input,span) {margin-block-start:11px}
+.workbench-plan-item small {grid-column:1;grid-row:2;margin-inline-start:26px}
+.workbench-plan-item .workbench-quiet {grid-column:2;grid-row:1;align-self:start}
+.workbench-plan-fields {grid-column:1/-1;padding-block:8px 4px}
