@@ -268,8 +268,12 @@
   }
 
   function planItemWhen(item){
-    const label=item.kind==='schedule'?'일정':'할 일';
-    return label+' · '+(item.dueOn?[item.dueOn,item.dueTime].filter(Boolean).join(' '):item.kind==='schedule'?'일정 날짜 필요':'마감일 없음');
+    const date=[item.dueOn,item.dueTime].filter(Boolean).join(' ');
+    return date||(item.kind==='schedule'?'날짜 필요':'마감일 없음');
+  }
+  function togglePlanEditor(button,open){
+    button.nextElementSibling.hidden=!open;
+    button.setAttribute('aria-expanded',String(open));
   }
   function planItemFields(row){
     return Object.fromEntries(['kind','title','detail','dueOn','dueTime'].map(name=>[name,row.querySelector('[name='+name+']').value]));
@@ -284,16 +288,19 @@
     try{
       const rows=parseWeeklyPlan(form.elements.answer.value);
       const min=dates.nextStart<today()?today():dates.nextStart;
-      const card=row=>
-        '<div class="workbench-plan-item" data-weekly-plan-item>'+
+      const card=(row,index)=>{
+        const editor='weekly-plan-'+row.kind+'-'+index;
+        return '<div class="workbench-plan-item" data-weekly-plan-item data-plan-kind="'+row.kind+'">'+
         '<label class="workbench-check"><input type="checkbox" name="item"><span data-plan-title>'+esc(row.title)+'</span></label>'+
         '<small data-plan-when>'+esc(planItemWhen(row))+'</small>'+
-        '<details><summary>항목 수정</summary><div class="personal-form">'+
+        '<button type="button" class="workbench-quiet" aria-expanded="false" aria-controls="'+editor+'" data-action="plan-edit">항목 수정</button>'+
+        '<div class="personal-form workbench-plan-fields" id="'+editor+'" hidden>'+
         '<label>제목<input name="title" maxlength="160" value="'+esc(row.title)+'"></label>'+
         '<label>유형<select name="kind"><option value="task">할 일</option><option value="schedule"'+(row.kind==='schedule'?' selected':'')+'>일정</option></select></label>'+
         '<div class="workbench-time"><label>날짜<input name="dueOn" type="date" min="'+esc(min)+'" max="'+esc(dates.nextEnd)+'" value="'+esc(row.dueOn)+'"></label>'+
         '<label>시간<input name="dueTime" type="time" value="'+esc(row.dueTime)+'"></label></div>'+
-        '<label>메모<textarea name="detail" rows="2" maxlength="1000">'+esc(row.detail)+'</textarea></label></div></details></div>';
+        '<label>메모<textarea name="detail" rows="2" maxlength="1000">'+esc(row.detail)+'</textarea></label></div></div>';
+      };
       preview.querySelector('[data-weekly-plan-items]').innerHTML=[['task','할 일'],['schedule','일정']].map(([kind,label])=>{
         const matches=rows.filter(row=>row.kind===kind);
         return matches.length?'<section class="workbench-plan-items"><h3>'+label+' '+matches.length+'개</h3>'+matches.map(card).join('')+'</section>':'';
@@ -317,10 +324,10 @@
 
   function weekly(){
     const available=data.projects.some(project=>project.id===weeklyProject);
-    const header='<section class="workbench-narrow"><h2>프로젝트 주간 리뷰</h2>'+
+    const header='<section class="workbench-week-header"><h2>프로젝트 주간 리뷰</h2>'+
       '<label class="workbench-week-project">프로젝트<select data-weekly-project>'+selectProject(weeklyProject)+'</select></label>'+
-      '<div class="workbench-actions">'+action('이전 주','review-previous')+action('이번 주','review-current')+action('다음 주','review-next')+'</div>'+
-      '<p class="workbench-muted">'+esc(weeklyStart+' – '+calendarDay(weeklyStart,6))+' · 한국 시간</p></section>';
+      '<div class="workbench-week-navigation"><p class="workbench-muted">'+esc(weeklyStart+' – '+calendarDay(weeklyStart,6))+' · 한국 시간</p>'+
+      '<div class="workbench-actions" role="group" aria-label="리뷰 기간">'+action('이전 주','review-previous')+action('이번 주','review-current')+action('다음 주','review-next')+'</div></div></section>';
     if(!available)return header+'<p>리뷰할 프로젝트를 선택해 주세요.</p>';
     if(!weeklyData)return header+'<p>주간 기록을 불러오고 있습니다.</p>';
     if(weeklyData.error)return header+'<p>'+esc(weeklyData.error)+'</p>'+action('다시 조회','review-refresh');
@@ -345,7 +352,7 @@
       '<label>주기<select name="frequency"><option value="daily">매일</option><option value="weekly" selected>매주</option><option value="monthly">매월</option></select></label>'+
       '<label>시작 날짜<input name="startOn" type="date" value="'+today()+'" min="'+today()+'" required></label></div>'+
       '<div><button class="btn primary" type="submit">반복 설정 저장</button></div></form></details></section>';
-    const tools='<div class="workbench-actions">'+action('주간 리뷰 내려받기','weekly-download')+
+    const tools='<div class="workbench-actions workbench-week-tools">'+action('주간 리뷰 내려받기','weekly-download')+
       action('AI로 다음 주 준비','weekly-ai')+'</div>';
     return header+counts+tools+(canCarry?weeklyImport(dates):'')+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
   }
@@ -605,6 +612,7 @@
     if(!data)return;
     if(next){switchPane(next);return;}
     if(key==='weekly-download'||key==='weekly-ai'){shareWeekly(key,trigger);return;}
+    if(key==='plan-edit'){togglePlanEditor(trigger,trigger.getAttribute('aria-expanded')==='false');return;}
     if(key==='refresh-activity'||key==='refresh-profile'){void loadPane(pane,true);return;}
     if(key==='open-activity'){
       const item=Array.isArray(activityData)&&activityData.find(row=>row.id===id);
@@ -708,7 +716,8 @@
     if(row){
       const item=planItemFields(row);
       row.querySelector('[data-plan-title]').textContent=item.title.trim()||'제목 없음';
-      row.querySelector('[data-plan-when]').textContent=planItemWhen(item);
+      const changed=item.kind!==row.dataset.planKind;
+      row.querySelector('[data-plan-when]').textContent=(changed?(item.kind==='schedule'?'일정으로 변경 · ':'할 일로 변경 · '):'')+planItemWhen(item);
     }
     if(!event.target.matches('[data-form="preview-plan"] textarea'))return;
     const panel=event.target.closest('[data-weekly-plan]');
@@ -733,7 +742,7 @@
         !fields[index].querySelector('[name=dueOn]').validity.valid);
       if(invalid>=0){
         note.textContent='선택한 항목의 제목과 날짜를 확인해 주세요. 날짜는 해당 주의 오늘 이후로 입력할 수 있습니다.';
-        fields[invalid].querySelector('details').open=true;
+        togglePlanEditor(fields[invalid].querySelector('[data-action=plan-edit]'),true);
         fields[invalid].querySelector(items[invalid].title.trim()?'[name=dueOn]':'[name=title]').focus();
         return;
       }
