@@ -62,7 +62,7 @@
    <div class="personal-nav-group" data-menu-group>
     <p>자료 · 가이드</p>
     <a href="#files" data-personal-link="files">비공개 저장소</a>
-    <a href="#getting-started" data-personal-link="getting-started">시작 가이드</a>
+    <a href="#getting-started" data-personal-link="getting-started">가이드</a>
     <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
     <a id="personal-owner-links" href="/dashboard#connections/integrations" hidden>운영 설정 · 연결</a>
    </div>
@@ -243,16 +243,66 @@
      <div id="personal-revenue-list"></div>
     </div>
    </section>
-   <section data-personal-view="getting-started" hidden aria-label="시작 가이드">
-    <section class="personal-sheet personal-site-guide">
-     <h2>내 계정으로 시작하기</h2>
-     <ol class="personal-site-guide-steps">
-      <li><details open><summary>웹사이트와 블로그 운영</summary><p>내 웹사이트에 주소와 갱신일을 등록하세요. 주소가 없으면 가비아 구매와 호스팅 연결 가이드부터 시작하세요. 웹사이트·블로그 수익과 비용은 정산 월별로 기록할 수 있어요.</p><div class="personal-site-guide-links"><a class="personal-link" href="#sites">내 웹사이트</a><a class="personal-link" href="#website-guide">구매·연결 가이드</a><a class="personal-link" href="#revenue">수익 대시보드</a></div></details></li>
-      <li><details><summary>AI 비서로 초안과 작업 만들기</summary><p>AI 비서의 모델 설정에서 본인 GPT, Claude 또는 Gemini API를 연결하세요. 채팅, 할 일, 일정, 메모, SNS·메일 초안, 카드뉴스 중 할 작업을 고르세요. 초안의 내용과 게시 계정을 확인한 뒤 예약할 수 있어요.</p><button class="btn" type="button" id="personal-start-ai">AI 비서 열기</button></details></li>
-      <li><details><summary>SNS와 메일 예약</summary><p>내 SNS에서 본인 채널을 연결하고 초안을 준비하세요. 게시 계정과 한국 시각을 확인해 예약을 승인하면 일정에서 게시 계획을 볼 수 있어요. 메일 예약에서 본인 Gmail도 같은 방식으로 준비할 수 있어요.</p><div class="personal-site-guide-links"><a class="personal-link" href="#social">내 SNS</a><a class="personal-link" href="#mail">메일 예약</a><a class="personal-link" href="#schedule">내 일정</a></div></details></li>
-      <li><details><summary>Google Drive에 자료 모으기</summary><p>비공개 저장소에서 본인 Google Drive를 연결하세요. 프로젝트 이름이 들어간 파일명을 써서 초안과 검증 자료를 찾기 쉽게 정리하세요. 누리원에서 올린 파일의 이름 앞부분으로 검색하고, 최근 업로드순이나 이름순으로 볼 수 있어요.</p><a class="personal-link" href="#files">비공개 저장소</a></details></li>
-     </ol>
-    </section>
+   <section data-personal-view="getting-started" class="personal-guide" hidden aria-label="누리원 가이드">
+    <nav class="personal-guide-nav" aria-label="가이드 분류">
+     <a href="#getting-started" data-guide-link="getting-started">사용 방법</a>
+     <a href="#guide-connections" data-guide-link="guide-connections">서비스 연결</a>
+     <a href="#guide-help" data-guide-link="guide-help">문제 해결</a>
+    </nav>
+    <div data-guide-panel="getting-started">
+     <details open><summary>매일 할 일과 일정을 정리하기</summary>
+      <ol><li>‘오늘’에서 가까운 마감과 다음 일정을 보고, 빠른 기록으로 할 일이나 메모를 남기세요.</li><li>시간이 정해진 약속은 ‘일정’에, 완료 여부를 관리할 일은 ‘할 일’에 넣으세요. 프로젝트를 지정하면 작업대에서 관련 기록만 볼 수 있습니다.</li><li>지난 기록은 ‘업무 검색’에서 제목과 내용으로 찾으세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#home">오늘</a><a href="#tasks">할 일</a><a href="#schedule">일정</a><a href="#search">업무 검색</a></div>
+     </details>
+     <details><summary>프로젝트 만들고 다음 주 계획 세우기</summary>
+      <ol><li>‘업무 작업대 → 프로젝트’에서 이름과 업무 원칙을 저장하세요.</li><li>‘주간 리뷰’에서 프로젝트와 주를 고릅니다. 미완료 항목을 선택해 다음 주로 옮기거나, 반복 업무에 시작 날짜와 주기를 설정하세요.</li><li>‘AI로 다음 주 준비’로 요청을 만들고 답변을 가져오세요. 할 일과 일정을 검토한 뒤 선택한 항목만 승인·등록합니다. 날짜가 없는 일정은 먼저 날짜를 넣으세요.</li><li>공유하거나 보관할 기록은 ‘주간 리뷰 내려받기’로 저장하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#workbench">업무 작업대</a><a href="/personal?workbench=weekly#workbench">주간 리뷰</a></div>
+     </details>
+     <details><summary>AI로 초안 만들고 승인하기</summary>
+      <ol><li>‘AI 비서 → 구독 AI’에서 목적과 프리셋을 고르고 요청을 미리 확인하세요. 복사한 요청을 본인의 ChatGPT·Claude·Gemini에서 사용합니다.</li><li>답변은 ‘답변 가져오기’에서 메모·할 일·일정으로 확인 후 저장할 수 있습니다. 누리원 안에서 바로 대화하려면 ‘API 설정’에서 본인 키와 모델을 설정하세요.</li><li>프로젝트 승인함에서 콘텐츠·카드뉴스·일정 제안 등을 검토하세요. SNS 게시나 메일 발송은 해당 화면에서 계정·원고·시각을 확인하고 따로 예약을 승인합니다.</li></ol>
+      <div class="personal-site-guide-links"><button class="btn" type="button" id="personal-start-ai">AI 비서 열기</button><a href="/personal?workbench=approvals#workbench">승인함</a><a href="#guide-connections">AI 연결 방법</a></div>
+     </details>
+     <details><summary>SNS 게시와 메일 발송 예약하기</summary>
+      <ol><li>연결한 SNS 계정 또는 Gmail을 확인하고 초안을 작성하세요.</li><li>‘원고 승인 및 예약’에서 원고, 게시 계정이나 수신자, 한국 시간 기준 예약 시각을 확인해 승인하세요.</li><li>예약 현황은 ‘일정’에서, 게시·발송 결과와 확인이 필요한 건은 작업대의 ‘실행 내역’에서 확인하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#social">내 SNS</a><a href="#mail">메일 예약</a><a href="/personal?workbench=activity#workbench">실행 내역</a></div>
+     </details>
+     <details><summary>Google Drive에 자료 보관하기</summary>
+      <ol><li>‘비공개 저장소’에서 Drive 연결 상태를 확인하고 파일을 올리세요.</li><li>프로젝트 이름이 들어간 파일명으로 정리하세요. 이름 앞부분으로 검색하고 최근 업로드순 또는 이름순으로 정렬할 수 있습니다.</li></ol>
+      <div class="personal-site-guide-links"><a href="#files">비공개 저장소</a></div>
+     </details>
+     <details><summary>웹사이트·블로그와 월별 수익 관리하기</summary>
+      <ol><li>‘내 웹사이트’에 운영 중인 주소와 갱신일을 등록하세요.</li><li>도메인을 처음 산다면 구매·연결 가이드에서 등록업체, 호스팅, DNS 연결 순서를 확인하세요.</li><li>‘수익 대시보드’에서 정산 월을 선택하고 실제 수익과 비용을 기록하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#sites">내 웹사이트</a><a href="#website-guide">구매·연결 가이드</a><a href="#revenue">수익 대시보드</a></div>
+     </details>
+    </div>
+    <div data-guide-panel="guide-connections" hidden>
+     <details open><summary>연결 전에 확인할 것</summary>
+      <ol><li>가입 후 운영자의 사용 승인이 완료된 본인 누리원 계정으로 로그인하세요.</li><li>작업대의 ‘연결 관리’에서 채널의 연결 상태를 확인하고, 제공사 승인 화면에서도 사용할 계정 이름을 확인하세요.</li><li>연결을 마치면 누리원으로 돌아와 계정 이름과 연결 상태를 다시 확인하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="/personal?workbench=connect#workbench">연결 관리</a></div>
+     </details>
+     <details><summary>Instagram·Threads·YouTube·X</summary>
+      <ol><li>‘내 SNS → 채널 연결 및 설정’에서 서비스와 ‘계정 연결’을 선택합니다. Instagram은 비즈니스 또는 크리에이터 계정을 사용하세요.</li><li>제공사 승인 화면에서 연결할 계정과 요청하는 권한을 확인하세요. ‘앱 준비 필요’가 보이면 같은 화면의 제공사별 설정 안내를 확인하세요.</li><li>돌아온 뒤 계정 이름을 확인하세요. 기존 계정의 ‘다시 연결’을 눌렀다면 제공사에서도 같은 계정을 선택하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#social">내 SNS</a></div>
+     </details>
+     <details><summary>Gmail과 Google Drive</summary>
+      <ol><li>메일은 ‘메일 예약 → Google로 연결’, 파일은 ‘비공개 저장소 → Google Drive 연결’에서 시작하세요.</li><li>각 화면에서 사용할 Google 계정과 권한을 확인하세요. Gmail은 발송 권한을, Drive는 누리원이 만든 파일과 이 앱에 접근을 허용한 파일에 대한 권한을 요청합니다.</li><li>누리원으로 돌아온 뒤 각 화면에서 연결 상태를 확인합니다.</li></ol>
+      <div class="personal-site-guide-links"><a href="#mail">메일 예약</a><a href="#files">비공개 저장소</a></div>
+     </details>
+     <details><summary>ChatGPT·Claude·Gemini</summary>
+      <ol><li>본인 AI 채팅으로 직접 가져가려면 ‘AI 비서 → 구독 AI’에서 요청을 준비해 복사하세요.</li><li>AI 앱에서 누리원 자료를 조회하려면 ‘연결 관리 → 본인 AI 구독 연결’의 제공사별 안내를 따라 연결하고 권한을 확인하세요. 서비스나 계정에 따라 연결 가능 범위가 다릅니다.</li><li>누리원 화면 안에서 답을 받으려면 ‘AI 비서 → API 설정’에서 제공사·모델·본인 API 키를 저장하고 ‘저장된 모델 확인’을 누르세요. API 키는 설정 입력란에만 입력하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="/personal?workbench=connect#workbench">AI 연결 관리</a><a href="#getting-started">AI 사용 방법</a></div>
+     </details>
+     <details><summary>웹사이트, 도메인과 호스팅</summary>
+      <ol><li>‘내 웹사이트’에서 운영할 주소를 등록합니다. 도메인이 없다면 구매·연결 가이드에서 가비아와 호스팅 연결 순서를 확인하세요.</li><li>호스팅이 요구하는 DNS 레코드를 도메인 관리 화면에 넣고 연결·SSL 상태를 확인하세요.</li><li>사이트를 연 뒤 주소와 갱신일을 저장하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#sites">내 웹사이트</a><a href="#website-guide">구매·연결 가이드</a></div>
+     </details>
+    </div>
+    <div data-guide-panel="guide-help" hidden>
+     <details open><summary>연결 버튼이 없거나 승인 화면에서 돌아오지 않을 때</summary><p>‘앱 준비 필요’가 보이면 해당 서비스의 연결 설정과 콜백 주소 안내를 확인하세요. 승인 화면에서 동의를 취소했거나 다른 계정을 골랐다면 누리원으로 돌아와 ‘계정 연결’ 또는 ‘다시 연결’을 다시 선택하세요.</p><a href="/personal?workbench=connect#workbench">연결 상태 확인</a></details>
+     <details><summary>게시·발송 상태에 ‘확인 필요’가 표시될 때</summary><p>원본 SNS 또는 보낸편지함에서 이미 처리됐는지 먼저 확인하세요. 그 뒤 실행 내역에서 원고, 대상 계정 또는 수신자, 예약 시각을 확인하고 필요하면 다시 예약하세요.</p><a href="/personal?workbench=activity#workbench">실행 내역</a></details>
+     <details><summary>AI가 응답하지 않거나 계획이 분류되지 않을 때</summary><p>누리원 안의 채팅은 ‘API 설정’에서 저장된 모델을 확인하세요. 다음 주 계획은 ‘AI로 다음 주 준비’에서 만든 요청으로 답을 받은 뒤 JSON 전체나 ‘할 일’·‘일정’ 제목이 붙은 목록을 붙여넣으세요.</p><a href="/personal?workbench=weekly#workbench">주간 리뷰</a></details>
+     <details><summary>연결을 바꾸거나 끊기</summary><p>예약이 남아 있는지 ‘발송·게시 일정’에서 먼저 확인하세요. 각 서비스 화면의 ‘다시 연결’ 또는 ‘연결 해제’를 사용하고, 누리원으로 돌아와 상태를 확인하세요.</p><a href="#schedule">예약 일정 확인</a></details>
+    </div>
    </section>
    <section data-personal-view="stock-program" hidden aria-label="자동 주식 프로그램">
     <section class="personal-sheet personal-site-guide">
