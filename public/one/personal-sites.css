@@ -85,3 +85,15 @@
  .personal-stock-evidence {gap:5px;margin-block:7px}
  :is(#personal-site-editor,#personal-revenue-editor) {padding:var(--personal-panel-pad)}
 }
+
+.personal-guide {max-inline-size:52rem;min-inline-size:0}
+.personal-guide-nav {display:flex;gap:0 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-block-end:12px}
+.personal-guide-nav a {display:inline-flex;align-items:center;min-height:44px;padding-inline:2px;border-bottom:2px solid transparent;color:var(--muted);font-weight:600;text-decoration:none}
+.personal-guide-nav a[aria-current="page"] {border-color:var(--teal);color:var(--ink)}
+.personal-guide details {border-bottom:1px solid var(--line);padding-inline:2px}
+.personal-guide summary {min-height:44px;align-content:center;padding-block:6px;cursor:pointer;font-weight:650;overflow-wrap:anywhere}
+.personal-guide details :is(p,ol) {margin:0 0 8px;color:var(--muted);overflow-wrap:anywhere;word-break:keep-all}
+.personal-guide ol {padding-inline-start:1.35rem}
+.personal-guide ol li+li {margin-block-start:6px}
+.personal-guide details a {display:inline-flex;align-items:center;min-height:44px;color:var(--teal);text-underline-offset:.2em}
+.personal-guide details .personal-site-guide-links {margin-block-end:6px}

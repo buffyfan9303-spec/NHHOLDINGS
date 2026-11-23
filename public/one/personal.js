@@ -4,7 +4,10 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'시작 가이드', 'stock-program':'자동 주식 프로그램'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'가이드', 'guide-connections':'가이드', 'guide-help':'가이드', 'stock-program':'자동 주식 프로그램'};
+  const guideViews = new Set(['getting-started','guide-connections','guide-help']);
+  const guideTabs = [...document.querySelectorAll('[data-guide-link]')];
+  const guidePanels = [...document.querySelectorAll('[data-guide-panel]')];
   const kinds = {tasks:'task', schedule:'schedule', notes:'note', links:'link'};
   const dayFormatter = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const dateFormatter = new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'});
@@ -297,11 +300,16 @@
     view = target;
     el('personal-title').textContent = names[view];
     const guide = view==='website-guide';
-    const active = guide ? 'sites' : view;
+    const inGuide = guideViews.has(view);
+    const active = inGuide ? 'getting-started' : guide ? 'sites' : view;
+    if(inGuide){
+      for(const tab of guideTabs)tab.setAttribute('aria-current',tab.dataset.guideLink===view?'page':'false');
+      for(const panel of guidePanels)panel.hidden=panel.dataset.guidePanel!==view;
+    }
     for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===active?'page':'false');
     more.setAttribute('aria-current',String(!quickViews.has(active)));
     if (changed && menu.open) menu.close();
-    const visible = kinds[view]?'items':guide?'sites':view;
+    const visible = kinds[view]?'items':active;
     window.NuriPersonalSites?.select?.(guide);
     for(const section of screens) {
       section.hidden = section.dataset.personalView!==visible;
