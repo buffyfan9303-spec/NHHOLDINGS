@@ -27,7 +27,9 @@ assert.deepEqual(panels,['getting-started','guide-connections','guide-help']);
 const navLinks = tags('data-personal-link');
 const menuNames = Object.fromEntries(navLinks.map(l=>[l['data-personal-link'],l.text]));
 assert.equal(menuNames['getting-started'],'가이드');
-for(const [view,name] of Object.entries({home:'오늘',tasks:'할 일',schedule:'일정',search:'업무 검색',workbench:'업무 작업대',
+const sections=tags('data-personal-section');
+assert.deepEqual(sections.map(row=>row.text),['오늘','할 일·일정','프로젝트','SNS·메일','파일·메모','사이트·수익','연결·가이드']);
+for(const [view,name] of Object.entries({tasks:'할 일',schedule:'일정',search:'업무 검색',
   notes:'메모',links:'바로가기',sites:'내 웹사이트',social:'내 SNS',mail:'메일 예약',revenue:'수익 대시보드',files:'비공개 저장소','stock-program':'자동 주식 프로그램'}))
   assert.equal(menuNames[view],name,'personal menu preserved: '+view);
 
@@ -43,7 +45,7 @@ for(const link of workbenchLinks){
   assert(accepted.includes(pane(link.href)),link.href);
 }
 assert.deepEqual([...new Set(workbenchLinks.map(l=>pane(l.href)))].sort(),['activity','approvals','connect','weekly']);
-const known = new Set(Object.keys(menuNames).concat(['website-guide','guide-connections','guide-help']));
+const known = new Set(Object.keys(menuNames).concat(sections.map(row=>row['data-personal-section']),['website-guide','guide-connections','guide-help']));
 for(const link of tags('href="#', guideHtml))assert(known.has(link.href.slice(1)),'internal guide link: '+link.href);
 
 // 3) Runtime: route(), direct open, back/forward, mobile more-menu. Fake DOM, blocked fetch.
@@ -56,13 +58,18 @@ function make(hash){
   const screenNodes = [...html.matchAll(/data-personal-view="([^"]+)"/g)].map(m=>node({personalView:m[1]}));
   const navNodes = [...html.matchAll(/<a [^>]*data-personal-link="([^"]+)"[^>]*>/g)]
     .map(match=>node({personalLink:match[1]}));
+  const sectionNodes = sections.map(row=>node({personalSection:row['data-personal-section']}));
+  const contextNodes=[...html.matchAll(/<nav[^>]*data-personal-context="([^"]+)"[^>]*>([\s\S]*?)<\/nav>/g)]
+    .map(([,key,markup])=>({...node({personalContext:key}),querySelectorAll:()=>tags('data-personal-link',markup)
+      .map(row=>navNodes.find(n=>n.dataset.personalLink===row['data-personal-link']))}));
   const el = id => els.get(id)||(els.set(id,{...node(),textContent:'',innerHTML:'',open:false,
     addEventListener(t,fn){events.set(id+':'+t,fn);},focus(){},querySelectorAll:()=>[],reset(){},
     replaceChildren(...c){this.children=c;},close(){this.open=false;},showModal(){this.open=true;}}),els.get(id));
   const group = {cloneNode:()=>({querySelector:()=>null,
-    querySelectorAll:()=>navNodes.filter(n=>!['home','tasks','schedule'].includes(n.dataset.personalLink))})};
+    querySelectorAll:()=>sections.map(row=>node({personalSection:row['data-personal-section']}))})};
   const bySel = {'[data-guide-link]':guideTabNodes,'[data-guide-panel]':panelNodes,'[data-personal-link]':navNodes,
-    '[data-personal-view]':screenNodes,'.personal-nav [data-menu-group]':[group]};
+    '[data-personal-view]':screenNodes,'[data-personal-context]':contextNodes,
+    '[data-personal-section]':sectionNodes,'.personal-nav [data-menu-group]':[group]};
   const document = {visibilityState:'visible',body:node(),getElementById:el,
     querySelectorAll:s=>bySel[s]||[],querySelector:()=>({addEventListener(){}}),addEventListener(){}};
   const location = {pathname:'/personal',hash,search:''};
@@ -71,7 +78,7 @@ function make(hash){
     fetch:(path,options)=>new Promise(()=>requests.push({path,options}))};
   vm.runInNewContext(source,sandbox);
   const go = next=>{location.hash=next;events.get('hashchange')();};
-  return {guideTabNodes,panelNodes,screenNodes,navNodes,el,go,requests,events};
+  return {guideTabNodes,panelNodes,screenNodes,navNodes,sectionNodes,contextNodes,el,go,requests,events};
 }
 const shown = f=>f.panelNodes.filter(p=>!p.hidden).map(p=>p.dataset.guidePanel);
 const current = f=>f.guideTabNodes.filter(t=>t.attrs['aria-current']==='page').map(t=>t.dataset.guideLink);
@@ -85,7 +92,7 @@ for(const hash of ['#getting-started','#guide-connections','#guide-help']){  // 
   assert.deepEqual(shown(f),[hash.slice(1)]);
   assert.deepEqual(current(f),[hash.slice(1)]);
   assert.deepEqual(navCurrent(f),['getting-started']);
-  assert.equal(f.el('personal-more').attrs['aria-current'],'true');
+  assert.equal(f.el('personal-more').attrs['aria-current'],'false');
 }
 const f = make('#getting-started');
 for(const next of ['#guide-connections','#guide-help','#getting-started']){
@@ -99,8 +106,16 @@ for(const [hash,title] of [['#workbench','업무 작업대'],['#tasks','할 일'
   assert.equal(f.el('personal-title').textContent,title);
 }
 f.go('#website-guide'); assert.deepEqual(navCurrent(f),['sites']);
-f.go('#workbench'); assert.deepEqual(screen(f),['workbench']); assert.deepEqual(navCurrent(f),['workbench']);
+f.go('#workbench'); assert.deepEqual(screen(f),['workbench']); assert.deepEqual(navCurrent(f),[]);
 f.go('#tasks'); assert.deepEqual(navCurrent(f),['tasks']); assert.equal(f.el('personal-more').attrs['aria-current'],'false');
+for(const [hash,section] of [['#schedule','tasks'],['#mail','social'],['#notes','files'],['#revenue','sites'],['#stock-program','sites'],['#guide-help','connector-workflow']]){
+  f.go(hash);
+  assert.deepEqual(f.contextNodes.filter(n=>!n.hidden).map(n=>n.dataset.personalContext),[section]);
+  assert.equal(f.sectionNodes.find(n=>n.dataset.personalSection===section).attrs['aria-current'],'location');
+}
+f.go('#home');
+assert(f.contextNodes.every(n=>n.hidden));
+
 f.go('#guide-help'); f.go('#home'); f.go('#guide-help'); // back/forward = hash restored
 assert.deepEqual(shown(f),['guide-help']);
 

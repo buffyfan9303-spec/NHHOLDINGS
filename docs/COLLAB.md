@@ -1,5 +1,7 @@
 # 누리원 · Codex / Claude 협업 기준
 
+- 누리원 내 업무 탐색 정리 · 2026-11-24 KST · Codex 담당. 데스크톱 상위 메뉴 7개 및 모바일 공통 분류, 세부 경로·뒤로가기·권한별 링크 유지. Chrome·WebKit의 목표 화면 크기 5개에서 검증.
+
 - 누리원 서비스 연결 작업 · 2026-11-24 KST · Codex 담당. Gmail→할 일→Calendar 승인→주간 리뷰, 개인별 Kakao·Notion·GitHub 연결, 고정 하단 메뉴를 검증했다. 격리 PostgreSQL 계정 분리·중복 방지와 PC·모바일 5개 화면 환경, typecheck·test·build를 확인했다. 실서비스 OAuth와 실제 외부 발송은 각 연결 설정 후 검증한다.
 
 - 웹사이트별 원천 대조 · 2026-11-18 KST · Codex가 운영 URL 5곳을 열고 공개 사이트맵과 읽기 전용 원천 수치를 대조했다. 대시보드 웹사이트 카드의 집계 기준·마지막 조회 시각·원본 주소를 확인하는 링크를 보완했다. typecheck/test/build, Chromium 및 WebKit 320·390·768·1440px의 5개 카드와 상세 탭 진입을 확인했다.

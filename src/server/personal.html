@@ -37,43 +37,51 @@
  </header>
  <div class="personal-workspace">
   <nav class="personal-mobile-nav" aria-label="내 업무 빠른 메뉴">
-   <a href="#home" data-personal-link="home" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>오늘</span></a>
-   <a href="#tasks" data-personal-link="tasks"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2"/></svg><span>할 일</span></a>
-   <a href="#schedule" data-personal-link="schedule"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 5h2m4 0h2"/></svg><span>일정</span></a>
-   <a href="#connector-workflow" data-personal-link="connector-workflow"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 0 0 6 1l4-4a4 4 0 0 0-6-6l-2 2m4 7a4 4 0 0 0-6-1l-4 4a4 4 0 0 0 6 6l2-2"/></svg><span>연결</span></a>
+   <a href="#home" data-personal-section="home" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>오늘</span></a>
+   <a href="#tasks" data-personal-section="tasks"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2"/></svg><span>할 일·일정</span></a>
+   <a href="#workbench" data-personal-section="workbench"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a1 1 0 0 1 1-1h6l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg><span>프로젝트</span></a>
+   <a href="#connector-workflow" data-personal-section="connector-workflow"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 0 0 6 1l4-4a4 4 0 0 0-6-6l-2 2m4 7a4 4 0 0 0-6-1l-4 4a4 4 0 0 0 6 6l2-2"/></svg><span>연결</span></a>
    <button type="button" id="personal-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="personal-menu"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>더보기</span></button>
   </nav>
   <nav class="personal-nav" aria-label="내 업무 메뉴">
    <div class="personal-nav-group" data-menu-group>
-    <p>업무</p>
-    <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
-    <a href="#tasks" data-personal-link="tasks">할 일</a>
-    <a href="#schedule" data-personal-link="schedule">일정</a>
-    <a href="#search" data-personal-link="search">업무 검색</a>
-    <a href="#workbench" data-personal-link="workbench">업무 작업대</a>
-    <a href="#notes" data-personal-link="notes">메모</a>
-    <a href="#links" data-personal-link="links">바로가기</a>
-   </div>
-   <div class="personal-nav-group" data-menu-group>
-    <p>콘텐츠 · 웹사이트</p>
-    <a href="#sites" data-personal-link="sites">내 웹사이트</a>
-    <a href="#social" data-personal-link="social">내 SNS</a>
-    <a href="#mail" data-personal-link="mail">메일 예약</a>
-    <a href="#revenue" data-personal-link="revenue">수익 대시보드</a>
-   </div>
-   <div class="personal-nav-group" data-menu-group>
-    <p>자료 · 가이드</p>
-    <a href="#files" data-personal-link="files">비공개 저장소</a>
-    <a href="#connector-workflow" data-personal-link="connector-workflow">서비스 연결 작업</a>
-    <a href="#getting-started" data-personal-link="getting-started">가이드</a>
-    <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
-    <a id="personal-owner-links" href="/dashboard#connections/integrations" hidden>운영 설정 · 연결</a>
+    <a href="#home" data-personal-section="home" aria-current="page">오늘</a>
+    <a href="#tasks" data-personal-section="tasks">할 일·일정</a>
+    <a href="#workbench" data-personal-section="workbench">프로젝트</a>
+    <a href="#social" data-personal-section="social">SNS·메일</a>
+    <a href="#files" data-personal-section="files">파일·메모</a>
+    <a href="#sites" data-personal-section="sites">사이트·수익</a>
+    <a href="#connector-workflow" data-personal-section="connector-workflow">연결·가이드</a>
    </div>
   </nav>
   <main id="personal-main" tabindex="-1" class="personal-main" aria-busy="true">
    <div class="personal-title"><div><time id="personal-date"></time><h1 id="personal-title" tabindex="-1">오늘의 업무</h1></div>
     <button id="personal-reload" type="button" class="btn" hidden>다시 조회</button>
    </div>
+   <nav class="personal-context" data-personal-context="tasks" aria-label="할 일·일정" hidden>
+    <a href="#tasks" data-personal-link="tasks">할 일</a>
+    <a href="#schedule" data-personal-link="schedule">일정</a>
+    <a href="#search" data-personal-link="search">업무 검색</a>
+   </nav>
+   <nav class="personal-context" data-personal-context="social" aria-label="SNS·메일" hidden>
+    <a href="#social" data-personal-link="social">내 SNS</a>
+    <a href="#mail" data-personal-link="mail">메일 예약</a>
+   </nav>
+   <nav class="personal-context" data-personal-context="files" aria-label="파일·메모" hidden>
+    <a href="#files" data-personal-link="files">비공개 저장소</a>
+    <a href="#notes" data-personal-link="notes">메모</a>
+    <a href="#links" data-personal-link="links">바로가기</a>
+   </nav>
+   <nav class="personal-context" data-personal-context="sites" aria-label="사이트·수익" hidden>
+    <a href="#sites" data-personal-link="sites">내 웹사이트</a>
+    <a href="#revenue" data-personal-link="revenue">수익 대시보드</a>
+    <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
+   </nav>
+   <nav class="personal-context" data-personal-context="connector-workflow" aria-label="연결·가이드" hidden>
+    <a href="#connector-workflow" data-personal-link="connector-workflow">서비스 연결</a>
+    <a href="#getting-started" data-personal-link="getting-started">가이드</a>
+    <a id="personal-owner-links" href="/dashboard#connections/integrations" hidden>운영 설정</a>
+   </nav>
    <p id="personal-message" class="personal-message" role="status">내 업무를 불러오고 있습니다.</p>
    <section data-personal-view="home" class="personal-home" aria-labelledby="personal-home-title">
     <div class="personal-sheet personal-today-sheet">
