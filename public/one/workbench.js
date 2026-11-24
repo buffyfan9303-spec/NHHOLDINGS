@@ -166,7 +166,10 @@
   }
 
   function connect(){
-    return '<div class="workbench-body workbench-connections"><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-channels-title"><h2 id="workbench-channels-title">내 작업 채널</h2><a class="personal-link" href="#guide-connections">서비스 연결 가이드</a><div data-channel-overview>'+channelOverview()+'</div></section><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-ai-title"><h2 id="workbench-ai-title">본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
+    return '<div class="workbench-body workbench-connections"><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-channels-title"><h2 id="workbench-channels-title">내 작업 채널</h2><a class="personal-link" href="#guide-connections">서비스 연결 가이드</a> <a class="personal-link" href="#connector-workflow">Gmail·캘린더·Notion·GitHub·Analytics·카카오톡 연결 작업</a><div data-channel-overview>'+channelOverview()+'</div><h3>캘린더</h3><ul class="workbench-list workbench-channel-list">'+[
+      {name:'Google Calendar',state:'개별 일정 작성',label:'일정 열기',href:'#schedule'},
+      {name:'Apple 캘린더 · Outlook',state:'주간 일정 파일 가져오기',label:'사용 방법',href:'#guide-connections'}
+    ].map(channelRow).join('')+'</ul></section><section class="personal-sheet workbench-connection-panel" aria-labelledby="workbench-ai-title"><h2 id="workbench-ai-title">본인 AI 구독 연결</h2><p class="workbench-muted">AI 앱에서 누리원을 한 번 연결하면 같은 대화에서 내 프로젝트와 업무를 조회하고 승인함에 초안을 넣을 수 있습니다. 연결은 최대 30일 동안 유지됩니다.</p>'+
       '<div class="workbench-address"><p>누리원 서버 주소</p><div class="workbench-copy"><code id="workbench-server-address">'+esc(connectionURL())+'</code>'+
       action('주소 복사','copy-url')+'</div></div>'+
       '<ul class="workbench-list workbench-provider-list">'+Object.entries(providers).map(([id,[name,instructions,link]])=>{
@@ -358,7 +361,14 @@
       '<div><button class="btn primary" type="submit">반복 설정 저장</button></div></form></details></section>';
     const tools='<div class="workbench-actions workbench-week-tools">'+action('주간 리뷰 내려받기','weekly-download')+
       action('AI로 다음 주 준비','weekly-ai')+'</div>';
-    return header+counts+tools+(canCarry?weeklyImport(dates):'')+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
+    const metrics=weeklyData.performance;
+    const n=value=>esc(new Intl.NumberFormat('ko-KR').format(value));
+    const channel=metrics?.channel?.[0],site=metrics?.site?.[0];
+    const performance=metrics?'<section class="workbench-week-tools"><h3>콘텐츠 · 웹사이트 성과</h3><p class="workbench-muted">'+
+      esc(metrics.period.start+' ~ '+metrics.period.end)+'</p>'+
+      (channel?'<p>YouTube 조회 '+n(channel.views)+'회 · 시청 '+n(channel.minutes)+'분</p>':'')+
+      (site?'<p>GA4 세션 '+n(site.sessions)+'회 · 사용자 '+n(site.users)+'명</p>':'')+'</section>':'';
+    return header+counts+tools+performance+(canCarry?weeklyImport(dates):'')+'<div class="workbench-body workbench-week-details">'+carry+done+pending+repeats+'</div>';
   }
   function setupWeekly(){
     weeklyStart||=currentWeek();
