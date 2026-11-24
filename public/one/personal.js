@@ -18,19 +18,22 @@
   const editor = el('personal-editor');
   const form = el('personal-form');
   const tabs = [...document.querySelectorAll('[data-personal-link]')];
+  const sectionLinks = [...document.querySelectorAll('[data-personal-section]')];
+  const contextMenus = [...document.querySelectorAll('[data-personal-context]')];
+  const sectionByView = new Map(contextMenus.flatMap(menu =>
+    [...menu.querySelectorAll('[data-personal-link]')].map(link => [link.dataset.personalLink, menu.dataset.personalContext])));
   const screens = [...document.querySelectorAll('[data-personal-view]')];
   const more = el('personal-more'), menu = el('personal-menu'), menuLinks = el('personal-menu-links');
   const taskFilters = el('personal-task-filters'), week = el('personal-week'), searchForm = el('personal-search-form');
   const scheduleModes = el('personal-schedule-modes');
   let taskState = 'all', scheduleMode = 'week', selectedDay = null, weekRead = null, weekAgenda = null;
-  const quickViews = new Set(['home','tasks','schedule','connector-workflow']);
+  const quickSections = new Set(['home','tasks','workbench','connector-workflow']);
 
   more.addEventListener('click', () => {
     const groups = [...document.querySelectorAll('.personal-nav [data-menu-group]')].map(group => {
       const copy = group.cloneNode(true);
-      copy.querySelector('#personal-owner-links')?.removeAttribute('id');
-      for (const link of copy.querySelectorAll('[data-personal-link]')) {
-        if (quickViews.has(link.dataset.personalLink)) link.remove();
+      for (const link of copy.querySelectorAll('[data-personal-section]')) {
+        if (quickSections.has(link.dataset.personalSection)) link.remove();
       }
       return copy;
     });
@@ -326,7 +329,13 @@
       const current = nav.dataset.personalLink === active;
       nav.setAttribute('aria-current',current?'page':'false');
     }
-    more.setAttribute('aria-current',String(!quickViews.has(view)));
+    const section = sectionByView.get(active) ?? active;
+    for (const link of sectionLinks) {
+      const selected = link.dataset.personalSection === section;
+      link.setAttribute('aria-current',selected ? (view===section?'page':'location') : 'false');
+    }
+    for (const menu of contextMenus) menu.hidden = menu.dataset.personalContext !== section;
+    more.setAttribute('aria-current',String(!quickSections.has(section)));
     if (changed && menu.open) menu.close();
     const visible = kinds[view]?'items':active;
     window.NuriPersonalSites?.select?.(guide);
