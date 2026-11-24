@@ -479,3 +479,5 @@ SNS 조사도 역할을 나눈다. 티스토리 담당은 검색 의도·본인 
 - 누리원 주간 리뷰 레이아웃 정리 · Codex가 주간 리뷰의 보조 버튼·요약과 계획 항목 행·편집을 정리하고 기존 이월·반복·선택 승인 흐름과 두 테마의 전후 화면을 검증한다.
 
 - 누리원 가이드 · Codex가 기존 시작 가이드를 사용 방법·서비스 연결·문제 해결 탭으로 확장하고, 운영 기능으로 연결되는 링크와 모바일·PC 표시를 검증한다.
+
+- 누리원 가이드 회귀 검증 · Claude(claude/one-guide-regression-1124)가 `tests/personal-guide-client.cjs`를 npm test에 연결해 가이드 3개 분류, `#getting-started`, 직접 열기·해시 이동, 업무 작업대 링크의 `workbench` 대상(connect·activity·weekly·approvals), 모바일 더보기·기존 개인 업무 경로 보존을 합성 DOM·차단된 fetch로 검증한다. 실제 브라우저·모바일 100% 시각 검수와 운영 확인은 미실시.
