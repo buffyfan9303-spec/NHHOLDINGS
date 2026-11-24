@@ -16,6 +16,7 @@
  <link rel="stylesheet" href="/one/personal-ai.css">
  <link rel="stylesheet" href="/one/personal-sites.css">
  <link rel="stylesheet" href="/one/workbench.css">
+ <link rel="stylesheet" href="/one/connector-workflow.css">
  <link rel="stylesheet" href="/one/workspace.css">
 </head>
 <body class="personal-app">
@@ -36,10 +37,11 @@
  </header>
  <div class="personal-workspace">
   <nav class="personal-mobile-nav" aria-label="내 업무 빠른 메뉴">
-   <a href="#home" data-personal-link="home" aria-current="page">오늘</a>
-   <a href="#tasks" data-personal-link="tasks">할 일</a>
-   <a href="#schedule" data-personal-link="schedule">일정</a>
-   <button type="button" id="personal-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="personal-menu">더보기</button>
+   <a href="#home" data-personal-link="home" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>오늘</span></a>
+   <a href="#tasks" data-personal-link="tasks"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2"/></svg><span>할 일</span></a>
+   <a href="#schedule" data-personal-link="schedule"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 5h2m4 0h2"/></svg><span>일정</span></a>
+   <a href="#connector-workflow" data-personal-link="connector-workflow"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 0 0 6 1l4-4a4 4 0 0 0-6-6l-2 2m4 7a4 4 0 0 0-6-1l-4 4a4 4 0 0 0 6 6l2-2"/></svg><span>연결</span></a>
+   <button type="button" id="personal-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="personal-menu"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>더보기</span></button>
   </nav>
   <nav class="personal-nav" aria-label="내 업무 메뉴">
    <div class="personal-nav-group" data-menu-group>
@@ -62,6 +64,7 @@
    <div class="personal-nav-group" data-menu-group>
     <p>자료 · 가이드</p>
     <a href="#files" data-personal-link="files">비공개 저장소</a>
+    <a href="#connector-workflow" data-personal-link="connector-workflow">서비스 연결 작업</a>
     <a href="#getting-started" data-personal-link="getting-started">가이드</a>
     <a href="#stock-program" data-personal-link="stock-program">자동 주식 프로그램</a>
     <a id="personal-owner-links" href="/dashboard#connections/integrations" hidden>운영 설정 · 연결</a>
@@ -81,7 +84,7 @@
      <div id="personal-upcoming"></div>
     </div>
     <section class="personal-sheet personal-quick-sheet" aria-labelledby="personal-quick-title">
-     <div class="personal-planning-actions"><a class="personal-link" href="#workbench">업무 작업대</a><a class="personal-link" href="#search">업무 검색</a></div>
+     <div class="personal-planning-actions"><a class="personal-link" href="#workbench">업무 작업대</a><a class="personal-link" href="#search">업무 검색</a><a class="personal-link" href="#connector-workflow">서비스 연결 작업</a></div>
      <h2 id="personal-quick-title">빠른 기록</h2>
      <form id="personal-quick" class="personal-quick">
       <label for="personal-quick-title-input">할 일 또는 메모</label>
@@ -151,6 +154,7 @@
     </div>
    </section>
    <section id="workbench" data-personal-view="workbench" hidden aria-label="업무 작업대"></section>
+   <section id="connector-workflow" data-personal-view="connector-workflow" hidden aria-label="서비스 연결 작업"><div id="connector-workflow-root"></div></section>
    <section data-personal-view="social" hidden aria-label="내 SNS"><div id="personal-social-root"></div></section>
    <section data-personal-view="sites" hidden aria-label="내 웹사이트" class="personal-sites">
     <nav class="personal-site-tabs" aria-label="웹사이트 메뉴">
@@ -278,7 +282,7 @@
     <div data-guide-panel="guide-connections" hidden>
      <details open><summary>연결 전에 확인할 것</summary>
       <ol><li>가입 후 운영자의 사용 승인이 완료된 본인 누리원 계정으로 로그인하세요.</li><li>작업대의 ‘연결 관리’에서 채널의 연결 상태를 확인하고, 제공사 승인 화면에서도 사용할 계정 이름을 확인하세요.</li><li>연결을 마치면 누리원으로 돌아와 계정 이름과 연결 상태를 다시 확인하세요.</li></ol>
-      <div class="personal-site-guide-links"><a href="/personal?workbench=connect#workbench">연결 관리</a></div>
+      <div class="personal-site-guide-links"><a href="/personal?workbench=connect#workbench">연결 관리</a><a href="#connector-workflow">서비스 연결 작업(Gmail·캘린더·Notion·GitHub·Analytics·카카오톡)</a></div>
      </details>
      <details><summary>Instagram·Threads·YouTube·X</summary>
       <ol><li>‘내 SNS → 채널 연결 및 설정’에서 서비스와 ‘계정 연결’을 선택합니다. Instagram은 비즈니스 또는 크리에이터 계정을 사용하세요.</li><li>제공사 승인 화면에서 연결할 계정과 요청하는 권한을 확인하세요. ‘앱 준비 필요’가 보이면 같은 화면의 제공사별 설정 안내를 확인하세요.</li><li>돌아온 뒤 계정 이름을 확인하세요. 기존 계정의 ‘다시 연결’을 눌렀다면 제공사에서도 같은 계정을 선택하세요.</li></ol>
@@ -287,6 +291,10 @@
      <details><summary>Gmail과 Google Drive</summary>
       <ol><li>메일은 ‘메일 예약 → Google로 연결’, 파일은 ‘비공개 저장소 → Google Drive 연결’에서 시작하세요.</li><li>각 화면에서 사용할 Google 계정과 권한을 확인하세요. Gmail은 발송 권한을, Drive는 누리원이 만든 파일과 이 앱에 접근을 허용한 파일에 대한 권한을 요청합니다.</li><li>누리원으로 돌아온 뒤 각 화면에서 연결 상태를 확인합니다.</li></ol>
       <div class="personal-site-guide-links"><a href="#mail">메일 예약</a><a href="#files">비공개 저장소</a></div>
+     </details>
+     <details><summary>Google Calendar·Apple 캘린더·Outlook</summary>
+      <ol><li>‘일정 → 주간 일정’에서 날짜를 선택하세요. 개인 일정의 ‘Google Calendar에 추가’를 누르면 작성 화면이 열립니다. 연결할 Google 계정과 일정 내용을 확인하고 직접 저장하세요.</li><li>Apple 캘린더와 Outlook에서는 ‘주간 일정 다운로드’로 받은 .ics 파일을 가져올 수 있습니다.</li><li>이 경로는 일정 복사에 사용합니다. 누리원에서 수정한 일정은 외부 캘린더에서 별도로 수정하세요.</li></ol>
+      <div class="personal-site-guide-links"><a href="#schedule">일정 열기</a></div>
      </details>
      <details><summary>ChatGPT·Claude·Gemini</summary>
       <ol><li>본인 AI 채팅으로 직접 가져가려면 ‘AI 비서 → 구독 AI’에서 요청을 준비해 복사하세요.</li><li>AI 앱에서 누리원 자료를 조회하려면 ‘연결 관리 → 본인 AI 구독 연결’의 제공사별 안내를 따라 연결하고 권한을 확인하세요. 서비스나 계정에 따라 연결 가능 범위가 다릅니다.</li><li>누리원 화면 안에서 답을 받으려면 ‘AI 비서 → API 설정’에서 제공사·모델·본인 API 키를 저장하고 ‘저장된 모델 확인’을 누르세요. API 키는 설정 입력란에만 입력하세요.</li></ol>
@@ -423,6 +431,7 @@
  <script src="/one/personal-files.js" defer></script>
  <script src="/one/personal-automation.js" defer></script>
  <script src="/one/personal-ai.js" defer></script>
+ <script src="/one/connector-workflow.js" defer></script>
  <script src="/one/workbench.js" defer></script>
  <script src="/one/personal.js" defer></script>
 </body>

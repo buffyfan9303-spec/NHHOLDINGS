@@ -1,3 +1,4 @@
+import {projectPerformance} from './personal-connectors';
 import {createHash} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {pool} from '@/server/postgres.cjs';
@@ -75,9 +76,10 @@ export async function projectPlanning(owner:string,selected:unknown,week:unknown
   const window=reviewWeek(week);
   const workbench=await readWorkbench(owner);
   if(!workbench.projects.some(row=>row.id===projectId))throw missing();
-  const [items,{rows}]=await Promise.all([
+  const [items,{rows},performance]=await Promise.all([
     personalWorkspace(owner).list(),
     pool().query<{data:Rule}>("SELECT data FROM nh_documents WHERE "+ownerScope+" AND data->>'projectId'=$2 ORDER BY updated DESC,id",[owner,projectId]),
+    projectPerformance(owner,projectId,window.start),
   ]);
   const tasks=items.filter(item=>item.kind==='task'&&item.projectId===projectId);
   const display=({id,title,dueOn,version}:typeof tasks[number])=>({id,title,dueOn,version});
@@ -91,7 +93,7 @@ export async function projectPlanning(owner:string,selected:unknown,week:unknown
   const approvals=workbench.decisions.filter(row=>row.projectId===projectId&&row.status==='pending')
     .map(({id,title})=>({id,title}));
   const rules=rows.map(({data:{id,title,frequency,startOn,nextOn,active,version}})=>({id,title,frequency,startOn,nextOn,active,version}));
-  return {window,completed,unfinished,approvals,rules};
+  return {window,completed,unfinished,approvals,rules,performance};
 }
 
 type PlanItem={kind:'task'|'schedule';title:string;detail:string;dueOn:string|null;dueTime:string|null};

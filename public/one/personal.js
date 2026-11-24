@@ -4,7 +4,7 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
-  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'가이드', 'guide-connections':'가이드', 'guide-help':'가이드', 'stock-program':'자동 주식 프로그램'};
+  const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'가이드', 'guide-connections':'가이드', 'guide-help':'가이드', 'stock-program':'자동 주식 프로그램', 'connector-workflow':'서비스 연결 작업'};
   const guideViews = new Set(['getting-started','guide-connections','guide-help']);
   const guideTabs = [...document.querySelectorAll('[data-guide-link]')];
   const guidePanels = [...document.querySelectorAll('[data-guide-panel]')];
@@ -23,7 +23,7 @@
   const taskFilters = el('personal-task-filters'), week = el('personal-week'), searchForm = el('personal-search-form');
   const scheduleModes = el('personal-schedule-modes');
   let taskState = 'all', scheduleMode = 'week', selectedDay = null, weekRead = null, weekAgenda = null;
-  const quickViews = new Set(['home','tasks','schedule']);
+  const quickViews = new Set(['home','tasks','schedule','connector-workflow']);
 
   more.addEventListener('click', () => {
     const groups = [...document.querySelectorAll('.personal-nav [data-menu-group]')].map(group => {
@@ -38,7 +38,12 @@
     menu.showModal();
     more.setAttribute('aria-expanded','true');
   });
-  el('personal-menu-close').addEventListener('click', () => menu.close());
+  function dismissMenu() {
+    menu.close();
+    more.focus({preventScroll:true});
+  }
+  el('personal-menu-close').addEventListener('click',dismissMenu);
+  menu.addEventListener('cancel',event=>{event.preventDefault();dismissMenu();});
   menu.addEventListener('close', () => more.setAttribute('aria-expanded',String(menu.open)));
   menuLinks.addEventListener('click', event => {
     const link = event.target.closest('a');
@@ -176,7 +181,8 @@
     el('personal-day-events').innerHTML=rows.length?'<ul class="personal-plan-results">'+rows.map(row=>
       '<li><span>'+esc(row.dueTime||planLabel[row.kind])+'</span><div>'+recordTitle(row)+(row.dueTime?
         '<small>'+esc(planLabel[row.kind])+'</small>':'')+
-      (projectName(row.projectId)?'<small>'+esc(projectName(row.projectId))+'</small>':'')+'</div></li>').join('')+'</ul>':
+      (projectName(row.projectId)?'<small>'+esc(projectName(row.projectId))+'</small>':'')+
+      (row.kind==='schedule'?calendarAction(row):'')+'</div></li>').join('')+'</ul>':
       '<p class="personal-empty">이날 예정된 업무가 없습니다.</p>';
     week.querySelector('[data-week-action="export"]').disabled=!items.some(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
   }
@@ -243,6 +249,16 @@
     }
     return result;
   }
+  function calendarAction(item) {
+    const base = 'https://calendar.google.com/calendar/render';
+    const start = item.dueTime ? calendarStamp(item.dueOn+'T'+item.dueTime+':00+09:00') : item.dueOn.replaceAll('-','');
+    // The workspace stores a start time. Calendar drafts use a 30-minute default.
+    const end = item.dueTime ? calendarStamp(Date.parse(item.dueOn+'T'+item.dueTime+':00+09:00')+30*60000) :
+      addDays(item.dueOn,1).replaceAll('-','');
+    const query = new URLSearchParams({action:'TEMPLATE',text:item.title,dates:start+'/'+end,ctz:'Asia/Seoul'});
+    return '<a class="personal-calendar-link" href="'+esc(base+'?'+query)+
+      '" target="_blank" rel="noopener noreferrer" aria-label="'+esc(item.title+' Google Calendar에 추가')+'">Google Calendar에 추가</a>';
+  }
   function exportWeek() {
     const dates=weekParts(selectedDay??day());
     const selected=items.filter(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
@@ -294,7 +310,7 @@
   }
 
   function route(focus=false) {
-    const newView = location.hash.slice(1);
+    const newView = location.hash.slice(1).split('?')[0];
     const target = Object.hasOwn(names,newView)?newView:'home';
     const changed = target!==view;
     view = target;
@@ -306,8 +322,11 @@
       for(const tab of guideTabs)tab.setAttribute('aria-current',tab.dataset.guideLink===view?'page':'false');
       for(const panel of guidePanels)panel.hidden=panel.dataset.guidePanel!==view;
     }
-    for(const nav of tabs) nav.setAttribute('aria-current',nav.dataset.personalLink===active?'page':'false');
-    more.setAttribute('aria-current',String(!quickViews.has(active)));
+    for(const nav of tabs) {
+      const current = nav.dataset.personalLink === active;
+      nav.setAttribute('aria-current',current?'page':'false');
+    }
+    more.setAttribute('aria-current',String(!quickViews.has(view)));
     if (changed && menu.open) menu.close();
     const visible = kinds[view]?'items':active;
     window.NuriPersonalSites?.select?.(guide);
@@ -324,6 +343,7 @@
     }
     if(view==='home'&&ready)void window.NuriWorkbench?.loadHome();
     if(view==='workbench'&&ready)void window.NuriWorkbench.mount();
+    if(view==='connector-workflow'&&ready)void window.NuriConnectorWorkflow?.mount?.();
     if(view==='revenue'&&ready)void window.NuriPersonalRevenue?.mount?.();
     if(visible==='sites'&&ready)void window.NuriPersonalSites?.mount?.();
     if(view==='files'&&ready) void window.NuriPersonalFiles?.mount?.();
@@ -565,6 +585,7 @@
     window.NuriPersonalAutomation?.suspend?.();
     window.NuriPersonalSites?.suspend?.();
     window.NuriPersonalRevenue?.suspend?.();
+    window.NuriConnectorWorkflow?.suspend?.();
     window.NuriPersonalAI?.suspend?.();
     window.NuriWorkbench?.suspend();
     if(editor.open){suspendedEditor=!saving;editor.close();}
@@ -587,7 +608,9 @@
     route(true);
     return true;
   }
-  window.NuriPersonalWorkspace={syncProjects,openProjectRecords,activate(){
+  window.NuriPersonalWorkspace={syncProjects,openProjectRecords,tasks(){
+    return ready?items.filter(item=>item.kind==='task'&&!item.done).sort(dateOrder).map(({id,title})=>({id,title})):[];
+  },activate(){
     openAssistant=new URLSearchParams(location.search).has('ai');
     checkAccount();
   },reviewDraft,deactivate(){

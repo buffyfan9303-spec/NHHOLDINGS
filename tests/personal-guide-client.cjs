@@ -54,7 +54,8 @@ function make(hash){
   const guideTabNodes = guideTabs.map(t=>node({guideLink:t['data-guide-link']}));
   const panelNodes = panels.map(p=>node({guidePanel:p}));
   const screenNodes = [...html.matchAll(/data-personal-view="([^"]+)"/g)].map(m=>node({personalView:m[1]}));
-  const navNodes = navLinks.map(l=>node({personalLink:l['data-personal-link']}));
+  const navNodes = [...html.matchAll(/<a [^>]*data-personal-link="([^"]+)"[^>]*>/g)]
+    .map(match=>node({personalLink:match[1]}));
   const el = id => els.get(id)||(els.set(id,{...node(),textContent:'',innerHTML:'',open:false,
     addEventListener(t,fn){events.set(id+':'+t,fn);},focus(){},querySelectorAll:()=>[],reset(){},
     replaceChildren(...c){this.children=c;},close(){this.open=false;},showModal(){this.open=true;}}),els.get(id));
