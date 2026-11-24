@@ -571,6 +571,24 @@
   date.textContent = dateFormatter.format(new Date());
   el('personal-start-ai')?.addEventListener('click',()=>{if(ready)el('personal-ai-open').click();});
   window.addEventListener('hashchange',()=>{if(location.pathname==='/personal')route(true);});
+  // 같은 출처·같은 경로(/personal)의 링크는 문서를 다시 불러오지 않고 route()로 처리한다.
+  // 해시만 바뀌는 링크는 브라우저의 조각 탐색(hashchange → route)에 맡기고, 검색 문자열이 바뀌거나 해시가 없어
+  // 전체 문서가 다시 열릴 링크(?workbench=·?review= 딥링크, 브랜드 홈 등)만 가로챈다. 보조키·가운데 버튼·target·download·
+  // 다른 출처나 /dashboard 등 다른 경로는 그대로 둔다. pane·review 매개변수의 해석은 NuriWorkbench.mount가 맡는다.
+  document.addEventListener('click',event=>{
+    const link=event.target.closest?.('a[href]');
+    if(!link||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    if(link.target||link.hasAttribute('download')||location.pathname!=='/personal')return;
+    let url;
+    try{url=new URL(link.href,location.href);}catch{return;}
+    if(url.origin!==location.origin||url.pathname!=='/personal'||url.hash&&url.search===location.search)return;
+    event.preventDefault();
+    const same=url.href===location.href;
+    if(!same)history.pushState(null,'',url.href);
+    if(menu.open)menu.close();
+    route(true);
+    if(same)el('personal-title').focus({preventScroll:true});
+  });
   window.addEventListener('personal-automation-changed',()=>{
     if(ready&&location.pathname==='/personal'){
       weekRead?.controller.abort();weekRead=null;weekAgenda=null;

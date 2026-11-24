@@ -124,24 +124,31 @@
       <button class="btn" type="button" aria-pressed="false" data-schedule-mode="all">전체 일정</button>
      </div>
      <div id="personal-week" hidden>
-      <div class="personal-section-head">
+      <div class="personal-section-head personal-week-head">
        <h3 id="personal-week-title"></h3>
-       <div class="personal-planning-actions" aria-label="주간 일정 탐색">
+       <div class="personal-planning-actions" role="group" aria-label="주간 일정 탐색">
         <button class="btn" type="button" data-week-action="previous">이전 주</button>
         <button class="btn" type="button" data-week-action="current">이번 주</button>
         <button class="btn" type="button" data-week-action="next">다음 주</button>
        </div>
       </div>
       <div id="personal-week-days" class="personal-week-days" role="group" aria-label="요일 선택"></div>
-      <div class="personal-section-head">
+      <div class="personal-section-head personal-day-head">
        <h3 id="personal-day-heading"></h3>
        <div class="personal-planning-actions">
         <button class="btn" type="button" data-week-action="add">이날 일정 추가</button>
-        <button class="btn" type="button" data-week-action="export">주간 일정 다운로드</button>
        </div>
       </div>
       <p id="personal-week-status" class="personal-message" role="status"></p>
       <div id="personal-day-events"></div>
+      <details class="personal-week-tools">
+       <summary>일정 내보내기·캘린더 연동</summary>
+       <div class="personal-planning-actions">
+        <button class="btn" type="button" data-week-action="export">주간 일정 다운로드</button>
+        <a class="personal-link" href="#guide-connections">캘린더 연동 방법</a>
+       </div>
+       <p class="personal-hint">다운로드한 .ics 파일은 Apple 캘린더·Outlook에서 가져올 수 있어요. 개인 일정의 ‘Google Calendar에 추가’는 각 일정 옆에 있습니다.</p>
+      </details>
      </div>
      <div id="personal-list"></div>
      <section id="personal-automation-agenda" hidden class="personal-section-break"><h2>집중 시간과 예약</h2><div id="personal-automation-events"></div></section>

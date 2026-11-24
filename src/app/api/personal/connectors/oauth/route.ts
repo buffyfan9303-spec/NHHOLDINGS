@@ -7,9 +7,8 @@ export async function GET(req:NextRequest) {
   try {
     const user=await identity(req);
     if(user&&canUsePersonalWorkspace(await accessStatus(user))) {
-      await finishConnector(req,user.id);
-      return connectorRedirect(req,true);
+      return connectorRedirect(req,await finishConnector(req,user.id));
     }
   } catch {}
-  return connectorRedirect(req,false);
+  return connectorRedirect(req);
 }

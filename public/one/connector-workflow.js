@@ -78,7 +78,7 @@
 
   const root = document.getElementById('connector-workflow-root');
   let owner = null, controller = null, services = new Map(), callback = '', serverTasks = [], projects = [], loaded = false, loadError = '';
-  let busy = false, notice = null;
+  let busy = false, notice = null, openId = null, returnId = null;
   const cards = new Map();
   const results = new Map();
   const proposals = new Map();
@@ -205,13 +205,26 @@
 
   function badge(text, tone) { return h('span', {class: 'cw-badge cw-' + tone, text}); }
 
+  // 정렬 순서: 연결됨 → 승인 대기 → 설정 필요 → 확인 불가
+  function rank(provider) {
+    const s = state(provider);
+    if (!s.known) return 3;
+    if (s.connected) return 0;
+    return provider.kind === 'oauth' && s.configured ? 1 : 2;
+  }
   function statusOf(provider) {
     const s = state(provider);
-    if (!s.known) return badge('상태 확인 불가', 'warn');
+    if (!s.known) return badge('확인 불가', 'warn');
     if (s.connected) return badge('연결됨', 'ok');
-    if (provider.kind === 'oauth' && !s.configured) return badge('앱 설정 필요', 'warn');
-    if (provider.kind === 'oauth') return badge('계정 연결 필요', 'idle');
-    return badge('연결 필요', 'idle');
+    if (provider.kind === 'oauth' && s.configured) return badge('계정 연결 필요', 'idle');
+    return badge('설정 필요', 'warn');
+  }
+  function focusCard(id) {
+    const entry = cards.get(id);
+    if (!entry) return;
+    entry.node.open = true;
+    openId = id;
+    entry.node.querySelector('summary')?.focus();
   }
 
   function guide(provider) {
@@ -589,7 +602,7 @@
 
   function card(provider) {
     const s = state(provider);
-    const title = h('h3', {id: 'cw-' + provider.id + '-title', tabindex: '-1', text: provider.name});
+    const title = h('h3', {id: 'cw-' + provider.id + '-title', text: provider.name});
     const status = h('p', {class: 'cw-status', role: 'status'});
     const body = h('div', {class: 'cw-body'});
     body.append(p(provider.summary, 'cw-summary'));
@@ -608,33 +621,47 @@
     } else {
       body.append(guide(provider), tokenForm(provider));
     }
-    const node = h('article', {class: 'cw-card', 'aria-labelledby': title.id, data: {provider: provider.id}},
-      h('header', null, title, statusOf(provider)), body, status);
+    const node = h('details', {class: 'cw-item', name: 'nuri-personal-connector', open: openId === provider.id, data: {provider: provider.id}},
+      h('summary', null, title, statusOf(provider)), body);
+    node.addEventListener('toggle', () => {
+      if (node.open) {
+        openId = provider.id;
+        for (const [id, entry] of cards) if (id !== provider.id && entry.node.open) entry.node.open = false;
+      } else if (openId === provider.id) openId = null;
+    });
     cards.set(provider.id, {node, status});
-    return node;
+    return h('li', {class: 'cw-entry'}, node, status);
   }
 
   function paintAll() {
     cards.clear();
     const head = h('div', {class: 'cw-head'},
-      h('div', {class: 'cw-title', 'aria-hidden': 'true'}, h('span', {text: 'nuri@one'}), h('span', {text: ' ~ connectors $ '}), h('span', {class: 'cw-cursor', text: '_'})),
-      h('div', {class: 'cw-intro'},
-        p('Google·카카오·Notion·GitHub 6개 서비스를 연결해 읽고, 만들고, 승인한 것만 실행합니다. 키와 토큰은 입력 직후 서버에만 저장되며 이 화면에는 다시 표시되지 않습니다.'),
-        h('div', {class: 'cw-actions'}, h('button', {type: 'button', class: 'btn', text: '다시 불러오기', data: {cwReload: '1'}}),
-          h('a', {class: 'personal-link', href: '#guide-connections', text: '서비스 연결 가이드'}),
-          h('a', {class: 'personal-link', href: '/personal?workbench=connect#workbench', text: '연결 관리'}))));
+      h('div', {class: 'cw-title', 'aria-hidden': 'true'}, h('span', {text: 'nuri@one'}), h('span', {text: ' ~ connectors $ '}), h('span', {class: 'cw-cursor', text: '_'})));
+    const reloadButton = h('button', {type: 'button', class: 'cw-text-button', text: '다시 불러오기', data: {cwReload: '1'}});
     const message = h('p', {class: 'cw-global', role: 'status', data: {cwGlobal: '1'}});
     if (notice) { message.textContent = notice.text; message.classList.toggle('is-error', notice.error); message.setAttribute('role', notice.error ? 'alert' : 'status'); }
     const flow=h('nav',{class:'cw-actions cw-steps','aria-label':'메일에서 성과까지'},
       [['gmail','메일에서 할 일'],['calendar','빈 시간 찾기'],['analytics','성과 보기']].map(([id,text],index)=>{
         const button=h('button',{class:'btn',type:'button',text:String(index+1)+'. '+text});
-        button.addEventListener('click',()=>cards.get(id)?.node.querySelector('h3')?.focus());
+        button.addEventListener('click',()=>focusCard(id));
         return button;
       }));
-    const panel = h('div', {class: 'cw-panel'}, head, message, loaded ? flow : null);
-    if (loadError) panel.append(p(loadError, 'cw-status is-error'));
+    const panel = h('div', {class: 'cw-panel'}, head, message);
+    if (loadError) panel.append(h('div', {class: 'cw-overview'}, p(loadError, 'cw-status is-error'), reloadButton));
     else if (!loaded) panel.append(p('연결 상태를 불러오는 중입니다…', 'cw-empty'));
-    else panel.append(h('div', {class: 'cw-grid'}, PROVIDERS.map(card)));
+    else {
+      const sorted = PROVIDERS.map(provider => ({provider, rank: rank(provider)})).sort((x, y) => x.rank - y.rank);
+      const count = value => sorted.filter(item => item.rank === value).length;
+      const parts = ['연결됨 ' + count(0) + '/' + PROVIDERS.length];
+      if (count(1)) parts.push('계정 연결 필요 ' + count(1));
+      if (count(2)) parts.push('설정 필요 ' + count(2));
+      if (count(3)) parts.push('확인 불가 ' + count(3));
+      const links = h('div', {class: 'cw-related'},
+        h('a', {class: 'personal-link', href: '#guide-connections', text: '서비스 연결 가이드'}),
+        h('a', {class: 'personal-link', href: '/personal?workbench=connect#workbench', text: '연결 관리'}));
+      panel.append(h('div', {class: 'cw-overview'}, h('ul', {class: 'cw-count', 'aria-label': '연결 상태 요약'}, parts.map(text => h('li', {text}))), reloadButton),
+        h('ul', {class: 'cw-grid'}, sorted.map(item => card(item.provider))), flow, links);
+    }
     root.replaceChildren(panel);
   }
 
@@ -650,9 +677,8 @@
     for (const provider of PROVIDERS) if (!state(provider).connected) { results.delete(provider.id); proposals.delete(provider.id); }
     paintAll();
     if (busy) lock(true);
-    const target = focusId ? cards.get(focusId) : null;
-    if (target) {
-      target.node.querySelector('h3')?.focus();
+    if (focusId && cards.has(focusId)) {
+      focusCard(focusId);
       if (done) say(focusId, done);
     }
   }
@@ -670,6 +696,7 @@
       history.replaceState(history.state, '', url.href);
     }
     if (value !== 'connected' && value !== 'failed') return null;
+    if (PROVIDERS.some(item => item.id === id)) returnId = id;
     const name = PROVIDERS.find(item => item.id === id)?.name;
     return value === 'connected'
       ? {text: (name ? name + ' ' : '') + '연결을 마쳤습니다. 아래에서 연결 상태를 확인해 주세요.', error: false}
@@ -699,11 +726,12 @@
     } finally {
       if (alive()) lock(false);
     }
+    if (alive() && returnId && cards.has(returnId)) { focusCard(returnId); returnId = null; }
   }
 
   function suspend() {
     controller?.abort();
-    controller = null; owner = null; busy = false; loaded = false; loadError = ''; notice = null;
+    controller = null; owner = null; busy = false; loaded = false; loadError = ''; notice = null; openId = null; returnId = null;
     services = new Map(); callback = ''; serverTasks = []; projects = [];
     cards.clear(); results.clear(); proposals.clear();
     if (root) { root.removeAttribute('aria-busy'); root.replaceChildren(); }
