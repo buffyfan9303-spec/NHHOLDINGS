@@ -139,6 +139,10 @@ h2 {font-size:17px}
 .personal-row-meta {color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
 .personal-row-meta:empty {display:none}
 .personal-late {color:var(--danger)}
+.personal-agenda-heading {min-width:0}
+.personal-today-sheet .personal-row-text strong {display:block;word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty}
+.personal-agenda-line {margin:2px 0 0;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;word-break:keep-all}
+.personal-agenda-line strong {font-weight:700}
 .personal-time {padding-inline-start:3px}
 .personal-row-actions {display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px}
 .personal-action {min-height:44px;font-size:13px}
