@@ -344,7 +344,7 @@
     const counts='<ul class="workbench-week-counts" aria-label="주간 현황">'+[[completed,'완료'],[unfinished,'미완료'],[approvals,'승인 대기']].map(([rows,label])=>
       '<li><strong>'+rows.length+'</strong><span>'+label+'</span></li>').join('')+'</ul>';
     const done='<section><h3>완료</h3>'+listReview(completed,row=>'<li><strong>'+esc(row.title)+'</strong></li>','이 주에 완료한 일이 없습니다.')+'</section>';
-    const pending='<section><h3>승인 대기</h3>'+listReview(approvals,row=>'<li><a class="personal-link" href="?review='+encodeURIComponent(row.id)+'#workbench" data-action="weekly-approval" data-id="'+esc(row.id)+'">'+esc(row.title)+'</a></li>','현재 승인 대기 항목이 없습니다.')+'</section>';
+    const pending='<section><h3>승인 대기</h3>'+listReview(approvals,row=>'<li><a class="personal-link" href="?review='+encodeURIComponent(row.id)+'#workbench">'+esc(row.title)+'</a></li>','현재 승인 대기 항목이 없습니다.')+'</section>';
     const carry='<section><h3>미완료</h3><p class="workbench-muted">이 주까지 마감이거나 마감일이 없는 미완료 할 일입니다.</p>'+
       '<form class="personal-form" data-form="carry">'+listReview(unfinished,row=>'<li><label class="workbench-check">'+
         (canCarry?'<input type="checkbox" name="item" value="'+esc(row.id)+'">':'')+'<span>'+esc(row.title)+
@@ -534,14 +534,12 @@
   }
   async function mount(){
     if(!window.NuriPersonalAccount)return;
-    const incoming=new URL(location.href);
-    const requested=incoming.searchParams.get('workbench'), requestedReview=incoming.searchParams.get('review');
     if(controller){
-      if(data&&(requested||requestedReview)){
-        acceptRoute(incoming,requested,requestedReview);
-        render();focusCurrent();
+      if(data){
+        // 해시가 바뀌어 다시 mount되면 현재 주소의 pane·review를 반영한다(뒤로·앞으로 포함).
+        if(acceptRoute(new URL(location.href))){render();focusCurrent();}
+        void loadPane(pane,pane!=='preferences');
       }
-      if(data)void loadPane(pane,pane!=='preferences');
       return;
     }
     owner=window.NuriPersonalAccount;
@@ -557,22 +555,46 @@
     render();
     try{
       data=await api();
-      acceptRoute(incoming,requested,requestedReview);
+      // 응답을 기다리는 동안 다른 링크로 이동했을 수 있으므로 mount 시점이 아닌 지금 주소를 읽는다.
+      const moved=acceptRoute(new URL(location.href));
       render();void loadPane(pane);
-      if(requestedReview)focusCurrent();
+      if(moved&&detailId)focusCurrent();
     }
     catch(error){if(!signal.aborted){controller=null;root.innerHTML='<p role="status">'+esc(error.message)+'</p>'+action('다시 불러오기','retry');}}
   }
-  function acceptRoute(url,requested,id){
-    if(['connect','activity','weekly','approvals'].includes(requested))pane=requested;
+  // 주소 형식: 기존 딥링크 /personal?workbench=<pane>#workbench, /personal?review=<id>#workbench 는 계속 받는다.
+  // 받은 뒤에는 #workbench?pane=<pane>[&review=<id>] 로 정규화해 새로고침·뒤로·앞으로에서 같은 pane이 열린다.
+  function routeParams(url){
+    const [name,query='']=url.hash.slice(1).split('?');
+    const inHash=new URLSearchParams(query);
+    return {name,inHash,legacy:url.searchParams.has('workbench')||url.searchParams.has('review'),
+      requested:url.searchParams.get('workbench')??inHash.get('pane'),id:url.searchParams.get('review')??inHash.get('review')};
+  }
+  function workbenchHash(){
+    const query=new URLSearchParams({pane});
+    if(pane==='approvals'&&detailId)query.set('review',detailId);
+    return '#workbench?'+query;
+  }
+  // 현재 pane·검토 항목을 주소에 반영한다. push는 사용자가 pane을 바꾼 경우(뒤로 가기로 돌아올 수 있게), 그 외는 교체.
+  function syncLocation(push=false){
+    if(location.pathname!=='/personal'||routeParams(new URL(location.href)).name!=='workbench')return;
+    const url=new URL(location.href);
+    url.searchParams.delete('workbench');url.searchParams.delete('review');
+    url.hash=workbenchHash();
+    if(url.href===location.href)return;
+    history[push?'pushState':'replaceState'](history.state,'',url.href);
+  }
+  function acceptRoute(url){
+    const {name,inHash,legacy,requested,id}=routeParams(url);
+    if(name!=='workbench'||!data)return false;
+    const before=pane+'/'+detailId;
+    if(url.searchParams.has('workbench')?['connect','activity','weekly','approvals'].includes(requested):Object.hasOwn(renderers,requested??''))pane=requested;
     if(id){
       projectFilter='';
       if(!review(id)){pane='approvals';detailId=null;}
-    }
-    if(requested||id){
-      url.searchParams.delete('workbench');url.searchParams.delete('review');
-      history.replaceState(history.state,'',url.href);
-    }
+    } else if(inHash.has('pane')&&pane==='approvals')detailId=null;
+    syncLocation();
+    return legacy||before!==pane+'/'+detailId;
   }
   async function loadHome(){
     const account=window.NuriPersonalAccount;
@@ -595,7 +617,7 @@
   }
   async function mutate(input,message){
     if(running||!data||!controller)return;
-    const signal=controller.signal;
+    const signal=controller.signal, before=pane;
     running=true;
     root.setAttribute('aria-busy','true');
     root.querySelectorAll('button').forEach(button=>{button.disabled=true;});
@@ -620,6 +642,7 @@
       if(input.action==='project') {
         projectId=input.id??result.projects.at(-1)?.id??null;
       }
+      syncLocation(pane!==before);
       render(message);
       focusCurrent();
       if(result.decision?.category==='schedule'&&['approve','undo'].includes(input.action)){
@@ -636,7 +659,7 @@
     if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   }
   function switchPane(next){
-    pane=next;render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
+    pane=next;syncLocation(true);render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
     void loadPane(next);
   }
   root.addEventListener('click',async event=>{
@@ -669,7 +692,7 @@
     if(key==='all-projects'||key==='project-queue'){
       projectFilter=key==='project-queue'?id:'';showHistory=false;detailId=null;switchPane('approvals');return;
     }
-    if(key==='go-review'&&review(id)){render();focusCurrent();return;}
+    if(key==='go-review'&&review(id)){syncLocation(true);render();focusCurrent();return;}
     if(key==='start'&&templates[id]){
       const {name,rules,step}=templates[id];
       void mutate({action:'start-project',starter:id,name,rules,firstStep:step},'프로젝트와 첫 업무를 준비했습니다.');
@@ -684,10 +707,6 @@
     if(key.startsWith('review-')){
       weeklyStart=key==='review-current'?currentWeek():calendarDay(weeklyStart,key==='review-previous'?-7:key==='review-next'?7:0);
       weeklyData=null;render();void loadWeekly();return;
-    }
-    if(key==='weekly-approval'){
-      if(review(id)){event.preventDefault();render();focusCurrent();}
-      return;
     }
     if(key==='repeat-state'){
       const rule=weeklyData?.rules?.find(entry=>entry.id===id);
@@ -717,7 +736,7 @@
     if(key==='review'||key==='history'||key==='close-review'){
       detailId=key==='review'?id:null;
       if(key==='history')showHistory=!showHistory;
-      render();focusCurrent();
+      syncLocation();render();focusCurrent();
       if(detailId&&window.matchMedia('(max-width:780px)').matches)root.scrollIntoView({block:'start',behavior:'instant'});
       return;
     }
@@ -741,17 +760,7 @@
     }
     if(['approve','decline','undo'].includes(key)) void mutate({action:key,id,revision:decision?.revision??1},key==='approve'?'승인했습니다.':key==='decline'?'반려했습니다.':'되돌렸습니다.');
   });
-  home?.addEventListener('click',event=>{
-    const link=event.target.closest('a[href]');
-    if(!link||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-    const url=new URL(link.href);
-    if(url.pathname!==location.pathname||url.hash!=='#workbench')return;
-    event.preventDefault();
-    const current=new URL(location.href);
-    current.search=url.search;
-    history.replaceState(history.state,'',current.href);
-    if(location.hash==='#workbench')void mount();else location.hash='workbench';
-  });
+  // '이어서 할 일'(#personal-resume)의 ?review=·?workbench= 링크는 personal.js의 공통 같은 문서 탐색이 처리한다.
   root.addEventListener('change',event=>{
     if(!event.target.matches('[data-weekly-project]')||running)return;
     weeklyProject=event.target.value;weeklyData=null;weeklyRead++;

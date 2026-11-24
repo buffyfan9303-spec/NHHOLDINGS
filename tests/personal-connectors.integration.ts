@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {NextRequest, NextResponse} from 'next/server';
 import {Pool} from 'pg';
-import {changeConnector,connectorOverview,finishConnector,projectPerformance} from '../src/lib/personal-connectors';
+import {changeConnector,connectorOverview,connectorRedirect,finishConnector,projectPerformance} from '../src/lib/personal-connectors';
 import {GET as getConnectors,POST as postConnectors} from '../src/app/api/personal/connectors/route';
 
 const database = process.env.NURI_CONNECTOR_TEST_DATABASE;
@@ -63,7 +63,12 @@ test('personal connectors use own connections and explicit approval against isol
       headers:{cookie:'nh_access='+session+'; '+response.headers.get('set-cookie')!.split(';')[0]},
     });
     await assert.rejects(finishConnector(callback,two.id));
-    await finishConnector(callback,one.id);
+    const connected=await finishConnector(callback,one.id);
+    assert.equal(connected,provider);
+    const destination=new URL(connectorRedirect(callback,connected).headers.get('Location')!);
+    assert.equal(destination.origin,base);
+    assert.equal(destination.hash,'#connector-workflow');
+    assert.deepEqual([...destination.searchParams],[['connect','connected'],['provider',provider]]);
     await assert.rejects(finishConnector(callback,one.id));
   }
   const value=async<T>(promise:Promise<unknown>)=>await promise as T;

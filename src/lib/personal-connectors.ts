@@ -150,10 +150,14 @@ export async function finishConnector(req:NextRequest,owner:string) {
   const token=await tokenExchange(flow.provider,credential<App>(settings.app),{
     grant_type:'authorization_code',code,redirect_uri:connectorCallback(),...(flow.provider==='kakao'?{}:{code_verifier:flow.verifier})});
   await setToken(owner,flow.provider,token,'flow',claimed);
+  return flow.provider;
 }
 
-export function connectorRedirect(req:NextRequest,complete:boolean) {
-  const response=NextResponse.redirect(new URL('/personal?connect='+(complete?'connected':'failed')+'#connector-workflow',marketOrigin()));
+export function connectorRedirect(req:NextRequest,provider?:OAuthProvider) {
+  const target=new URL('/personal#connector-workflow',marketOrigin());
+  target.searchParams.set('connect',provider?'connected':'failed');
+  if(provider) target.searchParams.set('provider',provider);
+  const response=NextResponse.redirect(target);
   Object.entries(headers).forEach(([key,value])=>response.headers.set(key,value));
   response.cookies.set(cookieName,'',flowCookie(req,0));
   return response;

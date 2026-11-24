@@ -485,3 +485,5 @@ SNS 조사도 역할을 나눈다. 티스토리 담당은 검색 의도·본인 
 - 누리원 가이드 · Codex가 기존 시작 가이드를 사용 방법·서비스 연결·문제 해결 탭으로 확장하고, 운영 기능으로 연결되는 링크와 모바일·PC 표시를 검증한다.
 
 - 누리원 가이드 회귀 검증 · Claude(claude/one-guide-regression-1124)가 `tests/personal-guide-client.cjs`를 npm test에 연결해 가이드 3개 분류, `#getting-started`, 직접 열기·해시 이동, 업무 작업대 링크의 `workbench` 대상(connect·activity·weekly·approvals), 모바일 더보기·기존 개인 업무 경로 보존을 합성 DOM·차단된 fetch로 검증한다. 실제 브라우저·모바일 100% 시각 검수와 운영 확인은 미실시.
+
+- 누리원 연결·일정 동선 · 2026-11-24 KST · Claude Sonnet은 서비스 상태와 상세 설정을, Claude Fable은 일정과 작업대 동선을 구현했다. Codex가 통합하고 계정별 연결 상태, 기존 링크, 뒤로가기와 PC·모바일 표시를 독립 검수했다.
