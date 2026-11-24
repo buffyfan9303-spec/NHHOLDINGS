@@ -217,8 +217,12 @@
     const project=data.projects.find(row=>row.id===weeklyProject);
     if(!project)return;
     if(key==='weekly-ai'){
-      if(!window.NuriPersonalAI?.openWeeklyReview(owner,weeklyReport(project,weeklyData,12),trigger,
-        {projectId:project.id,...weeklyData.window})){
+      // 가져오기 기간은 오늘(한국 시간)과 nextStart 중 늦은 날짜부터. 전부 지났으면 plan 없이 열어 가져오기·JSON 기간을 숨긴다.
+      // start는 원래 주 그대로 두어 focusPlanImport가 실제 리뷰 화면과 대조할 수 있게 한다.
+      const {nextStart,nextEnd}=weeklyData.window;
+      const importFrom=nextStart<today()?today():nextStart;
+      const plan=importFrom<=nextEnd?{projectId:project.id,...weeklyData.window,nextStart:importFrom}:null;
+      if(!window.NuriPersonalAI?.openWeeklyReview(owner,weeklyReport(project,weeklyData,12),trigger,plan)){
         status('AI 도우미를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
       }
       return;
@@ -373,35 +377,68 @@
     if(!response.ok)throw Error(result.error||'주간 리뷰를 처리하지 못했습니다.');
     return result;
   }
-  async function loadWeekly(message=''){
+  // 등록 성공 후 같은 계정·프로젝트·주의 가져오기 폼을 재사용한다. 승인 처리한 항목만 제거하고
+  // 붙여넣은 답변·미선택 항목의 편집은 기존 DOM 그대로 둔다. 새 화면에 가져오기 영역이 없으면 폐기한다.
+  function keepPlanImport(panel,submitted){
+    const fresh=root.querySelector('[data-weekly-plan]');
+    if(!fresh)return;
+    const form=panel.querySelector('[data-form="import-plan"]');
+    const list=form.querySelector('[data-weekly-plan-items]');
+    submitted.forEach(row=>row.remove());
+    list.querySelectorAll(':scope > section').forEach(section=>{
+      const rows=section.querySelectorAll('[data-weekly-plan-item]');
+      if(!rows.length){section.remove();return;}
+      section.querySelector('h3').textContent=(rows[0].dataset.planKind==='schedule'?'일정':'할 일')+' '+rows.length+'개';
+    });
+    if(!list.querySelector('[data-weekly-plan-item]')){form.hidden=true;list.replaceChildren();}
+    panel.querySelector('[data-weekly-plan-status]').textContent='';
+    panel.querySelectorAll('button,input,select,textarea').forEach(control=>{control.disabled=false;});
+    fresh.replaceWith(panel);
+  }
+  async function loadWeekly(message='',restore){
     if(!weeklyProject||!controller||pane!=='weekly')return;
     const ref=++weeklyRead,signal=controller.signal;
+    const retained=restore?null:root.querySelector('[data-weekly-plan][open]');
+    const account=owner;
     try{
       const result=await weeklyRequest();
       if(ref!==weeklyRead||signal.aborted)return;
       weeklyData=result;
     }catch(error){
       if(ref!==weeklyRead||signal.aborted)return;
-      weeklyData={error:error.message};
+      if(restore||retained)message=[message,'주간 목록을 다시 불러오지 못했습니다.'].filter(Boolean).join(' ');
+      else weeklyData={error:error.message};
     }
     if(pane==='weekly'){
       const focused=root.contains(document.activeElement);
       render(message||root.querySelector('[data-workbench-status]')?.textContent||'');
+      restore?.();
+      if(retained&&owner===account&&owner===window.NuriPersonalAccount){
+        root.querySelector('[data-weekly-plan]')?.replaceWith(retained);
+      }
       if(focused)(root.querySelector('[data-weekly-project]')??root.querySelector('[aria-current=page]'))?.focus({preventScroll:true});
     }
   }
   async function writeWeekly(input,message){
     if(running||!controller||owner!==window.NuriPersonalAccount)return;
     const signal=controller.signal;
+    const account=owner,context={project:weeklyProject,start:weeklyStart};
+    const planPanel=input.action==='import-plan'?root.querySelector('[data-weekly-plan]'):null;
+    const submitted=planPanel?[...planPanel.querySelectorAll('[data-form="import-plan"] [data-weekly-plan-item]')]
+      .filter(row=>row.querySelector('[name=item]').checked):[];
     running=true;
     root.setAttribute('aria-busy','true');
     root.querySelectorAll('button,input,select,textarea').forEach(control=>{control.disabled=true;});
     try{
       const result=await weeklyRequest({...input,projectId:weeklyProject,week:weeklyStart});
+      let restore;
       if(input.action==='import-plan'){
         message=result.created+'개 등록'+(result.skipped?' · 중복 '+result.skipped+'개 건너뜀':'')+'.';
+        restore=()=>{
+          if(planPanel&&!signal.aborted&&owner===account&&owner===window.NuriPersonalAccount&&weeklyProject===context.project&&weeklyStart===context.start)keepPlanImport(planPanel,submitted);
+        };
       }
-      await loadWeekly(input.action==='repeat-create'&&!result.created?'같은 반복 설정이 이미 있습니다.':message);
+      await loadWeekly(input.action==='repeat-create'&&!result.created?'같은 반복 설정이 이미 있습니다.':message,restore);
       if(input.action==='carry'||input.action==='import-plan')window.dispatchEvent(new Event('personal-automation-changed'));
     }catch(error){
       if(!signal.aborted){
@@ -710,6 +747,12 @@
     weeklyProject=event.target.value;weeklyData=null;weeklyRead++;
     render();root.querySelector('[data-weekly-project]')?.focus({preventScroll:true});
     void loadWeekly();
+  });
+  // 편집 input의 Enter가 암묵적 제출로 선택 항목을 등록하지 않게 한다. IME 조합 중 Enter는 그대로 둔다.
+  // 승인 버튼은 button 요소라 대상이 아니므로 Enter·Space 동작이 유지된다.
+  root.addEventListener('keydown',event=>{
+    if(event.key!=='Enter'||event.isComposing||event.keyCode===229)return;
+    if(event.target.matches('[data-form="import-plan"] input'))event.preventDefault();
   });
   root.addEventListener('input',event=>{
     const row=event.target.closest('[data-weekly-plan-item]');
