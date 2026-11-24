@@ -281,6 +281,19 @@
     el('personal-week-status').textContent='개인 일정 '+selected.length+'건을 다운로드했습니다.';
   }
 
+  function paintAgendaSummary(tasks,schedule,now) {
+    const taskLine=el('personal-today-summary'), calendarLine=el('personal-upcoming-summary');
+    taskLine.hidden=calendarLine.hidden=true;
+    if(!ready)return;
+    const overdue=tasks.filter(item=>item.dueOn&&item.dueOn<now).length;
+    const dueToday=tasks.filter(item=>item.dueOn===now).length;
+    taskLine.innerHTML=(overdue?'<strong class="personal-late">기한 지남 '+overdue+'건</strong> · ':'')+'오늘 마감 '+dueToday+'건';
+    taskLine.hidden=false;
+    const today=schedule.filter(item=>item.dueOn===now).length;
+    calendarLine.textContent='오늘 개인 일정 '+today+'건';
+    calendarLine.hidden=false;
+  }
+
   function paintItems() {
     const now = day();
     const tasks = items.filter(item=>item.kind==='task'&&!item.done).sort(dateOrder);
@@ -292,6 +305,7 @@
       ...item,title:'집중 · '+item.title,kind:'focus',dueOn:item.focusOn,dueTime:item.focusTime,
     })).sort(dateOrder);
     el('personal-upcoming').innerHTML = list([...schedule,...automated,...focus].sort(dateOrder).slice(0,4),'예정된 일정이 없습니다.',true);
+    paintAgendaSummary(tasks,schedule,now);
     taskFilters.hidden=view!=='tasks';
     scheduleModes.hidden=view!=='schedule';
     week.hidden=view!=='schedule'||scheduleMode!=='week';
@@ -376,6 +390,7 @@
     const validation = new AbortController();
     activeCheck = validation;
     ready=false;
+    el('personal-today-summary').hidden=el('personal-upcoming-summary').hidden=true;
     el('personal-main').setAttribute('aria-busy','true');
     el('personal-reload').hidden = true;
     try {
