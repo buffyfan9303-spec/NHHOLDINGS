@@ -785,7 +785,9 @@
     route(true);
     return true;
   }
-  window.NuriPersonalWorkspace={syncProjects,openProjectRecords,tasks(){
+  window.NuriPersonalWorkspace={syncProjects,openProjectRecords,projectName(id){
+    return ready&&typeof id==='string'?projectName(id):'';
+  },tasks(){
     return ready?items.filter(item=>item.kind==='task'&&!item.done).sort(dateOrder).map(({id,title})=>({id,title})):[];
   },activate(){
     openAssistant=new URLSearchParams(location.search).has('ai');

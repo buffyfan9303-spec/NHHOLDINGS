@@ -38,6 +38,21 @@ test('personal Gmail scheduling isolates principal, claims once, and demands rev
   await assert.rejects(()=>editPersonalMail(guest,{action:'draft',id:draft.id,version:1,...base},guestEmail),{status:404});
   await assert.rejects(()=>editPersonalMail(owner,{action:'schedule',id:draft.id,version:1,approved:false,at:new Date(Date.now()+60_000).toISOString()},ownerEmail),{status:400});
   await assert.rejects(()=>editPersonalMail(owner,{action:'draft',id:draft.id,version:9,...base},ownerEmail),{status:409});
+  const project={id:'3b1d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e01',name:'메일 프로젝트',rules:'',version:1};
+  const guestProject={id:'3b1d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e02',name:'손님 프로젝트',rules:'',version:1};
+  for(const [who,row] of [[owner,project],[guest,guestProject]] as const){
+    await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-workbench',$1,$2)",[who,JSON.stringify({ownerId:who,projects:[row],decisions:[]})]);
+  }
+  assert.equal(draft.projectId,undefined);
+  const linked=await editPersonalMail(owner,{action:'draft',...base,projectId:project.id},ownerEmail);
+  assert.equal(linked.projectId,project.id);
+  assert.equal((await editPersonalMail(owner,{action:'draft',id:linked.id,version:1,...base,subject:'유지'},ownerEmail)).projectId,project.id);
+  assert.equal((await editPersonalMail(owner,{action:'draft',id:linked.id,version:2,...base,projectId:null},ownerEmail)).projectId,undefined);
+  await assert.rejects(()=>editPersonalMail(owner,{action:'draft',...base,projectId:guestProject.id},ownerEmail),{status:404});
+  await assert.rejects(()=>editPersonalMail(owner,{action:'draft',...base,projectId:5},ownerEmail),{status:400});
+  assert.equal((await listPersonalMail(owner)).find(row=>row.id===linked.id)?.projectId,undefined);
+  await editPersonalMail(owner,{action:'draft',id:linked.id,version:3,...base,projectId:project.id},ownerEmail);
+  assert.equal((await listPersonalMail(owner)).find(row=>row.id===linked.id)?.projectId,project.id);
 
   async function scheduled(actor:string,title:string,delta=-1000) {
     const id=randomUUID(),stamp=new Date().toISOString();

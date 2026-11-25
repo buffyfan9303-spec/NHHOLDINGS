@@ -67,7 +67,7 @@ async function run(page,width){
   window.NuriPersonalAccount=owner;
   window.aiWrites=[];
   window.NuriPersonalWorkspace={reviewDraft(kind,draft){window.aiDraft={kind,...draft};return true;}};
-  window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';},reviewApprovedDraft(kind,title,text,card){window.aiContinued={kind,title,text,card};return true;}};
+  window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';},reviewApprovedDraft(kind,title,text,card,project){window.aiContinued={kind,title,text,card,...(project?{project}:{})};return true;}};
   window.addEventListener('personal-automation-changed',event=>window.aiWrites.push(event.detail?.kind));
   const network=window.fetch.bind(window);
   window.fetch=async (input,init)=>{
@@ -199,6 +199,13 @@ async function run(page,width){
  await button('보내기').click();
  await dock.locator('.personal-ai-turn',{hasText:'project turn'}).getByRole('button',{name:'메모 편집에서 검토',exact:true}).click();
  assert.equal(await page.evaluate(()=>window.aiDraft.projectId),'p1');
+ await toggle.click();
+ await dock.locator('.personal-ai-turn',{hasText:'project turn'}).getByRole('button',{name:'메일 편집에서 검토',exact:true}).click();
+ assert.deepEqual(await page.evaluate(()=>window.aiContinued.project),{id:'p1',name:'검수'},'project answers carry the project to mail drafts');
+ await toggle.click();
+ await dock.locator('.personal-ai-turn',{hasText:'project turn'}).getByRole('button',{name:'SNS 편집에서 검토',exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.aiContinued.kind),'social');
+ assert.deepEqual(await page.evaluate(()=>window.aiContinued.project),{id:'p1',name:'검수'},'project answers carry the project to SNS drafts');
  await toggle.click();
  await button('일반 대화').click();
 

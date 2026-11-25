@@ -265,6 +265,24 @@ test('personal SNS OAuth, approved publication, ambiguous failures and revocatio
     })).post;
     const ownerPost = await drafts('owner','owner approved post');
     const friendPost = await drafts('friend','friend revoked post');
+    const project = {id:'2f0a2c7e-7c1b-4e0e-9d55-3f9c1e6d1a01', name:'AI 비서 연결 프로젝트', rules:'', version:1};
+    const foreignProject = {id:'2f0a2c7e-7c1b-4e0e-9d55-3f9c1e6d1a02', name:'다른 소유자 프로젝트', rules:'', version:1};
+    for (const [who, row] of [['owner',project],['friend',foreignProject]] as const) {
+      await database.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-workbench',$1,$2)",
+        [accounts[who].id, JSON.stringify({ownerId:accounts[who].id, projects:[row], decisions:[]})]);
+    }
+    assert.equal(ownerPost.projectId, null);
+    const linked = (await api('owner',{action:'save',accountId:owner.id,title:'프로젝트 초안',body:'프로젝트 초안',projectId:project.id})).post;
+    assert.equal(linked.projectId, project.id);
+    assert.equal((await api('owner',{action:'save',accountId:owner.id,title:'프로젝트 유지',body:'프로젝트 유지',id:linked.id,version:linked.version})).post.projectId, project.id);
+    assert.equal((await api('owner',{action:'save',accountId:owner.id,title:'프로젝트 해제',body:'프로젝트 해제',id:linked.id,version:linked.version+1,projectId:null})).post.projectId, null);
+    await api('owner',{action:'save',accountId:owner.id,title:'남의 프로젝트',body:'남의 프로젝트',projectId:foreignProject.id},404);
+    await api('owner',{action:'save',accountId:owner.id,title:'잘못된 프로젝트',body:'잘못된 프로젝트',projectId:7},400);
+    const listed = await responseJSON(await list(req('owner')));
+    assert.equal(listed.posts.find((row:{id:string})=>row.id===linked.id)?.projectId, null);
+    assert.equal(listed.posts.find((row:{id:string})=>row.id===ownerPost.id)?.projectId, null);
+    const relinked = (await api('owner',{action:'save',accountId:owner.id,title:'다시 연결',body:'다시 연결',id:linked.id,version:linked.version+2,projectId:project.id})).post;
+    assert.equal((await responseJSON(await list(req('owner')))).posts.find((row:{id:string})=>row.id===relinked.id)?.projectId, project.id);
     assert.equal((await context('live')).list('personal-social-post').length,0);
     await api('friend',{action:'schedule',id:ownerPost.id,version:ownerPost.version,approved:true,scheduledAt:new Date(Date.now()+20_000).toISOString()},404);
     await api('owner',{action:'schedule',id:ownerPost.id,version:ownerPost.version,scheduledAt:new Date(Date.now()+20_000).toISOString()},400);

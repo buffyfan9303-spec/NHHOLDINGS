@@ -4,12 +4,14 @@ import {MarketError} from '@/lib/security';
 import {canRunPersonalAutomation} from './personal-automation-access';
 import {mailAccessToken, mailConnection} from './personal-mail-auth';
 import {uuidPattern} from '@/server/personal-workspace.cjs';
+import {workbenchProject} from './personal-workbench';
 
 type MailStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'review' | 'cancelled';
 type MailDraft = {to: string; subject: string; body: string};
 type MailItem = MailDraft & {
   id: string; ownerId: string; ownerEmail:string; version: number; status: MailStatus; createdAt: string; updatedAt: string;
   scheduledAt: string | null; connectionId: string | null; retryable?: boolean; sentAt?: string | null; reason?: string | null; messageId?: string | null;
+  projectId?: string;
 };
 
 const documentScope = "workspace='live' AND kind='personal-mail-item'";
@@ -37,6 +39,15 @@ export function mailDraft(input: Record<string,unknown>): MailDraft {
   const subject = cleanText(input.subject,160,'제목');
   if (/[\r\n]/.test(subject)) throw new MarketError('제목은 한 줄로 입력해 주세요.');
   return {to,subject,body:cleanText(input.body,16000,'내용')};
+}
+
+// AI-created drafts keep an owner-scoped project link so the assistant can continue work across menus.
+// undefined keeps the stored link, null or '' removes it, a string must name a project the owner holds.
+async function linkedProject(owner: string, value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || value.length > 100) throw new MarketError('연결할 프로젝트를 확인해 주세요.');
+  return (await workbenchProject(owner, value)).id;
 }
 
 const visibleItem = ({ownerId,ownerEmail,connectionId,messageId,...item}:MailItem) => item;
@@ -70,8 +81,9 @@ async function changeItem(previous:MailItem, patch:Partial<MailItem>){
 export async function editPersonalMail(actor:string,input:Record<string,unknown>,ownerEmail:string){
   const action=input.action;
   if(action==='draft'&&!input.id){
+    const project=await linkedProject(actor,input.projectId);
     const id=randomUUID(), now=iso();
-    const item={...mailDraft(input),id,ownerId:actor,ownerEmail,status:'draft' as const,version:1,createdAt:now,updatedAt:now,scheduledAt:null,connectionId:null};
+    const item={...mailDraft(input),...(project?{projectId:project}:{}),id,ownerId:actor,ownerEmail,status:'draft' as const,version:1,createdAt:now,updatedAt:now,scheduledAt:null,connectionId:null};
     const db=pool();
     await db.query("INSERT INTO nh_documents(workspace,kind,id,data) VALUES('live','personal-mail-item',$1,$2)",
       [actor+':'+id,JSON.stringify(item)]);
@@ -83,7 +95,8 @@ export async function editPersonalMail(actor:string,input:Record<string,unknown>
   let patch:Partial<MailItem>;
   if(action==='draft'){
     if(!['draft','cancelled'].includes(previous.status))throw new MarketError('발송을 준비 중이거나 결과가 있는 메일은 복사해 새 초안으로 작성해 주세요.',409);
-    patch={...mailDraft(input),status:'draft',reason:null,scheduledAt:null,connectionId:null};
+    const project=await linkedProject(actor,input.projectId);
+    patch={...mailDraft(input),status:'draft',reason:null,scheduledAt:null,connectionId:null,...(project===undefined?{}:{projectId:project??undefined})};
   }else if(action==='schedule'){
     if(!['draft','cancelled'].includes(previous.status)&&!(previous.status==='review'&&previous.retryable===true))throw new MarketError('현재 상태에서 예약할 수 없습니다.',409);
     if(input.approved!==true)throw new MarketError('받는 주소, 제목, 본문과 발송 시각을 확인해 주세요.');
