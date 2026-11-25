@@ -1,6 +1,6 @@
 import type {NextRequest} from 'next/server';
 import {automationActor} from '@/lib/personal-automation-access';
-import {changeConnector,connectorOverview} from '@/lib/personal-connectors';
+import {calendarConnectionStatus,changeConnector,connectorOverview} from '@/lib/personal-connectors';
 import {body,failure,requireOrigin} from '@/lib/security';
 
 export const dynamic='force-dynamic';
@@ -13,6 +13,7 @@ function rejected(error:unknown) {
 export async function GET(req:NextRequest) {
   try {
     const {id}=await automationActor(req);
+    if(req.nextUrl.searchParams.get('view')==='calendar-status') return Response.json(await calendarConnectionStatus(id),{headers});
     return Response.json(await connectorOverview(id),{headers});
   } catch(error) {return rejected(error);}
 }

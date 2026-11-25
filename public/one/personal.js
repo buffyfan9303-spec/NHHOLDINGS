@@ -302,10 +302,9 @@
     return result;
   }
   function googlePaint(connectors) {
-    const calendar = connectors&&Array.isArray(connectors.services)?connectors.services.find(row=>row.id==='calendar'):null;
-    el('personal-feed-google').textContent = !calendar||typeof calendar.connected!=='boolean'?
+    el('personal-feed-google').textContent = !connectors||typeof connectors.connected!=='boolean'?
       'Google Calendar 연결 상태를 확인하지 못했어요. 일정 옆 ‘Google Calendar에 추가’는 계속 쓸 수 있습니다.':
-      calendar.connected?'Google Calendar가 연결돼 있습니다. 아래 연결 화면에서 요청을 승인하세요.':
+      connectors.connected?'Google Calendar가 연결돼 있습니다. 아래 연결 화면에서 요청을 승인하세요.':
       'Google Calendar가 아직 연결되지 않았어요. 연결하지 않아도 일정 옆 ‘Google Calendar에 추가’는 쓸 수 있습니다.';
   }
   async function feedRefresh() {
@@ -323,7 +322,7 @@
       if(error?.name==='AbortError'||revision!==feedRevision||!feedPanel.open)return;
       feedState.phase='error';feedState.active=null;feedPaint(error?.message||undefined);
     });
-    const google = feedFetch('/api/personal/connectors',{},gRevision,gController.signal,true).then(value=>{
+    const google = feedFetch('/api/personal/connectors?view=calendar-status',{},gRevision,gController.signal,true).then(value=>{
       if(gRevision!==googleRevision||!feedPanel.open)return;
       googlePaint(value);
     },error=>{

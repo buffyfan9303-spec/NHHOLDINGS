@@ -87,6 +87,10 @@ export async function connectorOverview(owner:string) {
     tasks:items.filter(item=>item.kind==='task'&&!item.done).slice(0,100).map(({id,title})=>({id,title}))};
 }
 
+export async function calendarConnectionStatus(owner:string) {
+  return {connected:!!(await document<Settings>(owner,'calendar'))?.token};
+}
+
 function oauthSession(req:NextRequest) {
   const jwt=req.cookies.get('nh_access')?.value??'';
   try {
