@@ -55,7 +55,7 @@ async function run(page,width){
   const action=mode==='task'?{kind:'task',id:'task-a',title:'새로운 할 일',href:'https://evil.invalid/untrusted'}:
    mode==='cards'?{kind:'cards',id:'card-a',title:'회의용 카드뉴스',slides:2}:
    mode==='social'?{kind:'social',id:'draft-a',title:'내 SNS 초안'}:null;
-  const message={id:'row-'+(history.length+1),provider,mode,prompt,response:'한글 첫 조각과 나머지 답변',createdAt:new Date().toISOString(),action};
+  const message={id:'row-'+(history.length+1),provider,mode,prompt,response:prompt==='long answer'?'가'.repeat(4100):'한글 첫 조각과 나머지 답변',createdAt:new Date().toISOString(),action};
   history.push(message);
   return route.fulfill({contentType:'text/event-stream; charset=utf-8',
    body:events('delta',{text:'한글 첫 조각'})+events('delta',{text:'과 나머지 답변'})+events('done',{message})});
@@ -67,7 +67,7 @@ async function run(page,width){
   window.NuriPersonalAccount=owner;
   window.aiWrites=[];
   window.NuriPersonalWorkspace={reviewDraft(kind,draft){window.aiDraft={kind,...draft};return true;}};
-  window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';}};
+  window.NuriPersonalAutomation={selectSocialCard(id,slide){window.aiSelectedCard={id,slide};location.hash='social';},reviewApprovedDraft(kind,title,text,card){window.aiContinued={kind,title,text,card};return true;}};
   window.addEventListener('personal-automation-changed',event=>window.aiWrites.push(event.detail?.kind));
   const network=window.fetch.bind(window);
   window.fetch=async (input,init)=>{
@@ -161,6 +161,46 @@ async function run(page,width){
  assert.deepEqual(await page.evaluate(()=>window.aiSelectedCard),{id:'card-a',slide:1});
  assert.equal(new URL(page.url()).hash,'#social');
  await toggle.click();
+ const before=requests.length;
+ await field('prompt').fill('작성 중인 요청');
+ await button('메일 쓰기').click();
+ assert.equal(await field('mode').inputValue(),'mail');
+ assert.equal(await field('prompt').inputValue(),'작성 중인 요청','entry chip keeps typed text');
+ assert.equal(requests.length,before,'entry chip never sends a request');
+ await button('카드뉴스 만들기').click();
+ assert.equal(await field('mode').inputValue(),'cards');
+ assert.equal(await button('콘텐츠 묶음 만들기').isVisible(),false,'content pack needs a project');
+ await dock.locator('.personal-ai-turn',{hasText:'SNS 모의 원고'}).getByRole('button',{name:'SNS 편집에서 검토',exact:true}).click();
+ assert.deepEqual(await page.evaluate(()=>window.aiContinued),{kind:'social',title:'내 SNS 초안',text:'한글 첫 조각과 나머지 답변',card:null});
+ assert.equal(requests.length,before,'continue never calls the server');
+ await toggle.click();
+ await dock.locator('.personal-ai-turn',{hasText:'회의 카드'}).getByRole('button',{name:'글과 카드뉴스로 SNS 편집',exact:true}).click();
+ assert.deepEqual(await page.evaluate(()=>window.aiContinued.card),{id:'card-a',slide:1});
+ await toggle.click();
+ await dock.locator('.personal-ai-turn',{hasText:'SNS 모의 원고'}).getByRole('button',{name:'메모 편집에서 검토',exact:true}).click();
+ assert.equal(await page.evaluate(()=>'projectId' in window.aiDraft),false,'ordinary note keeps no project');
+ await toggle.click();
+ await field('mode').selectOption('chat');
+ await field('prompt').fill('long answer');
+ await button('보내기').click();
+ const longTurn=dock.locator('.personal-ai-turn',{hasText:'long answer'});
+ const longNote=longTurn.getByRole('button',{name:'메모 편집에서 검토',exact:true});
+ await longNote.waitFor();
+ await page.evaluate(()=>{window.aiDraft=null;});
+ await longNote.click();
+ assert.equal(await page.evaluate(()=>window.aiDraft),null,'long answer is not truncated on first click');
+ assert.match(await dock.locator('[data-ai-status]').textContent(),/제한을 넘습니다/);
+ await longTurn.getByRole('button',{name:/앞 4,000자만 가져오기/}).click();
+ assert.equal(await page.evaluate(()=>window.aiDraft.detail.length),4000);
+ await toggle.click();
+ await page.evaluate(()=>{window.aiDraft=null;});
+ assert.equal(await page.evaluate(()=>window.NuriPersonalAI.openProject('p1','검수')),true);
+ await field('prompt').fill('project turn');
+ await button('보내기').click();
+ await dock.locator('.personal-ai-turn',{hasText:'project turn'}).getByRole('button',{name:'메모 편집에서 검토',exact:true}).click();
+ assert.equal(await page.evaluate(()=>window.aiDraft.projectId),'p1');
+ await toggle.click();
+ await button('일반 대화').click();
 
  await field('mode').selectOption('chat');
  await field('prompt').fill('stream error');
@@ -183,6 +223,12 @@ async function run(page,width){
  await dock.getByText('첫 요청을 보내면 답변이 여기에 표시됩니다.',{exact:true}).waitFor();
  assert.equal(await dock.getByText('첫 계정의 이전 요청',{exact:true}).count(),0);
  assert.equal(await button('보내기').isDisabled(),true);
+ const noModel=requests.length;
+ await button('메일 쓰기').click();
+ assert.equal(await dock.locator('#personal-ai-handoff').isVisible(),true,'no API model: chip opens subscription AI request');
+ assert.equal(await dock.locator('[data-ai-handoff-form]').getByLabel('목적').inputValue(),'reply');
+ assert.equal(requests.slice(noModel).filter(request=>request.method==='POST').length,0,'no-model chip generates nothing');
+ await button('구독 AI').click();
  assert(requests.some(request=>request.owner===b&&request.endpoint==='chat'&&request.method==='GET'));
  await button('구독 AI').click();
  const handoff=dock.locator('#personal-ai-handoff');

@@ -374,3 +374,7 @@
 @media(forced-colors:active) {
   .personal-ai-guide summary:active {opacity:1}
 }
+.personal-ai-starts,.personal-ai-continue {display:flex;flex-wrap:wrap;gap:6px}
+.personal-ai-starts [aria-pressed="true"] {border-color:currentColor;font-weight:700}
+.personal-ai-starts [hidden] {display:none}
+.personal-ai-continue {margin-top:6px}

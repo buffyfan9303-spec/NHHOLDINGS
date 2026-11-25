@@ -35,10 +35,11 @@
         '<details><summary>연결한 AI에 요청하기</summary><p>'+esc(template.prompt)+'</p>'+
         '<div class="workbench-actions">'+action('요청 문장 복사','copy-example',selectedTemplate)+
         '<a class="personal-link" href="#workbench" data-action="connect-pane">AI 연결 확인</a></div></details>':'')+'</section>':'';
+    const waiting=related.filter(row=>row.status==='pending').length;
     const next=project?'<section class="workbench-narrow"><div class="workbench-heading"><h2>이 프로젝트 이어서 하기</h2>'+
-      '<div class="workbench-actions">'+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함','project-queue',project.id)+action('주간 리뷰 열기','project-weekly',project.id)+action('프로젝트 기록','project-records',project.id)+action('할 일 추가','project-task',project.id)+'</div>'+'</div>'+
+      '<div class="workbench-actions">'+action('콘텐츠 묶음 만들기','open-pack',project.id)+action('프로젝트 AI 대화','project-chat',project.id)+action('프로젝트 승인함'+(waiting?' ('+waiting+')':''),'project-queue',project.id)+action('주간 리뷰 열기','project-weekly',project.id)+action('프로젝트 기록','project-records',project.id)+action('할 일 추가','project-task',project.id)+'</div>'+'</div>'+
       (related.length?'<ul class="workbench-list">'+related.slice(0,6).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+
-      '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>':'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
+      '<small>'+decisionLabel(row)+'</small></li>').join('')+'</ul>'+packProgress(related):'<p class="workbench-muted">이 프로젝트에 연결된 제안이 없습니다.</p>')+
       contentForm(project.id)+'</section>':'';
 
     return firstRun+next+'<div class="workbench-body'+(starter?' workbench-body-single':'')+'">'+
@@ -62,13 +63,39 @@
       '<div><button class="btn primary" type="submit">일정 제안 만들기</button></div></form><a class="personal-link" href="#schedule">내 일정 보기</a></section>';
   }
   const decisionLabel=row=>({pending:'검토 대기',applied:'승인 완료',declined:'반려',undone:'되돌림'})[row.status]||'';
+  // 작성 중인 묶음 입력은 같은 계정의 같은 문서 안에서만 프로젝트별로 보관한다. 다른 계정이면 읽지 않는다.
+  const packDrafts={owner:null,map:new Map()};
+  const packFields=['title','topic','short','blog','social','card'];
+  const packDraft=id=>packDrafts.owner&&packDrafts.owner===owner?packDrafts.map.get(id)||null:null;
+  const packFormat={short:'숏폼 대본',blog:'블로그 초안',social:'SNS 문구',cards:'카드뉴스'};
+  // 승인 뒤 열리는 곳. 묶음 형식이 없는 기존 콘텐츠와 SNS 문구만 SNS 게시 초안으로 간다.
+  function handoffLabel(row){
+    const format=row.pack?.format;
+    if(row.category==='cards')return row.cardId?'SNS 카드 게시 초안 열기':'';
+    if(row.category==='content')return !row.pack||format==='social'?'게시 초안 열기':format==='blog'?'블로그 노트로 열기':format==='short'?'숏폼 대본 노트로 열기':'노트로 열기';
+    return ({mail:'메일 초안 열기',drive:'정리 메모 열기',business:'업무 메모 열기',seller:'판매 준비 메모 열기'})[row.category]||'';
+  }
+  function packRows(row){return row.pack?data.decisions.filter(item=>item.pack?.id===row.pack.id).reverse():[];}
+  function packProgress(rows){
+    const packs=new Map();
+    rows.filter(row=>row.pack).forEach(row=>{if(!packs.has(row.pack.id))packs.set(row.pack.id,[]);});
+    return [...packs.keys()].slice(0,2).map(id=>{
+      const list=packRows({pack:{id}});
+      const wait=list.filter(row=>row.status==='pending').length,done=list.filter(row=>row.status==='applied').length;
+      return '<div class="workbench-pack"><strong>'+esc(list[0].pack.topic.slice(0,60))+'</strong><small>'+(wait?'검토할 초안 '+wait+'건':'검토 끝')+(done?' · 승인 '+done+'건':'')+'</small>'+
+        '<ul class="workbench-list">'+list.map(row=>'<li data-status="'+row.status+'">'+action(esc(packFormat[row.pack.format]||row.title),'go-review',row.id)+
+        '<small>'+decisionLabel(row)+(row.status==='applied'&&handoffLabel(row)?' · 다음: '+handoffLabel(row):'')+'</small></li>').join('')+'</ul></div>';
+    }).join('');
+  }
   function contentForm(id){
-    return '<details><summary>콘텐츠 묶음 만들기</summary><form class="personal-form" data-form="content-pack">'+
+    const draft=packDraft(id)||{};
+    const field=name=>esc(draft[name]??'');
+    return '<details data-pack-form'+(packDraft(id)?' open':'')+'><summary>콘텐츠 묶음 만들기</summary><form class="personal-form" data-form="content-pack">'+
       '<input type="hidden" name="projectId" value="'+esc(id)+'">'+
-      '<label>묶음 제목<input name="title" maxlength="80" required></label><label>주제와 원본 자료<textarea name="topic" rows="3" maxlength="2000" required></textarea></label>'+
-      '<label>숏폼 대본<textarea name="short" rows="3" maxlength="4000"></textarea></label><label>블로그 초안<textarea name="blog" rows="3" maxlength="4000"></textarea></label>'+
-      '<label>SNS 문구<textarea name="social" rows="3" maxlength="4000"></textarea></label>'+
-      '<label>카드뉴스 JSON<textarea name="card" rows="3" maxlength="18000"></textarea></label>'+
+      '<label>묶음 제목<input name="title" maxlength="80" required value="'+field('title')+'"></label><label>주제와 원본 자료<textarea name="topic" rows="3" maxlength="2000" required>'+field('topic')+'</textarea></label>'+
+      '<label>숏폼 대본<textarea name="short" rows="3" maxlength="4000">'+field('short')+'</textarea></label><label>블로그 초안<textarea name="blog" rows="3" maxlength="4000">'+field('blog')+'</textarea></label>'+
+      '<label>SNS 문구<textarea name="social" rows="3" maxlength="4000">'+field('social')+'</textarea></label>'+
+      '<label>카드뉴스 JSON<textarea name="card" rows="3" maxlength="18000">'+field('card')+'</textarea></label>'+
       '<div class="workbench-actions"><button class="btn primary" type="submit">초안을 승인함에 추가</button>'+
       action('AI 요청 예시 복사','copy-pack',id)+'</div></form></details>';
   }
@@ -80,12 +107,13 @@
     if(decision) {
       const project=data.projects.find(item=>item.id===decision.projectId);
       const stale=decision.projectId&&(!project||decision.projectVersion&&project.version!==decision.projectVersion);
-      const destination={mail:'메일 초안 열기',content:'게시 초안 열기',drive:'정리 메모 열기',business:'업무 메모 열기',seller:'판매 준비 메모 열기'};
-      const link=decision.pack&&['blog','short'].includes(decision.pack.format)?null:destination[decision.category];
+      const link=handoffLabel(decision);
+      const siblings=packRows(decision),nextWaiting=siblings.find(row=>row.status==='pending'&&row.id!==decision.id);
+      const packLine=siblings.length>1?'<p class="workbench-muted" data-pack-remaining>이 묶음 '+siblings.length+'건 · 검토 대기 '+siblings.filter(row=>row.status==='pending').length+'건 · 승인 '+siblings.filter(row=>row.status==='applied').length+'건</p>':'';
       const cardList=decision.card?.slides.map((slide,index)=>'<li><small>'+(index+1)+'장</small><strong>'+esc(slide.headline)+'</strong><p>'+esc(slide.body)+'</p>'+
         (decision.status==='applied'&&decision.cardId?'<a class="btn" href="/api/personal/ai/cards/'+esc(decision.cardId)+'?slide='+index+'" target="_blank" rel="noopener">이미지 확인</a>':'')+'</li>').join('');
       details='<section class="workbench-detail">'+action('목록으로','close-review')+'<h3>'+esc(decision.title)+'</h3><p class="workbench-muted">'+esc([statusText[decision.status],decision.source,project?.name].filter(Boolean).join(' · '))+(project&&decision.projectVersion?' (기억 v'+esc(decision.projectVersion)+')':'')+'</p>'+
-        '<p>'+esc(decision.text)+'</p>'+
+        '<p>'+esc(decision.text)+'</p>'+packLine+
         (decision.pack?'<details><summary>원본 자료와 이 묶음의 다른 초안</summary><p>'+esc(decision.pack.topic)+'</p><ul class="workbench-list">'+
           data.decisions.filter(row=>row.pack?.id===decision.pack.id&&row.id!==decision.id).map(row=>'<li>'+action(esc(row.title),'go-review',row.id)+'</li>').join('')+'</ul></details>':'')+
         (decision.originalText?'<details open><summary>수정 전 초안</summary><p>'+esc(decision.originalText)+'</p></details>':'')+
@@ -95,7 +123,9 @@
         (decision.moves?'<ul class="workbench-list">'+decision.moves.map(move=>'<li><time>'+esc(move.day+' '+move.time)+'</time><strong>'+esc(move.title)+'</strong></li>').join('')+'</ul>':'')+
         (cardList?'<ol class="workbench-list">'+cardList+'</ol>':'')+
         '<div class="workbench-actions">'+(decision.status==='pending'?action(decision.category==='schedule'?'승인하고 일정에 반영':cardList?'승인하고 이미지 만들기':'초안 승인','approve',decision.id)+action('반려','decline',decision.id):'')+
-        (decision.status==='applied'&&!cardList?action('되돌리기','undo',decision.id)+(!['schedule','cards'].includes(decision.category)?action('초안 복사','copy-draft',decision.id)+(link?action(link,'open-draft',decision.id):'')+(decision.category==='drive'?'<a href="#files">비공개 저장소</a>':''):''):'')+'</div></section>';
+        (decision.status==='applied'&&!cardList?action('되돌리기','undo',decision.id)+(!['schedule','cards'].includes(decision.category)?action('초안 복사','copy-draft',decision.id)+(link?action(link,'open-draft',decision.id):'')+(decision.category==='drive'?'<a href="#files">비공개 저장소</a>':''):''):'')+
+        (decision.status==='applied'&&cardList&&link?action(link,'open-draft',decision.id):'')+
+        (nextWaiting?action('다음 검토할 초안','go-review',nextWaiting.id):'')+(project?action('프로젝트로 돌아가기','back-project',project.id):'')+'</div></section>';
     }
     return '<div class="workbench-body workbench-review"'+(decision?' data-detail-open':'')+'><section class="workbench-queue"><div class="workbench-heading"><h2>검토할 제안</h2>'+action(showHistory?'대기 항목':'처리 내역','history')+'</div>'+
       (projectFilter?'<div class="workbench-actions"><small>'+esc(data.projects.find(row=>row.id===projectFilter)?.name)+'</small>'+action('모든 프로젝트','all-projects')+'</div>':'')+
@@ -638,6 +668,7 @@
     try {
       const result=input.action==='profile'?{profile:await profileRequest({instructions:input.instructions,version:profileData.version})}:await api(input);
       if(result.profile)profileData=result.profile;
+      if(input.action==='content-pack')packDrafts.map.delete(input.projectId);
       if(result.decisions&&!result.projects){
         data.decisions=[...result.decisions,...data.decisions];
         projectFilter=projectId;review(result.decisions[0].id);
@@ -739,6 +770,15 @@
     const project=data.projects.find(row=>row.id===id),decision=data.decisions.find(row=>row.id===id);
     if(key==='project-weekly'&&project){weeklyProject=project.id;weeklyData=null;switchPane('weekly');return;}
     if(key==='project-records'&&project){window.NuriPersonalWorkspace?.openProjectRecords?.(project.id);return;}
+    if(key==='open-pack'&&project){
+      const form=root.querySelector('[data-pack-form]');
+      if(form){form.open=true;form.scrollIntoView({block:'start'});form.querySelector('[name="title"]').focus({preventScroll:true});}
+      return;
+    }
+    if(key==='back-project'&&project){
+      projectId=project.id;selectedTemplate=null;detailId=null;pane='projects';
+      syncLocation(true);render();arrivePane();focusCurrent();return;
+    }
     if(key==='project-task'&&project){window.NuriPersonalWorkspace?.reviewDraft?.('task',{projectId:project.id});return;}
     if(key==='project-chat'&&project){window.NuriPersonalAI?.openProject(project.id,project.name);return;}
     if(key==='connect-pane'){event.preventDefault();switchPane('connect');return;}
@@ -763,7 +803,9 @@
     }
     if(key==='open-draft'&&decision?.status==='applied'){
       const {category,title,text}=decision;
-      if(category==='mail'||category==='content'){
+      if(category==='cards'){
+        if(decision.cardId)window.NuriPersonalAutomation?.selectSocialCard?.(decision.cardId,0);
+      }else if(category==='mail'||category==='content'&&(!decision.pack||decision.pack.format==='social')){
         window.NuriPersonalAutomation?.reviewApprovedDraft(category==='mail'?'mail':'social',title,text);
       }else window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text,projectId:decision.projectId});
       return;
@@ -788,6 +830,11 @@
     if(event.target.matches('[data-form="import-plan"] input'))event.preventDefault();
   });
   root.addEventListener('input',event=>{
+    const packForm=event.target.closest('[data-form="content-pack"]');
+    if(packForm&&owner&&owner===window.NuriPersonalAccount){
+      if(packDrafts.owner!==owner){packDrafts.owner=owner;packDrafts.map=new Map();}
+      packDrafts.map.set(packForm.elements.projectId.value,Object.fromEntries(packFields.map(name=>[name,packForm.elements[name].value])));
+    }
     const row=event.target.closest('[data-weekly-plan-item]');
     if(row){
       const item=planItemFields(row);
