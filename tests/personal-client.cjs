@@ -112,7 +112,7 @@ const visible = (fixture,state)=>{
  assert.match(cal.element('personal-feed-state').textContent,/확인하는 중/);
  assert.equal(cal.element('[data-feed-action=create]').disabled,true);
  answer(take('/api/personal/calendar-subscription'),{error:'temporary'},503);
- answer(take('/api/personal/connectors'),{error:'x'},500);
+ answer(take('/api/personal/connectors?view=calendar-status'),{error:'x'},500);
  await flush();
  assert.match(cal.element('personal-feed-state').textContent,/temporary/);
  assert.equal(cal.element('[data-feed-action=create]').disabled,true);
@@ -121,7 +121,7 @@ const visible = (fixture,state)=>{
  assert.match(cal.element('personal-feed-google').textContent,/확인하지 못했어요/);
  press('refresh');
  answer(take('/api/personal/calendar-subscription'),{active:true,createdAt:'2026-11-25T00:00:00Z'});
- answer(take('/api/personal/connectors'),{services:[{id:'calendar',connected:true},{id:'gmail',connected:false}]});
+ answer(take('/api/personal/connectors?view=calendar-status'),{connected:true});
  await flush();
  assert.match(cal.element('personal-feed-google').textContent,/연결돼 있습니다/);
  assert.equal(cal.element('[data-feed-action=disable]').hidden,false);
@@ -149,7 +149,7 @@ const visible = (fixture,state)=>{
  cal.requests.length=0;
  open();
  answer(take('/api/personal/calendar-subscription'),{active:false});
- answer(take('/api/personal/connectors'),{services:[{id:'calendar',connected:false}]});
+ answer(take('/api/personal/connectors?view=calendar-status'),{connected:false});
  await flush();
  assert.match(cal.element('personal-feed-state').textContent,/꺼져 있습니다/);
  assert.equal(cal.element('[data-feed-action=disable]').hidden,true);
@@ -164,5 +164,49 @@ const visible = (fixture,state)=>{
  assert.equal(cal.element('personal-feed-password').value,'');
  assert.equal(cal.element('personal-feed-link').hidden,true);
  assert.equal(cal.element('personal-feed-state').textContent.includes('LATE'),false);
+ // Google이 느려도 Apple 구독은 먼저 쓸 수 있고, 변경은 Google 확인을 취소하지 않는다.
+ cal.requests.length=0;
+ open();
+ const gPending=take('/api/personal/connectors?view=calendar-status');
+ answer(take('/api/personal/calendar-subscription'),{active:true});
+ await flush();
+ assert.match(cal.element('personal-feed-state').textContent,/켜져 있습니다/);
+ assert.equal(cal.element('[data-feed-action=create]').disabled,false);
+ assert.equal(cal.element('[data-feed-action=disable]').hidden,false);
+ assert.match(cal.element('personal-feed-google').textContent,/확인하는 중/);
+ assert.equal(gPending.options.signal.aborted,false);
+ press('disable');
+ assert.equal(cal.element('[data-feed-action=create]').disabled,true,'mutation in flight');
+ assert.equal(gPending.options.signal.aborted,false,'disable must not cancel the Google check');
+ const off=cal.requests.find(request=>request.options.method==='POST');
+ cal.requests.splice(cal.requests.indexOf(off),1);
+ answer(off,{active:false});
+ await flush();
+ assert.match(cal.element('personal-feed-state').textContent,/껐습니다/);
+ answer(gPending,{connected:true});
+ await flush();
+ assert.match(cal.element('personal-feed-google').textContent,/연결돼 있습니다/);
+ // Google 실패가 Apple을 막지 않고, Apple 오류 뒤 다시 시도가 된다.
+ press('create');
+ cal.requests.length=0;
+ cal.element('personal-calendar-connect').open=false;cal.events.get('personal-calendar-connect:toggle')();
+ open();
+ answer(take('/api/personal/connectors?view=calendar-status'),{error:'down'},500);
+ answer(take('/api/personal/calendar-subscription'),{error:'temporary'},503);
+ await flush();
+ assert.match(cal.element('personal-feed-google').textContent,/확인하지 못했어요/);
+ assert.equal(cal.element('[data-feed-action=refresh]').hidden,false);
+ press('refresh');
+ answer(take('/api/personal/calendar-subscription'),{active:false});
+ const gSlow=take('/api/personal/connectors?view=calendar-status');
+ await flush();
+ assert.equal(cal.element('[data-feed-action=create]').disabled,false);
+ assert.match(cal.element('personal-feed-google').textContent,/확인하는 중/);
+ // 닫으면 두 응답 모두 취소되고 늦은 응답은 그려지지 않는다.
+ cal.element('personal-calendar-connect').open=false;cal.events.get('personal-calendar-connect:toggle')();
+ assert.equal(gSlow.options.signal.aborted,true);
+ answer(gSlow,{connected:true});
+ await flush();
+ assert.doesNotMatch(cal.element('personal-feed-google').textContent,/연결돼 있습니다/);
  console.log('Personal client verified: stale session response blocked, offline modal recovery, and cleared-cookie logout, and calendar-subscription credential lifecycle.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

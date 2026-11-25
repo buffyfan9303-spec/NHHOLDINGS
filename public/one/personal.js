@@ -266,7 +266,9 @@
   // 화면을 떠나거나 닫거나 계정·가시성이 바뀌면 지운다. 주소(URL)에는 비밀이 없다.
   const feedPanel = el('personal-calendar-connect'), feedFields = ['personal-feed-url','personal-feed-user','personal-feed-password'];
   const feedState = {phase:'idle',active:null,busy:false};
-  let feedRevision = 0, feedAbort = null;
+  // 구독 상태(feedRevision/feedAbort)와 Google 연결 확인(googleRevision/googleAbort)은 소유권이 따로라
+  // 한쪽이 느려도 다른 쪽이 기다리거나 취소되지 않는다. 닫기·로그아웃·계정 변경은 둘 다 취소한다.
+  let feedRevision = 0, feedAbort = null, googleRevision = 0, googleAbort = null;
   const feedButton = name => document.querySelector('[data-feed-action='+name+']');
   function feedPaint(message) {
     const known = feedState.phase==='ready';
@@ -284,38 +286,50 @@
   }
   function feedClear() {
     feedRevision++; feedAbort?.abort(); feedAbort = null;
+    googleRevision++; googleAbort?.abort(); googleAbort = null;
     feedWipe();
     Object.assign(feedState,{phase:'idle',active:null,busy:false});
     feedPanel.open = false;
     feedPaint();
     el('personal-feed-google').textContent = '확인 전입니다.';
   }
-  async function feedFetch(url,options,revision,signal) {
+  async function feedFetch(url,options,revision,signal,google) {
     const owner = accountId;
     const response = await fetch(url,{cache:'no-store',signal,...options,headers:{'X-Personal-Account':owner,...(options?.headers??{})}});
     const result = await response.json().catch(()=>({}));
-    if(revision!==feedRevision||owner!==accountId)throw new DOMException('stale','AbortError');
+    if(revision!==(google?googleRevision:feedRevision)||owner!==accountId)throw new DOMException('stale','AbortError');
     if(!response.ok)throw new Error(result.error||'요청을 처리하지 못했습니다.');
     return result;
   }
+  function googlePaint(connectors) {
+    el('personal-feed-google').textContent = !connectors||typeof connectors.connected!=='boolean'?
+      'Google Calendar 연결 상태를 확인하지 못했어요. 일정 옆 ‘Google Calendar에 추가’는 계속 쓸 수 있습니다.':
+      connectors.connected?'Google Calendar가 연결돼 있습니다. 아래 연결 화면에서 요청을 승인하세요.':
+      'Google Calendar가 아직 연결되지 않았어요. 연결하지 않아도 일정 옆 ‘Google Calendar에 추가’는 쓸 수 있습니다.';
+  }
   async function feedRefresh() {
     if(!ready||!accountId||view!=='schedule')return;
-    feedAbort?.abort();
+    feedAbort?.abort(); googleAbort?.abort();
     const revision = ++feedRevision, controller = feedAbort = new AbortController();
+    const gRevision = ++googleRevision, gController = googleAbort = new AbortController();
     feedWipe(); feedState.phase = 'loading'; feedState.active = null; feedState.busy = false; feedPaint();
     el('personal-feed-google').textContent = 'Google Calendar 연결 상태를 확인하는 중입니다.';
-    const [status,connectors] = await Promise.allSettled([
-      feedFetch('/api/personal/calendar-subscription',{},revision,controller.signal),
-      feedFetch('/api/personal/connectors',{},revision,controller.signal),
-    ]);
-    if(revision!==feedRevision||!feedPanel.open)return;
-    if(status.status==='fulfilled'){feedState.phase='ready';feedState.active=status.value.active===true;feedPaint();}
-    else {feedState.phase='error';feedState.active=null;feedPaint(status.reason?.message||undefined);}
-    const calendar = connectors.status==='fulfilled'&&Array.isArray(connectors.value.services)?connectors.value.services.find(row=>row.id==='calendar'):null;
-    el('personal-feed-google').textContent = connectors.status!=='fulfilled'||!calendar||typeof calendar.connected!=='boolean'?
-      'Google Calendar 연결 상태를 확인하지 못했어요. 일정 옆 ‘Google Calendar에 추가’는 계속 쓸 수 있습니다.':
-      calendar.connected?'Google Calendar가 연결돼 있습니다. 아래 연결 화면에서 요청을 승인하세요.':
-      'Google Calendar가 아직 연결되지 않았어요. 연결하지 않아도 일정 옆 ‘Google Calendar에 추가’는 쓸 수 있습니다.';
+    // 두 요청은 각자 도착하는 즉시 결과를 그린다(느린 Google이 Apple 구독 버튼을 막지 않는다).
+    const status = feedFetch('/api/personal/calendar-subscription',{},revision,controller.signal).then(value=>{
+      if(revision!==feedRevision||!feedPanel.open)return;
+      feedState.phase='ready';feedState.active=value.active===true;feedPaint();
+    },error=>{
+      if(error?.name==='AbortError'||revision!==feedRevision||!feedPanel.open)return;
+      feedState.phase='error';feedState.active=null;feedPaint(error?.message||undefined);
+    });
+    const google = feedFetch('/api/personal/connectors?view=calendar-status',{},gRevision,gController.signal,true).then(value=>{
+      if(gRevision!==googleRevision||!feedPanel.open)return;
+      googlePaint(value);
+    },error=>{
+      if(error?.name==='AbortError'||gRevision!==googleRevision||!feedPanel.open)return;
+      googlePaint(null);
+    });
+    await Promise.all([status,google]);
   }
   async function feedChange(action) {
     if(feedState.busy||feedState.phase!=='ready'||!['create','disable'].includes(action))return;
