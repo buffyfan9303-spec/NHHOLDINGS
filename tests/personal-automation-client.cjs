@@ -36,6 +36,7 @@ const initialPosts=[
 async function scenario(page) {
  let posts=structuredClone(initialPosts),accounts=structuredClone(initialAccounts),mail=[],connection={connected:false,paused:false,configured:false};
  let sequence=0,delayRead=null,redirectOrigin=source;
+ const ownedProjects=new Set();
  const mailState=()=>({configured:connection.configured,connection:{...connection,redirectUri:redirectOrigin+'/api/personal/mail/oauth'},items:mail});
  const socialState=owner=>({
   providers:providers.map(provider=>({...provider,redirectUri:redirectOrigin+'/api/personal/social/'+provider.id,
@@ -77,7 +78,14 @@ async function scenario(page) {
    return reply({ok:true});
   }
   if(body.action==='save'||body.action==='draft'){
+   // Mirrors the server contract: omitted keeps the stored link, null or '' detaches, a string must be the owner's project.
+   if(body.projectId!==undefined&&body.projectId!==null&&body.projectId!==''&&!ownedProjects.has(body.projectId)){
+    return route.fulfill({status:404,json:{error:'업무 항목을 찾을 수 없습니다.'}});
+   }
    const record={...body,status:'draft',id:body.id||'fixture-'+(++sequence),version:(body.version||0)+1};
+   const stored=body.id?rows.find(item=>item.id===body.id)?.projectId:undefined;
+   if(body.projectId===undefined&&stored)record.projectId=stored;
+   if(!record.projectId)delete record.projectId;
    if(kind==='social')record.provider=accounts.find(a=>a.id===body.accountId).provider;
    if(record.cardId===card.id){
     record.cardTitle=card.title;
@@ -295,6 +303,76 @@ async function scenario(page) {
  assert.equal(await unsavedMailBody.inputValue(),'편집 중인 메일 내용을 유지');
  assert.equal(await unsavedMailBody.evaluate(el=>document.activeElement===el),true);
  await button(dialog,'닫기').click();
+
+ // AI project answers seed drafts with an owner-scoped project link; edits keep it unless the user detaches it.
+ const projectId='5d8f2a10-4c3b-4e6a-9f7d-2b1c0e9a8d01',projectName='누리원 고객 안내 프로젝트 '+'아주 긴 이름 '.repeat(14);
+ ownedProjects.add(projectId);
+ await page.evaluate(({projectId,projectName})=>{window.NuriPersonalWorkspace={projectName:id=>id===projectId?projectName:''};},{projectId,projectName});
+ const projectBody='프로젝트 연결 본문 '.repeat(900).trim();
+ const seed=(kind,title,body)=>page.evaluate(({kind,title,body,projectId,projectName})=>
+  window.NuriPersonalAutomation.reviewApprovedDraft(kind,title,body,null,{id:projectId,name:projectName}),{kind,title,body,projectId,projectName});
+ const keep=dialog.getByRole('checkbox',{name:/프로젝트/});
+ const draftCount=kind=>requests.filter(r=>r.kind===kind&&['draft','save'].includes(r.body?.action)).length;
+ assert.equal(await seed('mail','프로젝트 메일 초안',projectBody),true);
+ await dialog.getByLabel('본문').waitFor();
+ assert.equal(await keep.isChecked(),true,'a seeded project link starts attached');
+ await expectText(dialog,'프로젝트 연결 유지 · '+projectName);
+ assert.equal(await dialog.getByLabel('본문').inputValue(),projectBody,'long AI text arrives intact');
+ assert(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'long project names wrap inside the dialog');
+ await dialog.getByLabel('받는 사람').fill('project-reader@example.invalid');
+ await dialog.getByLabel('제목').fill('프로젝트 메일 초안 (편집함)');
+ await submit('초안 저장');
+ const projectMailRow=gmail.locator('.auto-row').filter({hasText:'프로젝트 메일 초안 (편집함)'});
+ await projectMailRow.waitFor();
+ assert.equal(action('mail','draft').projectId,projectId,'editing and saving a seeded draft sends the project id');
+ assert.equal(action('mail','draft').body,projectBody);
+ await button(projectMailRow,'편집').click();
+ await expectText(dialog,'프로젝트 연결 유지 · '+projectName);
+ await submit('초안 저장');
+ await expectText(gmail,'초안을 저장했습니다.');
+ assert.equal(Object.hasOwn(action('mail','draft'),'projectId'),false,'a kept stored link is omitted so the server preserves it');
+ assert.equal(mail.find(row=>row.subject==='프로젝트 메일 초안 (편집함)').projectId,projectId);
+ await button(projectMailRow,'편집').click();
+ await keep.uncheck();
+ await submit('초안 저장');
+ await expectText(gmail,'초안을 저장했습니다.');
+ assert.equal(action('mail','draft').projectId,null,'an explicit unlink sends null');
+ await button(projectMailRow,'편집').click();
+ assert.equal(await keep.count(),0,'a detached draft shows no project field');
+ await button(dialog,'닫기').click();
+ mail.unshift({id:'old-linked',to:'old@example.invalid',subject:'삭제된 프로젝트의 이전 초안',body:'이전 원고',status:'draft',version:3,projectId:'0f0f0f0f-0000-4000-8000-000000000000'});
+ await changed('mail');
+ const oldLinkedRow=gmail.locator('.auto-row').filter({hasText:'삭제된 프로젝트의 이전 초안'});
+ await oldLinkedRow.waitFor();
+ await button(oldLinkedRow,'편집').click();
+ await expectText(dialog,'연결된 프로젝트 유지');
+ const before=draftCount('mail');
+ await submit('초안 저장');
+ await expectText(gmail,'초안을 저장했습니다.');
+ assert.equal(draftCount('mail'),before+1);
+ assert.equal(Object.hasOwn(action('mail','draft'),'projectId'),false,'an older draft linked to a removed project still saves');
+ assert.equal(mail.find(row=>row.id==='old-linked').projectId,'0f0f0f0f-0000-4000-8000-000000000000');
+ await button(gmail.locator('.auto-row').filter({hasText:'AI가 저장한 메일 초안'}),'편집').click();
+ assert.equal(await keep.count(),0,'an unlinked older draft shows no project field');
+ await submit('초안 저장');
+ await expectText(gmail,'초안을 저장했습니다.');
+ assert.equal(Object.hasOwn(action('mail','draft'),'projectId'),false,'an unlinked older draft never gains a link');
+
+ await view('social');
+ assert.equal(await seed('social','프로젝트 SNS 초안','프로젝트 SNS 본문'),true);
+ await dialog.getByLabel('게시 계정').selectOption('threads-a');
+ assert.equal(await keep.isChecked(),true);
+ await submit('초안 저장');
+ const projectPostRow=social.locator('.auto-row').filter({hasText:'프로젝트 SNS 초안'});
+ await projectPostRow.waitFor();
+ assert.equal(action('social','save').projectId,projectId,'SNS drafts carry the seeded project id');
+ await button(projectPostRow,'편집').click();
+ await keep.uncheck();
+ await submit('초안 저장');
+ await expectText(social,'초안을 저장했습니다.');
+ assert.equal(action('social','save').projectId,null);
+ assert.equal(posts.find(row=>row.title==='프로젝트 SNS 초안').projectId,undefined);
+ await view('mail');
 
  posts.unshift({id:'assistant-social',accountId:'threads-a',provider:'threads',title:'AI가 저장한 SNS 초안',body:'공유할 모의 SNS 원고',status:'draft',version:1});
  await changed('social');

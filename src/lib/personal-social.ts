@@ -12,6 +12,7 @@ import {validMetadata, videoId} from '@/server/youtube.cjs';
 import {weight} from '@/server/content-tools.cjs';
 import {getPersonalCard} from './personal-cards';
 import {mintPersonalCardImage} from './personal-card-media';
+import {workbenchProject} from './personal-workbench';
 
 type Actor = {id: string; email: string};
 type StoredApp = Owned & {fingerprint: string; secret: string};
@@ -52,6 +53,7 @@ type Post = Owned & SocialDraft & Partial<CardMedia> & {
   link: string | null;
   error: string | null;
   publishedAt: string | null;
+  projectId?: string;
 };
 type Store = ReturnType<typeof socialStore>;
 const flowLifetime = 600_000;
@@ -133,9 +135,9 @@ async function app(store: Store, provider: PersonalProvider): Promise<App | null
 
 function postView({id, data}: RecordOf<Post>) {
   const {accountId, provider, title, body, mediaUrl, videoId, madeForKids, synthetic, scheduledAt, status, version,
-    link, error, uncertain, publishedAt, cardId, cardSlide, cardTitle, altText} = data;
+    link, error, uncertain, publishedAt, cardId, cardSlide, cardTitle, altText, projectId} = data;
   return {id, accountId, provider, title, body, mediaUrl, videoId, madeForKids, synthetic, scheduledAt, status, version, link, error, uncertain, publishedAt,
-    cardId: cardId ?? null, cardSlide: cardSlide ?? null, cardTitle: cardTitle ?? null, altText: altText ?? null};
+    cardId: cardId ?? null, cardSlide: cardSlide ?? null, cardTitle: cardTitle ?? null, altText: altText ?? null, projectId: projectId ?? null};
 }
 
 const callback = (provider: PersonalProvider) => marketOrigin() + '/api/personal/social/' + provider;
@@ -315,12 +317,21 @@ function postFields(input: Record<string, unknown>, account: RecordOf<Account>, 
   return {accountId: account.id, provider, title, body, mediaUrl, videoId: '', madeForKids: false, synthetic: false, ...(card ?? {})};
 }
 
-function newPost(actor: Actor, draft: SocialDraft & Partial<CardMedia>): Post {
+function newPost(actor: Actor, draft: SocialDraft & Partial<CardMedia>, projectId?: string): Post {
   return {
-    ...draft, ownerId: actor.id, version: 1, ownerEmail: actor.email, status: 'draft', scheduledAt: null,
+    ...draft, ...(projectId ? {projectId} : {}), ownerId: actor.id, version: 1, ownerEmail: actor.email, status: 'draft', scheduledAt: null,
     connectionId: null, claimUntil: null, checkedAt: null, container: '', containerChecks: 0, uncertain: false,
     externalId: null, link: null, error: null, publishedAt: null,
   };
+}
+
+// AI-created drafts keep an owner-scoped project link so the assistant can continue work across menus.
+// undefined keeps the stored link, null or '' removes it, a string must name a project the owner holds.
+async function linkedProject(owner: string, value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || value.length > 100) throw new MarketError('연결할 프로젝트를 확인해 주세요.');
+  return (await workbenchProject(owner, value)).id;
 }
 
 async function approvedAccount(store: Store, post: Pick<Post, 'accountId' | 'provider'>) {
@@ -334,6 +345,7 @@ async function approvedAccount(store: Store, post: Pick<Post, 'accountId' | 'pro
 export async function changePersonalSocial(actor: Actor, input: Record<string, unknown>) {
   // Saved cards are immutable. Read their scoped contents before taking the shared application connection.
   const card = input.action === 'save' ? await ownedCardSelection(actor.id, input) : null;
+  const project = input.action === 'save' ? await linkedProject(actor.id, input.projectId) : undefined;
   return socialTransaction(actor.id, async db => {
     const store = socialStore(actor.id, db);
     if (input.action === 'configure') {
@@ -376,7 +388,7 @@ export async function changePersonalSocial(actor: Actor, input: Record<string, u
     if (input.action === 'save') {
       const account = await store.get<Account>(kinds.account, recordId(input.accountId));
       if (!account) throw noAccount();
-      data = newPost(actor, postFields(input, account, card));
+      data = newPost(actor, postFields(input, account, card), project === undefined ? previous?.projectId : project ?? undefined);
     } else if (input.action === 'cancel') {
       if (previous!.status !== 'scheduled') throw new MarketError('예약된 게시물만 취소할 수 있습니다.', 409);
       data = {...previous!, status: 'cancelled', connectionId: null, error: null};

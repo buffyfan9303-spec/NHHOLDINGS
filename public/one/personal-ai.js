@@ -958,7 +958,7 @@
     const card=control.hasAttribute('data-with-card')&&message.action?.kind==='cards'?
       {id:message.action.id,slide:Number(control.closest('[data-ai-message-id]').querySelector('[data-ai-card-id]')?.dataset.aiPage)||0}:null;
     const opened=target==='note'?window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text,...(view.project?{projectId:view.project.id}:{})}):
-      window.NuriPersonalAutomation?.reviewApprovedDraft?.(target,title,text,card);
+      window.NuriPersonalAutomation?.reviewApprovedDraft?.(target,title,text,card,view.project?{id:view.project.id,name:view.project.name}:null);
     if(opened){
       status(view,over?'앞부분만 가져왔습니다. 전체 답변은 AI 대화에 남아 있습니다.':'편집 화면으로 가져왔습니다. 저장 전에 검토하세요.');
       hide(view);

@@ -208,5 +208,15 @@ const visible = (fixture,state)=>{
  answer(gSlow,{connected:true});
  await flush();
  assert.doesNotMatch(cal.element('personal-feed-google').textContent,/연결돼 있습니다/);
+ // Project names for linked drafts are exposed only for the loaded account and vanish while it is revalidated.
+ const named=fixture();
+ answer(named.requests.shift(),{...snapshot('alice'),projects:[{id:'p-alice',name:'Alice 프로젝트',rules:'',version:1}]});
+ await flush();
+ const lookup=named.sandbox.window.NuriPersonalWorkspace.projectName;
+ assert.equal(lookup('p-alice'),'Alice 프로젝트');
+ assert.equal(lookup('p-other'),'');
+ assert.equal(lookup(7),'');
+ visible(named,'hidden');
+ assert.equal(lookup('p-alice'),'','a masked session reveals no project names');
  console.log('Personal client verified: stale session response blocked, offline modal recovery, and cleared-cookie logout, and calendar-subscription credential lifecycle.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

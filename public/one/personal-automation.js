@@ -290,11 +290,12 @@
 
   function draftEditor(view,item,cardChoice=null,seed=null) {
     if(view.kind==='mail'){
-      return modal(view,'draft',item?.id,`
+      modal(view,'draft',item?.id,`
         <label>받는 사람<input name="to" type="email" required maxlength="254" value="${escape(item?.to)}"></label>
         <label>제목<input name="subject" required maxlength="160" value="${escape(item?.subject??seed?.title)}"></label>
         <label>본문<textarea name="body" rows="6" maxlength="16000" required>${escape(item?.body??seed?.text)}</textarea></label>`,
       item?'메일 초안 편집':'새 메일 초안','초안 저장');
+      return projectField(view,item,seed);
     }
     const accounts=connectedAccounts(view);
     if(!accounts.length){
@@ -328,8 +329,24 @@
     view.editor.cards=new Map();
     view.editor.existingCard=item?.cardId?item:null;
     view.editor.preselectedCard=cardChoice;
+    projectField(view,item,seed);
     setDraftFields(view);
     if(view.form.elements.imageSource.value==='card')void loadDraftCards(view);
+  }
+
+  // Keep a draft's project link through edits; the user can detach it before saving.
+  function projectField(view,item,seed) {
+    const stored=typeof item?.projectId==='string'&&item.projectId?item.projectId:'';
+    const id=stored||seed?.project?.id||'';
+    view.editor.projectId=id;
+    view.editor.storedProject=Boolean(stored);
+    if(!id)return;
+    const known=window.NuriPersonalWorkspace?.projectName?.(id)||(seed?.project?.id===id?seed.project.name:'');
+    const label=document.createElement('label');
+    label.className='auto-check auto-project-link';
+    label.innerHTML='<input type="checkbox" name="keepProject" checked> <span></span>';
+    label.querySelector('span').textContent=known?'프로젝트 연결 유지 · '+known:'연결된 프로젝트 유지';
+    view.fields.prepend(label);
   }
 
   function cardPage(view, selected='') {
@@ -541,11 +558,15 @@
     try {
       if(kind==='draft'){
         const change=id?{id,version}:{};
+        // Server contract: omitted keeps the stored link (also a link to a since-deleted project), null detaches,
+        // a string links after an owner check. Only a new AI-seeded link is sent as a string.
+        const linked=view.editor.projectId,kept=fields.keepProject==='on';
+        const project=!linked||(kept&&view.editor.storedProject)?{}:{projectId:kept?linked:null};
         const draft=view.kind==='mail'?{action:'draft',to:fields.to,subject:fields.subject,body:fields.body}:
           {action:'save',accountId:fields.accountId,title:fields.title,body:fields.body,mediaUrl:fields.mediaUrl||'',videoId:fields.videoId||'',
             ...(fields.cardId?{cardId:fields.cardId,cardSlide:Number(fields.cardSlide)}:{}),
             ...(fields.madeForKids!==undefined?{madeForKids:fields.madeForKids==='true',synthetic:fields.synthetic==='true'}:{})};
-        return mutate(view,{...draft,...change},'초안을 저장했습니다.');
+        return mutate(view,{...draft,...project,...change},'초안을 저장했습니다.');
       }
       if(kind==='schedule'){
         if(!item||fields.approved!=='on')throw Error('원고와 예약 내용을 확인한 뒤 승인해 주세요.');
@@ -723,12 +744,15 @@
     draftEditor(view,null,{id:pending.id,slide:pending.slide,accountId:account.id});
   }
 
-  function reviewApprovedDraft(kind,title,text,card=null) {
+  function reviewApprovedDraft(kind,title,text,card=null,project=null) {
     const owner=window.NuriPersonalAccount;
     if(!owner||!['mail','social'].includes(kind))return false;
     const media=kind==='social'&&card&&typeof card.id==='string'&&cardIdPattern.test(card.id)&&Number.isInteger(card.slide)&&card.slide>=0?
       {id:card.id,slide:card.slide}:null;
-    approvedDraft={kind,title,text,owner,card:media};
+    // Carry only the current AI project; the server re-checks ownership before saving it.
+    const linked=project&&typeof project.id==='string'&&project.id&&project.id.length<=100?
+      {id:project.id,name:typeof project.name==='string'?project.name.slice(0,160):''}:null;
+    approvedDraft={kind,title,text,owner,card:media,project:linked};
     if(location.hash!=='#'+kind)location.hash=kind;
     else mount(kind);
     return true;

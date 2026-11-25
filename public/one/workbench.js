@@ -806,7 +806,8 @@
       if(category==='cards'){
         if(decision.cardId)window.NuriPersonalAutomation?.selectSocialCard?.(decision.cardId,0);
       }else if(category==='mail'||category==='content'&&(!decision.pack||decision.pack.format==='social')){
-        window.NuriPersonalAutomation?.reviewApprovedDraft(category==='mail'?'mail':'social',title,text);
+        const linked=data.projects.find(row=>row.id===decision.projectId);
+        window.NuriPersonalAutomation?.reviewApprovedDraft(category==='mail'?'mail':'social',title,text,null,linked?{id:linked.id,name:linked.name}:null);
       }else window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text,projectId:decision.projectId});
       return;
     }
