@@ -683,6 +683,22 @@
     }
   }
 
+  // 선택 딥링크: #connector-workflow?service=calendar. OAuth 복귀의 provider와는 별개이며 허용 목록의 값만 쓴다.
+  let appliedService = '';
+  function requestedService() {
+    const [hashName, hashQuery = ''] = location.hash.slice(1).split('?');
+    if (hashName !== 'connector-workflow') return '';
+    const id = new URLSearchParams(hashQuery).get('service');
+    return PROVIDERS.some(item => item.id === id) ? id : '';
+  }
+  function applyService() {
+    const id = requestedService();
+    if (!id) { appliedService = ''; return; }
+    if (appliedService === id || !alive() || !loaded || !cards.has(id)) return;
+    appliedService = id;
+    focusCard(id);
+  }
+
   function readReturn() {
     const url = new URL(location.href);
     const [hashName, hashQuery = ''] = url.hash.slice(1).split('?');
@@ -692,7 +708,10 @@
     const touched = params.some(item => item.has('connect') || item.has('provider'));
     if (touched) {
       url.searchParams.delete('connect'); url.searchParams.delete('provider');
-      url.hash = hashName ? '#' + hashName : '';
+      const rest = new URLSearchParams(hashQuery);
+      rest.delete('connect'); rest.delete('provider');
+      const tail = rest.toString();
+      url.hash = hashName ? '#' + hashName + (tail ? '?' + tail : '') : '';
       history.replaceState(history.state, '', url.href);
     }
     if (value !== 'connected' && value !== 'failed') return null;
@@ -708,12 +727,14 @@
     if (!root || !account) return;
     if (controller && owner === account) {
       for (const select of root.querySelectorAll('[data-task-select]')) fillTasks(select);
+      applyService();
       return;
     }
     suspend();
     owner = account;
     controller = new AbortController();
     notice = readReturn();
+    appliedService = '';
     loaded = false; loadError = '';
     paintAll();
     lock(true);
@@ -726,12 +747,13 @@
     } finally {
       if (alive()) lock(false);
     }
-    if (alive() && returnId && cards.has(returnId)) { focusCard(returnId); returnId = null; }
+    if (alive() && returnId && cards.has(returnId)) { focusCard(returnId); appliedService = requestedService(); returnId = null; }
+    else applyService();
   }
 
   function suspend() {
     controller?.abort();
-    controller = null; owner = null; busy = false; loaded = false; loadError = ''; notice = null; openId = null; returnId = null;
+    controller = null; owner = null; appliedService = ''; busy = false; loaded = false; loadError = ''; notice = null; openId = null; returnId = null;
     services = new Map(); callback = ''; serverTasks = []; projects = [];
     cards.clear(); results.clear(); proposals.clear();
     if (root) { root.removeAttribute('aria-busy'); root.replaceChildren(); }
@@ -757,5 +779,6 @@
     });
   }
 
+  window.addEventListener('hashchange', () => { if (!requestedService()) appliedService = ''; });
   window.NuriConnectorWorkflow = {mount, suspend};
 })();

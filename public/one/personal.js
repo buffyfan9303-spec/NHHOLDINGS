@@ -262,6 +262,98 @@
     return '<a class="personal-calendar-link" href="'+esc(base+'?'+query)+
       '" target="_blank" rel="noopener noreferrer" aria-label="'+esc(item.title+' Google Calendar에 추가')+'">Google Calendar에 추가</a>';
   }
+  // 캘린더 연동(Google 상태 · iPhone 읽기 전용 구독). 비밀번호는 생성 응답에서만 받아 입력란에 두고,
+  // 화면을 떠나거나 닫거나 계정·가시성이 바뀌면 지운다. 주소(URL)에는 비밀이 없다.
+  const feedPanel = el('personal-calendar-connect'), feedFields = ['personal-feed-url','personal-feed-user','personal-feed-password'];
+  const feedState = {phase:'idle',active:null,busy:false};
+  let feedRevision = 0, feedAbort = null;
+  const feedButton = name => document.querySelector('[data-feed-action='+name+']');
+  function feedPaint(message) {
+    const known = feedState.phase==='ready';
+    el('personal-feed-state').textContent = message ?? (feedState.phase==='loading'?'구독 상태를 확인하는 중입니다.':
+      feedState.phase==='error'?'구독 상태를 확인하지 못했습니다.':known?(feedState.active?'구독이 켜져 있습니다. 비밀번호는 다시 볼 수 없고, 새로 만들면 교체됩니다.':'구독이 꺼져 있습니다.'):'상태를 확인하기 전입니다.');
+    const create = feedButton('create'), off = feedButton('disable'), again = feedButton('refresh');
+    create.disabled = !known || feedState.busy;
+    create.textContent = known && feedState.active ? '구독 정보 다시 만들기(기존 중지)' : '구독 정보 만들기';
+    off.hidden = !(known && feedState.active); off.disabled = feedState.busy;
+    again.hidden = feedState.phase!=='error'; again.disabled = feedState.busy;
+  }
+  function feedWipe() {
+    for(const id of feedFields)el(id).value = '';
+    el('personal-feed-link').hidden = true;
+  }
+  function feedClear() {
+    feedRevision++; feedAbort?.abort(); feedAbort = null;
+    feedWipe();
+    Object.assign(feedState,{phase:'idle',active:null,busy:false});
+    feedPanel.open = false;
+    feedPaint();
+    el('personal-feed-google').textContent = '확인 전입니다.';
+  }
+  async function feedFetch(url,options,revision,signal) {
+    const owner = accountId;
+    const response = await fetch(url,{cache:'no-store',signal,...options,headers:{'X-Personal-Account':owner,...(options?.headers??{})}});
+    const result = await response.json().catch(()=>({}));
+    if(revision!==feedRevision||owner!==accountId)throw new DOMException('stale','AbortError');
+    if(!response.ok)throw new Error(result.error||'요청을 처리하지 못했습니다.');
+    return result;
+  }
+  async function feedRefresh() {
+    if(!ready||!accountId||view!=='schedule')return;
+    feedAbort?.abort();
+    const revision = ++feedRevision, controller = feedAbort = new AbortController();
+    feedWipe(); feedState.phase = 'loading'; feedState.active = null; feedState.busy = false; feedPaint();
+    el('personal-feed-google').textContent = 'Google Calendar 연결 상태를 확인하는 중입니다.';
+    const [status,connectors] = await Promise.allSettled([
+      feedFetch('/api/personal/calendar-subscription',{},revision,controller.signal),
+      feedFetch('/api/personal/connectors',{},revision,controller.signal),
+    ]);
+    if(revision!==feedRevision||!feedPanel.open)return;
+    if(status.status==='fulfilled'){feedState.phase='ready';feedState.active=status.value.active===true;feedPaint();}
+    else {feedState.phase='error';feedState.active=null;feedPaint(status.reason?.message||undefined);}
+    const calendar = connectors.status==='fulfilled'&&Array.isArray(connectors.value.services)?connectors.value.services.find(row=>row.id==='calendar'):null;
+    el('personal-feed-google').textContent = connectors.status!=='fulfilled'||!calendar||typeof calendar.connected!=='boolean'?
+      'Google Calendar 연결 상태를 확인하지 못했어요. 일정 옆 ‘Google Calendar에 추가’는 계속 쓸 수 있습니다.':
+      calendar.connected?'Google Calendar가 연결돼 있습니다. 아래 연결 화면에서 요청을 승인하세요.':
+      'Google Calendar가 아직 연결되지 않았어요. 연결하지 않아도 일정 옆 ‘Google Calendar에 추가’는 쓸 수 있습니다.';
+  }
+  async function feedChange(action) {
+    if(feedState.busy||feedState.phase!=='ready'||!['create','disable'].includes(action))return;
+    if(action==='disable'&&feedState.active!==true)return;
+    if(action==='create'&&feedState.active===true&&!confirm('새 정보를 만들면 기존 구독이 즉시 끊깁니다. 계속할까요?'))return;
+    if(action==='disable'&&!confirm('구독을 끄면 iPhone 등에서 더 이상 일정을 읽지 못합니다. 끌까요?'))return;
+    feedAbort?.abort();
+    const revision = ++feedRevision, controller = feedAbort = new AbortController();
+    feedState.busy = true; feedPaint('처리 중입니다.');
+    try {
+      const result = await feedFetch('/api/personal/calendar-subscription',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})},revision,controller.signal);
+      feedState.busy = false; feedState.active = result.active===true;
+      if(action==='create'&&typeof result.password==='string'){
+        el('personal-feed-url').value = result.url; el('personal-feed-user').value = result.username; el('personal-feed-password').value = result.password;
+        el('personal-feed-link').hidden = false;
+        feedPaint('새 구독 정보를 만들었습니다. 지금 복사해 두세요. 화면을 떠나면 지워집니다.');
+      } else {feedWipe();feedPaint('구독을 껐습니다.');}
+    } catch(error) {
+      if(error?.name==='AbortError'||revision!==feedRevision)return;
+      feedWipe(); feedState.busy = false; feedState.phase = 'error'; feedState.active = null;
+      feedPaint((error.message||'요청을 처리하지 못했습니다.')+' 상태를 다시 확인해 주세요.');
+    }
+  }
+  feedPanel.addEventListener('click',async event=>{
+    const copy = event.target.closest('[data-feed-copy]');
+    if(copy){
+      const input = el(copy.dataset.feedCopy==='password'?'personal-feed-password':'personal-feed-url');
+      input.select?.();
+      try{await navigator.clipboard.writeText(input.value);feedPaint('복사했습니다.');}catch{feedPaint('복사하지 못했습니다. 입력란을 길게 눌러 직접 복사하세요.');}
+      return;
+    }
+    const control = event.target.closest('[data-feed-action]');
+    if(!control)return;
+    if(control.dataset.feedAction==='refresh')void feedRefresh();
+    else void feedChange(control.dataset.feedAction);
+  });
+  feedPanel.addEventListener('toggle',()=>{if(feedPanel.open)void feedRefresh();else feedClear();});
+
   function exportWeek() {
     const dates=weekParts(selectedDay??day());
     const selected=items.filter(item=>item.kind==='schedule'&&dates.includes(item.dueOn));
@@ -309,6 +401,7 @@
     taskFilters.hidden=view!=='tasks';
     scheduleModes.hidden=view!=='schedule';
     week.hidden=view!=='schedule'||scheduleMode!=='week';
+    feedPanel.hidden=view!=='schedule';
     el('personal-add').hidden=view==='schedule'&&scheduleMode==='week';
     el('personal-list').hidden=view==='schedule'&&scheduleMode==='week';
     el('personal-automation-agenda').hidden=view!=='schedule'||scheduleMode!=='all';
@@ -331,6 +424,7 @@
     const target = Object.hasOwn(names,newView)?newView:'home';
     const changed = target!==view;
     view = target;
+    if(view!=='schedule')feedClear();
     el('personal-title').textContent = names[view];
     const guide = view==='website-guide';
     const inGuide = guideViews.has(view);
@@ -618,6 +712,7 @@
     checkNumber++;
     activeCheck?.abort();
     weekRead?.controller.abort();weekRead=null;weekAgenda=null;
+    feedClear();
     el('personal-week-status').textContent='';
     el('personal-search-results').replaceChildren();
     el('personal-search-status').textContent='';

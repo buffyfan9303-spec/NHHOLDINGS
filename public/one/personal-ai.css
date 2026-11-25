@@ -351,3 +351,4 @@
 .personal-ai-guide ol {padding-inline-start:1.35rem;margin:6px 0}
 .personal-ai-guide li+li {margin-block-start:6px}
 .personal-ai-guide p {margin:8px 0}
+.personal-ai-guide summary:focus-visible {outline:2px solid var(--teal);outline-offset:2px}
