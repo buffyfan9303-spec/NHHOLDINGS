@@ -97,3 +97,8 @@
 .personal-guide ol li+li {margin-block-start:6px}
 .personal-guide details a {display:inline-flex;align-items:center;min-height:44px;color:var(--teal);text-underline-offset:.2em}
 .personal-guide details .personal-site-guide-links {margin-block-end:6px}
+/* 접기 제목·선택 상자에도 전역 포커스 링과 같은 표시 */
+:is(.personal-site-guide-steps summary,.personal-guide summary,.personal-site-fields select):focus-visible {outline:2px solid var(--teal);outline-offset:2px}
+/* 사용자 분류명이 길어도 카드 밖으로 넘치지 않게 한다. 금액은 줄바꿈 없이 유지 */
+.personal-revenue-meta {min-width:0}
+.personal-revenue-meta span:first-child {min-width:0;max-inline-size:100%;white-space:normal;overflow-wrap:anywhere}

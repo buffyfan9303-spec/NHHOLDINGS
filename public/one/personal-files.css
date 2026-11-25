@@ -156,3 +156,6 @@
  .personal-file-list li {padding-block:4px}
  .personal-drive-filter {gap:5px;margin-block:8px}
 }
+.personal-file-setup summary:focus-visible,.personal-drive-filter :is(input,select):focus-visible,.personal-file-controls input:focus-visible {outline:2px solid var(--teal);outline-offset:2px}
+/* 좁은 폭: 주 버튼과 보조 버튼을 같은 줄 높이·폭으로 정렬, 필터 입력은 한 줄 전폭 */
+@media(max-width:480px){.personal-file-panel .personal-file-actions{width:100%}.personal-file-panel .personal-file-actions>.btn{flex:1 1 9rem;justify-content:center;min-height:44px}.personal-file-heading>div:first-child{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}.personal-drive-filter label{flex:1 1 100%}.personal-drive-filter input{flex:1 1 100%}.personal-drive-filter :is(select,button){flex:1 1 8rem}.personal-file-list li{align-items:flex-start}.personal-file-list li>:first-child{min-width:0;overflow-wrap:anywhere}}

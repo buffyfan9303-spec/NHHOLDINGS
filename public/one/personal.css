@@ -318,7 +318,7 @@ h2 {font-size:17px}
 .personal-week-tools .personal-hint{margin:6px 0 4px;color:var(--muted);font-size:12px}
 @media(prefers-reduced-motion:reduce){.personal-week-tools summary::before{transition:none}}
 #personal-search-form{max-width:560px;margin-bottom:8px}
-@media(max-width:390px){
+@media(max-width:401px){
   .personal-week-days{grid-template-columns:repeat(4,minmax(0,1fr))}
   .personal-week-head .personal-planning-actions{flex:1 1 100%}
   .personal-week-head .personal-planning-actions .btn{flex:1 1 0;min-width:0;padding-inline:6px}
@@ -331,3 +331,8 @@ h2 {font-size:17px}
   background-repeat:no-repeat;background-size:6px 6px;
 }
 #personal-search-form select:focus-visible,#personal-item-project:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.personal-feed{margin-block:0 10px}
+.personal-feed h3{margin:8px 0 4px;font-size:14px}
+.personal-feed label{display:block;margin-block:6px 2px;font-size:12px;color:var(--muted)}
+.personal-feed input[readonly]{width:100%;min-height:44px;font-size:12px}
+.personal-feed ol{margin-block:6px;padding-inline-start:20px}

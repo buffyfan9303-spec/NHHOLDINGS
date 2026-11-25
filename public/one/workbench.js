@@ -49,7 +49,7 @@
       '<div class="workbench-actions"><button class="btn primary" type="submit">기억 저장</button>'+
       (project?action('새 프로젝트','new')+action('기억 삭제','remove-project',project.id):'')+'</div></form></section>'+
       (!starter?'<section><h2>업무별 시작 가이드</h2><ul class="workbench-list">'+Object.entries(templates).map(([id,entry])=>
-        '<li><strong>'+entry.label+'</strong><p>'+entry.step+'</p>'+action('예제로 시작','template',id)+'</li>').join('')+'</ul></section>':'')+'</div>';
+        '<li class="workbench-guide-item"><strong>'+entry.label+'</strong><p>'+entry.step+'</p>'+'<button type="button" class="btn" data-action="template" data-id="'+id+'" aria-label="'+esc(entry.label)+' 예제로 시작">예제로 시작</button></li>').join('')+'</ul></section>':'')+'</div>';
   }
 
   function schedule(){

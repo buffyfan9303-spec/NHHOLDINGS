@@ -123,6 +123,37 @@
       <button class="btn" type="button" aria-pressed="true" data-schedule-mode="week">주간 일정</button>
       <button class="btn" type="button" aria-pressed="false" data-schedule-mode="all">전체 일정</button>
      </div>
+     <details id="personal-calendar-connect" class="personal-week-tools personal-feed" hidden>
+      <summary>Google·iPhone 캘린더 연동</summary>
+      <section aria-labelledby="personal-google-title">
+       <h3 id="personal-google-title">Google Calendar</h3>
+       <p id="personal-feed-google" class="personal-hint" role="status">확인 전입니다.</p>
+       <p class="personal-hint">연결 후 ‘서비스 연결 작업 &gt; Google Calendar’에서 일정 만들기 요청을 확인하고 승인해야 Google에 저장돼요. 일정 하나씩은 목록의 ‘Google Calendar에 추가’로 복사합니다. 이 화면에서 자동으로 보내지 않습니다.</p>
+       <div class="personal-planning-actions"><a class="btn" href="#connector-workflow?service=calendar">Google 연결 열기</a></div>
+      </section>
+      <section aria-labelledby="personal-feed-title">
+       <h3 id="personal-feed-title">iPhone 캘린더 구독(읽기 전용)</h3>
+       <p id="personal-feed-state" class="personal-message" role="status">상태를 확인하기 전입니다.</p>
+       <div class="personal-planning-actions">
+        <button class="btn" type="button" data-feed-action="create" disabled>구독 정보 만들기</button>
+        <button class="btn" type="button" data-feed-action="disable" disabled hidden>구독 끄기</button>
+        <button class="btn" type="button" data-feed-action="refresh" hidden>상태 다시 확인</button>
+       </div>
+       <div id="personal-feed-link" hidden>
+        <p class="personal-hint"><strong>비밀번호는 지금 한 번만 표시됩니다.</strong> 화면을 떠나거나 닫으면 지워집니다. 아는 사람은 일정 제목과 날짜를 읽을 수 있으니 공유하지 마세요. 누리원 로그인 비밀번호가 아닙니다.</p>
+        <label for="personal-feed-url">HTTPS 주소</label><input id="personal-feed-url" type="text" readonly autocomplete="off" spellcheck="false">
+        <label for="personal-feed-user">계정 이름</label><input id="personal-feed-user" type="text" readonly autocomplete="off" spellcheck="false">
+        <label for="personal-feed-password">생성된 비밀번호</label><input id="personal-feed-password" type="text" readonly autocomplete="off" spellcheck="false">
+        <div class="personal-planning-actions"><button class="btn" type="button" data-feed-copy="url">주소 복사</button><button class="btn" type="button" data-feed-copy="password">비밀번호 복사</button></div>
+       </div>
+       <ol class="personal-hint">
+        <li>iPhone ‘캘린더’ 앱 &gt; 하단 ‘캘린더’ &gt; ‘캘린더 추가’ &gt; ‘구독 캘린더 추가’를 누르세요.</li>
+        <li>HTTPS 주소를 붙여 넣고 ‘다음’을 누르세요.</li>
+        <li>묻는 대로 계정 이름은 nuri, 암호는 위에서 생성한 비밀번호를 입력합니다. 누리원 계정 비밀번호는 쓰지 않습니다.</li>
+       </ol>
+       <p class="personal-hint">표시 범위: 오늘 기준 30일 전부터 365일 후까지의 일정, 최대 500건, 제목과 날짜·시간만 보냅니다. 누리원에서 바꾼 내용은 Apple이 주기적으로 다시 읽으며, iPhone 쪽 수정·삭제는 누리원에 돌아오지 않습니다. 구독이 안 되면 ‘주간 일정 다운로드’(.ics)를 가져오거나 일정마다 ‘Google Calendar에 추가’를 쓰세요.</p>
+      </section>
+     </details>
      <div id="personal-week" hidden>
       <div class="personal-section-head personal-week-head">
        <h3 id="personal-week-title"></h3>
@@ -142,12 +173,12 @@
       <p id="personal-week-status" class="personal-message" role="status"></p>
       <div id="personal-day-events"></div>
       <details class="personal-week-tools">
-       <summary>일정 내보내기·캘린더 연동</summary>
+       <summary>일정 내보내기</summary>
        <div class="personal-planning-actions">
         <button class="btn" type="button" data-week-action="export">주간 일정 다운로드</button>
         <a class="personal-link" href="#guide-connections">캘린더 연동 방법</a>
        </div>
-       <p class="personal-hint">다운로드한 .ics 파일은 Apple 캘린더·Outlook에서 가져올 수 있어요. 개인 일정의 ‘Google Calendar에 추가’는 각 일정 옆에 있습니다.</p>
+       <p class="personal-hint">다운로드한 .ics 파일은 Apple 캘린더·Outlook에서 가져올 수 있어요. 개인 일정의 ‘Google Calendar에 추가’는 각 일정 옆에 있습니다. 위 ‘Google·iPhone 캘린더 연동’에서 구독을 설정할 수 있어요.</p>
       </details>
      </div>
      <div id="personal-list"></div>
@@ -308,7 +339,7 @@
       <div class="personal-site-guide-links"><a href="#mail">메일 예약</a><a href="#files">비공개 저장소</a></div>
      </details>
      <details><summary>Google Calendar·Apple 캘린더·Outlook</summary>
-      <ol><li>‘일정 → 주간 일정’에서 날짜를 선택하세요. 개인 일정의 ‘Google Calendar에 추가’를 누르면 작성 화면이 열립니다. 연결할 Google 계정과 일정 내용을 확인하고 직접 저장하세요.</li><li>Apple 캘린더와 Outlook에서는 ‘주간 일정 다운로드’로 받은 .ics 파일을 가져올 수 있습니다.</li><li>이 경로는 일정 복사에 사용합니다. 누리원에서 수정한 일정은 외부 캘린더에서 별도로 수정하세요.</li></ol>
+      <ol><li>‘일정 → 주간 일정’에서 날짜를 선택하세요. 개인 일정의 ‘Google Calendar에 추가’를 누르면 작성 화면이 열립니다. 연결할 Google 계정과 일정 내용을 확인하고 직접 저장하세요.</li><li>Apple 캘린더와 Outlook에서는 ‘주간 일정 다운로드’로 받은 .ics 파일을 가져올 수 있습니다.</li><li>iPhone은 ‘일정 → Google·iPhone 캘린더 연동 → 구독 정보 만들기’로 읽기 전용 구독을 만들 수 있습니다. 캘린더 앱 &gt; 캘린더 &gt; 캘린더 추가 &gt; 구독 캘린더 추가에서 HTTPS 주소를 붙여 넣고, 계정 이름 nuri와 생성된 별도 비밀번호를 입력하세요. 누리원 계정 비밀번호는 입력하지 않습니다.</li><li>구독은 오늘 기준 30일 전~365일 후, 최대 500건의 제목과 날짜만 보여 줍니다. 실제 iPhone 연결 결과는 아직 확인하지 못했으니, 안 되면 .ics 가져오기나 일정별 ‘Google Calendar에 추가’를 쓰세요.</li><li>이 경로는 읽기 전용입니다. 누리원에서 수정한 일정은 외부 캘린더에서 별도로 수정하세요.</li></ol>
       <div class="personal-site-guide-links"><a href="#schedule">일정 열기</a></div>
      </details>
      <details><summary>ChatGPT·Claude·Gemini</summary>
