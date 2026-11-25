@@ -18,6 +18,14 @@
   };
 
   const modes={chat:'대화',brief:'업무 요약',task:'할 일 추가',schedule:'일정 추가',note:'메모 작성',social:'SNS 초안',mail:'메일 초안',cards:'카드뉴스','content-pack':'콘텐츠 묶음'};
+  const startHints={
+    social:'예: 신제품 소개 글. 대상과 말투, 꼭 넣을 내용을 적어 주세요.',
+    cards:'예: 이번 주 공지를 5장 카드뉴스로. 장별 핵심을 적어 주세요.',
+    mail:'받는 사람 이메일 주소 한 개와 메일 목적을 적어 주세요.',
+    'content-pack':'주제와 원본 자료를 붙여넣어 주세요. 승인함에서 검토합니다.',
+  };
+  const continueTargets={social:'SNS 편집에서 검토',mail:'메일 편집에서 검토',note:'메모 편집에서 검토'};
+  const continueLimits={social:5000,mail:16000,note:4000};
   const socialProviders={instagram:'Instagram',threads:'Threads',youtube:'YouTube',x:'X'};
   const destinations={task:['할 일 열기','#tasks'],schedule:['일정 열기','#schedule'],note:['메모 열기','#notes'],social:['SNS 초안 열기','#social'],mail:['메일 초안 열기','#mail']};
   const formatTime=new Intl.DateTimeFormat('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'});
@@ -165,6 +173,12 @@
         </div>
       </section>
       <form class="personal-form personal-ai-compose" data-ai-compose>
+        <div class="personal-ai-starts" role="group" aria-label="크리에이터 빠른 시작" data-ai-starts>
+          <button type="button" class="personal-action" data-ai-action="start-mode" data-mode="social">SNS 글 쓰기</button>
+          <button type="button" class="personal-action" data-ai-action="start-mode" data-mode="cards">카드뉴스 만들기</button>
+          <button type="button" class="personal-action" data-ai-action="start-mode" data-mode="mail">메일 쓰기</button>
+          <button type="button" class="personal-action" data-ai-action="start-mode" data-mode="content-pack" hidden>콘텐츠 묶음 만들기</button>
+        </div>
         <div class="personal-ai-options">
           <label>응답 모델<select name="provider" required></select></label>
           <label>작업<select name="mode">${selectOptions(modes)}</select></label>
@@ -212,6 +226,11 @@
     const note=view.dock.querySelector('[data-ai-mode-note]');
     const pack=view.compose.elements.mode.querySelector('[value="content-pack"]');
     pack.hidden=!view.project;pack.disabled=!view.project;
+    for(const chip of view.dock.querySelectorAll('[data-ai-action="start-mode"]')){
+      if(chip.dataset.mode==='content-pack')chip.hidden=!view.project;
+      chip.setAttribute('aria-pressed',String(chip.dataset.mode===mode));
+    }
+    view.compose.elements.prompt.placeholder=startHints[mode]||'할 일이나 정리할 내용을 입력하세요.';
     note.textContent=mode==='content-pack'?'주제와 원본 자료를 입력하면 프로젝트 승인함에 콘텐츠 초안을 만듭니다.':mode==='mail'?'받는 사람 이메일 주소 한 개와 메일 목적을 입력하세요.':mode==='social'?(
       view.compose.elements.socialProvider.value==='youtube'?'작성한 YouTube 원고를 메모에서 확인할 수 있어요.':'초안은 내 SNS에서 검토하고 예약할 수 있어요.'
     ):'';
@@ -302,6 +321,7 @@
       const use=node('button','personal-action','카드뉴스를 SNS에 첨부');
       use.type='button';
       use.dataset.aiAction='attach';
+      use.title='“'+(action.title||'카드뉴스')+'” 1번 장을 SNS 편집에 첨부합니다. 저장 전에 검토합니다.';
       bar.append(use);
     }
     card.append(title,image,bar);
@@ -315,7 +335,10 @@
       const link=node('a','personal-link','프로젝트 승인함 열기');
       link.href='/personal?review='+encodeURIComponent(action.id)+'#workbench';
       link.dataset.aiGo='';
-      return link;
+      if(!action.title)return link;
+      const named=node('div','personal-ai-receipt');
+      named.append(node('strong','',action.title),link);
+      return named;
     }
     if(!Object.hasOwn(destinations,action.kind))return null;
     const [label,path]=destinations[action.kind];
@@ -339,6 +362,28 @@
     answer.append(label,text);
     const result=receipt(message.action);
     if(result)answer.append(result);
+    if(!pending&&message.id&&message.response?.trim()){
+      entry.dataset.aiMessageId=message.id;
+      const next=node('div','personal-ai-actions personal-ai-continue');
+      next.setAttribute('role','group');
+      next.setAttribute('aria-label','이 답변으로 이어서 작성');
+      for(const [target,label] of Object.entries(continueTargets)){
+        const button=node('button','personal-action',label);
+        button.type='button';
+        button.dataset.aiAction='continue';
+        button.dataset.target=target;
+        next.append(button);
+      }
+      if(message.action?.kind==='cards'&&typeof window.NuriPersonalAutomation?.reviewApprovedDraft==='function'){
+        const both=node('button','personal-action','글과 카드뉴스로 SNS 편집');
+        both.type='button';
+        both.dataset.aiAction='continue';
+        both.dataset.target='social';
+        both.dataset.withCard='';
+        next.append(both);
+      }
+      answer.append(next);
+    }
     const time=Date.parse(message.createdAt);
     if(Number.isFinite(time)){
       const timestamp=node('time','personal-ai-time',formatTime.format(time)+' KST');
@@ -736,6 +781,8 @@
     const prev=card.querySelector('[data-ai-action="prev"]'),next=card.querySelector('[data-ai-action="next"]');
     prev.disabled=page===0;
     next.disabled=page===count-1;
+    const attach=card.querySelector('[data-ai-action="attach"]');
+    if(attach)attach.title='“'+(card.querySelector('strong').textContent||'카드뉴스')+'” '+(page+1)+'번 장을 SNS 편집에 첨부합니다. 저장 전에 검토합니다.';
     if(button.disabled)(dir<0?next:prev).focus({preventScroll:true});
   }
 
@@ -800,6 +847,8 @@
       else if(action==='stop')view.stream?.abort();
       else if(action==='remove'||action==='verify')void changeProvider(view,action);
       else if(action==='prev'||action==='next')pageCard(control,action==='prev'?-1:1);
+      else if(action==='start-mode')startMode(view,control.dataset.mode);
+      else if(action==='continue')continueFromAnswer(view,control);
       else if(action==='attach'){
         const card=control.closest('[data-ai-card-id]');
         if(card){hide(view);window.NuriPersonalAutomation?.selectSocialCard?.(card.dataset.aiCardId,Number(card.dataset.aiPage));}
@@ -860,6 +909,60 @@
       if(resume.pane)setHandoff(view,true,resume.pane);
     }
     resume=null;
+  }
+
+  // Entry chips only pick an existing mode; nothing is generated until the user presses send.
+  function startMode(view,mode){
+    if(!Object.hasOwn(modes,mode)||view.stream||view.loading||view.configuring)return;
+    const select=view.compose.elements.mode;
+    if(select.querySelector('[value="'+mode+'"]')?.disabled)return;
+    if(!view.providers.some(p=>p.configured)){
+      // No API model: reuse the subscription-AI request pane. Typed text is copied only into an empty request; nothing is sent.
+      const form=view.handoffForm.elements;
+      form.kind.value=mode==='mail'?'reply':'draft';
+      if(!form.request.value.trim())form.request.value=view.compose.elements.prompt.value;
+      updateSkillLabels(view);
+      setHandoff(view,true,'request');
+      form.request.focus({preventScroll:true});
+      return;
+    }
+    select.value=mode;
+    modeChanged(view);
+    setControls(view);
+    status(view,modes[mode]+' 작업을 선택했습니다. 요청을 입력한 뒤 보내기를 눌러 주세요.');
+    view.compose.elements.prompt.focus({preventScroll:true});
+  }
+
+  // Reuse a finished answer in the real editor. Review and save/schedule stay in that editor.
+  function continueFromAnswer(view,control){
+    const id=control.closest('[data-ai-message-id]')?.dataset.aiMessageId;
+    const message=view.messages.find(item=>item.id===id);
+    const target=control.dataset.target;
+    if(!message||!Object.hasOwn(continueTargets,target))return;
+    const full=message.response.trim(),limit=continueLimits[target];
+    const over=full.length>limit;
+    // Never drop text silently: a long answer needs a second, explicit click for the shortened import.
+    if(over&&view.confirmCut!==control){
+      if(view.confirmCut?.isConnected)view.confirmCut.textContent=view.confirmCut.dataset.label;
+      control.dataset.label=control.textContent;
+      control.textContent='앞 '+limit.toLocaleString('ko-KR')+'자만 가져오기';
+      view.confirmCut=control;
+      status(view,'답변이 '+full.length.toLocaleString('ko-KR')+'자로 '+limit.toLocaleString('ko-KR')+'자 제한을 넘습니다. 전체 답변은 이 대화에 그대로 남아 있습니다. 앞부분만 가져오려면 버튼을 한 번 더 누르세요.',true);
+      return;
+    }
+    if(view.confirmCut?.isConnected)view.confirmCut.textContent=view.confirmCut.dataset.label;
+    view.confirmCut=null;
+    const text=full.slice(0,limit);
+    const firstLine=full.split('\n').find(line=>line.trim())||'';
+    const title=(message.action?.title||firstLine).replace(/^[#>*\-\s]+/,'').slice(0,target==='note'?160:100)||'AI 답변';
+    const card=control.hasAttribute('data-with-card')&&message.action?.kind==='cards'?
+      {id:message.action.id,slide:Number(control.closest('[data-ai-message-id]').querySelector('[data-ai-card-id]')?.dataset.aiPage)||0}:null;
+    const opened=target==='note'?window.NuriPersonalWorkspace?.reviewDraft('note',{title,detail:text,...(view.project?{projectId:view.project.id}:{})}):
+      window.NuriPersonalAutomation?.reviewApprovedDraft?.(target,title,text,card);
+    if(opened){
+      status(view,over?'앞부분만 가져왔습니다. 전체 답변은 AI 대화에 남아 있습니다.':'편집 화면으로 가져왔습니다. 저장 전에 검토하세요.');
+      hide(view);
+    }else status(view,'열려 있는 편집을 마친 뒤 다시 시도해 주세요.',true);
   }
 
   function selectProject(view,project){

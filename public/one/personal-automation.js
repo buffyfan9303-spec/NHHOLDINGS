@@ -706,7 +706,10 @@
     if(approvedDraft?.owner===view.owner&&approvedDraft.kind===view.kind){
       const seed=approvedDraft;
       approvedDraft=null;
-      draftEditor(view,null,null,seed);
+      // A generated caption may arrive with its card news; keep both so continuing loses no media.
+      const account=seed.card&&view.data.accounts.find(a=>imageProviders.includes(a.provider)&&a.ready&&!a.paused);
+      if(seed.card&&!account)note(view,'카드뉴스를 함께 올리려면 Instagram 또는 Threads 계정을 연결해 주세요. 글은 그대로 가져왔습니다.',true);
+      draftEditor(view,null,account?{id:seed.card.id,slide:seed.card.slide,accountId:account.id}:null,seed);
       return;
     }
     if(view.kind!=='social'||!socialCard||socialCard.owner!==view.owner)return;
@@ -720,10 +723,12 @@
     draftEditor(view,null,{id:pending.id,slide:pending.slide,accountId:account.id});
   }
 
-  function reviewApprovedDraft(kind,title,text) {
+  function reviewApprovedDraft(kind,title,text,card=null) {
     const owner=window.NuriPersonalAccount;
     if(!owner||!['mail','social'].includes(kind))return false;
-    approvedDraft={kind,title,text,owner};
+    const media=kind==='social'&&card&&typeof card.id==='string'&&cardIdPattern.test(card.id)&&Number.isInteger(card.slide)&&card.slide>=0?
+      {id:card.id,slide:card.slide}:null;
+    approvedDraft={kind,title,text,owner,card:media};
     if(location.hash!=='#'+kind)location.hash=kind;
     else mount(kind);
     return true;

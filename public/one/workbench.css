@@ -183,3 +183,7 @@
 #workbench .workbench-guide-item>strong,#workbench .workbench-guide-item>p{grid-column:1;min-width:0;overflow-wrap:anywhere}
 #workbench .workbench-guide-item>.btn{grid-column:2;grid-row:1/span 2;align-self:center;justify-self:end;min-width:7.25rem;justify-content:center}
 @media(max-width:780px){#workbench .workbench-list .workbench-guide-item{grid-template-columns:minmax(0,1fr)}#workbench .workbench-guide-item>.btn{grid-column:1;grid-row:auto;justify-self:stretch;margin-top:.35rem;min-height:44px}}
+.workbench-pack{margin-block:.75rem;padding-inline-start:.75rem;border-inline-start:2px solid var(--line,#a3a9a4)}
+.workbench-pack .workbench-list{margin-block:.25rem .5rem}
+.workbench-pack li[data-status="pending"] small{font-weight:700}
+.workbench-pack li[data-status="declined"] small,.workbench-pack li[data-status="undone"] small{font-style:italic}
