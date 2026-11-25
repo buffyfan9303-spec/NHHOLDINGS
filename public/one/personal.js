@@ -4,6 +4,28 @@
   const el = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
+  // 실제 화면·창·날짜 선택이 바뀐 순간에만 쓰는 부드러운 진입(opacity+작은 translate). 재검증·재렌더에서는 호출하지 않는다.
+  const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const arriveRuns = new WeakMap();
+  const arrive = (target) => {
+    if(motionQuery?.matches)return;
+    for(const node of [target].flat()){
+      if(!node||node.hidden)continue;
+      arriveRuns.get(node)?.cancel?.();
+      arriveRuns.delete(node);
+      node.classList?.remove('motion-arrive');
+      if(typeof node.animate==='function'){
+        const run=node.animate([{opacity:.82,transform:'translateY(5px)'},{opacity:1,transform:'none'}],
+          {duration:200,easing:'cubic-bezier(.23,1,.32,1)'});
+        arriveRuns.set(node,run);
+        run.onfinish=run.oncancel=()=>{if(arriveRuns.get(node)===run)arriveRuns.delete(node);};
+      } else {
+        requestAnimationFrame(()=>{if(!node.hidden)node.classList?.add('motion-arrive');});
+        node.addEventListener?.('animationend',()=>node.classList?.remove('motion-arrive'),{once:true});
+      }
+    }
+  };
+  window.NuriMotion = {arrive};
   const names = {home:'오늘의 업무', tasks:'할 일', schedule:'일정', workbench:'업무 작업대', notes:'메모', links:'바로가기', search:'업무 검색', sites:'내 웹사이트', 'website-guide':'구매·연결 가이드', social:'내 SNS', mail:'메일 예약', files:'비공개 저장소', revenue:'수익 대시보드', 'getting-started':'가이드', 'guide-connections':'가이드', 'guide-help':'가이드', 'stock-program':'자동 주식 프로그램', 'connector-workflow':'서비스 연결 작업'};
   const guideViews = new Set(['getting-started','guide-connections','guide-help']);
   const guideTabs = [...document.querySelectorAll('[data-guide-link]')];
@@ -464,8 +486,7 @@
     for(const section of screens) {
       section.hidden = section.dataset.personalView!==visible;
       if(!section.hidden&&changed) {
-        section.classList.remove('personal-arrive');
-        requestAnimationFrame(()=>{if(!section.hidden)section.classList.add('personal-arrive');});
+        arrive(section);
       }
     }
     if(ready){
@@ -642,9 +663,12 @@
   scheduleModes.addEventListener('click',event=>{
     const control=event.target.closest('[data-schedule-mode]');
     if(!ready||!control)return;
+    const previousMode=scheduleMode;
     scheduleMode=control.dataset.scheduleMode;
+    const modeChanged=scheduleMode!==previousMode;
     for(const button of scheduleModes.children)button.setAttribute('aria-pressed',String(button===control));
     paintItems();void loadWeek();
+    if(modeChanged)arrive(scheduleMode==='week'?week:[el('personal-list'),el('personal-automation-agenda')]);
   });
   week.addEventListener('click',event=>{
     const control=event.target.closest('[data-plan-day],[data-week-action]');
@@ -653,8 +677,10 @@
     if(weekAction==='add')return openEditor(null,'schedule',{dueOn:selectedDay??day()});
     if(weekAction==='export')return exportWeek();
     el('personal-week-status').textContent='';
+    const previousDay=selectedDay, previousWeek=monday(previousDay??day());
     selectedDay=planDay??(weekAction==='current'?day():addDays(selectedDay??day(),weekAction==='previous'?-7:7));
     paintWeek();void loadWeek();
+    if(selectedDay!==previousDay)arrive(monday(selectedDay)!==previousWeek?[el('personal-week-days'),el('personal-day-events')]:el('personal-day-events'));
   });
   searchForm.addEventListener('input',paintSearch);
   searchForm.addEventListener('submit',event=>{event.preventDefault();paintSearch();});

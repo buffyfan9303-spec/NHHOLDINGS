@@ -244,3 +244,16 @@
 .auto-advanced {flex-basis:100%;min-width:0}
 .auto-advanced summary {min-height:44px;align-content:center;cursor:pointer;color:var(--muted);font-size:13px}
 :is(.auto-channel-setup,.auto-advanced) summary:focus-visible {outline:2px solid var(--teal);outline-offset:2px}
+/* Fable motion 2026-11-25: disclosure feedback for SNS/email channel setup and advanced options. */
+:is(.auto-channel-setup,.auto-advanced) summary:hover {color:var(--teal)}
+:is(.auto-channel-setup,.auto-advanced) summary:active {opacity:.72}
+@media (prefers-reduced-motion:no-preference) {
+  :is(.auto-channel-setup,.auto-advanced) summary {transition:color .16s ease,opacity .12s ease}
+  @supports (transition-behavior:allow-discrete) {
+    :is(.auto-channel-setup,.auto-advanced)[open] > :not(summary) {transition:opacity 160ms ease,transform 180ms var(--arrive)}
+    @starting-style {:is(.auto-channel-setup,.auto-advanced)[open] > :not(summary) {opacity:0;transform:translateY(3px)}}
+  }
+}
+@media (forced-colors:active) {
+  :is(.auto-channel-setup,.auto-advanced) summary:active {opacity:1}
+}
