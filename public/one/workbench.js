@@ -466,10 +466,24 @@
   function render(message=''){
     if(data&&pane==='weekly')setupWeekly();
     if(data)window.NuriPersonalWorkspace?.syncProjects?.(data.projects);
-    root.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries({...sections,preferences:'내 선호'}).map(([id,label])=>
+    const head=document.createElement('template');
+    head.innerHTML='<nav class="workbench-nav" aria-label="업무 작업대 메뉴">'+Object.entries({...sections,preferences:'내 선호'}).map(([id,label])=>
       '<button type="button" data-pane="'+id+'"'+(id===pane?' aria-current="page"':'')+'>'+label+'</button>').join('')+
-      (data?action('새로고침','refresh'):'')+'</nav><p class="personal-message" data-workbench-status role="status">'+esc(message)+'</p>'+
-      (data?renderers[pane]():'<p class="workbench-muted">업무 작업대를 불러오는 중입니다.</p>');
+      (data?action('새로고침','refresh'):'')+'</nav><p class="personal-message" data-workbench-status role="status">'+esc(message)+'</p>';
+    // 본문 컨테이너는 한 번 만들면 계속 유지한다. 재렌더는 안쪽 내용만 바꾸므로 진행 중인 진입 전환(WAAPI/CSS)이 끊기지 않는다.
+    // 컨테이너는 블록 흐름이라 자식 여백이 그대로 겹치고, nav·상태 줄은 이전처럼 root의 직계 자식이다.
+    let body=root.querySelector(':scope>[data-workbench-pane]');
+    if(!body){root.textContent='';body=document.createElement('div');body.setAttribute('data-workbench-pane','');root.append(head.content,body);}
+    else{
+      root.querySelector(':scope>nav').replaceWith(head.content.querySelector('nav'));
+      root.querySelector(':scope>[data-workbench-status]').replaceWith(head.content.querySelector('[data-workbench-status]'));
+    }
+    body.innerHTML=data?renderers[pane]():'<p class="workbench-muted">업무 작업대를 불러오는 중입니다.</p>';
+  }
+  // pane 전환·재mount 때만 본문 컨테이너를 부드럽게 들인다. 데이터 재검증 렌더에서는 호출하지 않으며 비공개 데이터 스냅샷(view transition)을 쓰지 않는다.
+  function arrivePane(){
+    const body=root.querySelector(':scope>[data-workbench-pane]');
+    if(body)window.NuriMotion?.arrive?.(body);
   }
   async function api(input,query=''){
     const signal=controller.signal;
@@ -537,7 +551,7 @@
     if(controller){
       if(data){
         // 해시가 바뀌어 다시 mount되면 현재 주소의 pane·review를 반영한다(뒤로·앞으로 포함).
-        if(acceptRoute(new URL(location.href))){render();focusCurrent();}
+        if(acceptRoute(new URL(location.href))){render();arrivePane();focusCurrent();}
         void loadPane(pane,pane!=='preferences');
       }
       return;
@@ -659,7 +673,7 @@
     if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
   }
   function switchPane(next){
-    pane=next;syncLocation(true);render();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
+    pane=next;syncLocation(true);render();arrivePane();root.querySelector('[aria-current="page"]').focus({preventScroll:true});
     void loadPane(next);
   }
   root.addEventListener('click',async event=>{

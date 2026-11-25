@@ -102,3 +102,29 @@
 /* 사용자 분류명이 길어도 카드 밖으로 넘치지 않게 한다. 금액은 줄바꿈 없이 유지 */
 .personal-revenue-meta {min-width:0}
 .personal-revenue-meta span:first-child {min-width:0;max-inline-size:100%;white-space:normal;overflow-wrap:anywhere}
+/* Fable motion 2026-11-25: sites/guide tabs, view panels, guide disclosures, editor exit. */
+.personal-site-tabs a:active {opacity:.72}
+:is(.personal-site-guide-steps,.personal-guide) summary:hover {color:var(--teal)}
+:is(.personal-site-guide-steps,.personal-guide) summary:active {opacity:.72}
+@media(prefers-reduced-motion:no-preference) {
+ .personal-site-tabs a {transition:color .16s ease,border-color .16s ease,opacity .12s ease}
+ :is(.personal-site-guide-steps,.personal-guide) summary {transition:color .16s ease,opacity .12s ease}
+ @supports (transition-behavior:allow-discrete) {
+  :is(#personal-site-list-panel,#personal-site-guide-panel):not([hidden]) {transition:opacity 180ms var(--arrive),transform 200ms var(--arrive)}
+  @starting-style {:is(#personal-site-list-panel,#personal-site-guide-panel):not([hidden]) {opacity:0;transform:translateY(4px)}}
+  :is(.personal-site-guide-steps,.personal-guide) details[open] > :not(summary) {transition:opacity 160ms ease}
+  @starting-style {:is(.personal-site-guide-steps,.personal-guide) details[open] > :not(summary) {opacity:0}}
+  :is(#personal-site-editor,#personal-revenue-editor) {
+   opacity:0;transform:translateY(8px) scale(.992);pointer-events:none;
+   transition:opacity 180ms var(--arrive),transform 200ms var(--arrive),display 200ms allow-discrete,overlay 200ms allow-discrete;
+  }
+  :is(#personal-site-editor,#personal-revenue-editor)[open] {opacity:1;transform:none;pointer-events:auto;animation:none}
+  @starting-style {:is(#personal-site-editor,#personal-revenue-editor)[open] {opacity:0;transform:translateY(8px) scale(.992)}}
+  :is(#personal-site-editor,#personal-revenue-editor)::backdrop {opacity:0;pointer-events:none;transition:opacity 180ms ease,display 200ms allow-discrete,overlay 200ms allow-discrete}
+  :is(#personal-site-editor,#personal-revenue-editor)[open]::backdrop {opacity:1;pointer-events:auto;animation:none}
+  @starting-style {:is(#personal-site-editor,#personal-revenue-editor)[open]::backdrop {opacity:0}}
+ }
+}
+@media(forced-colors:active) {
+ .personal-site-tabs a:active,:is(.personal-site-guide-steps,.personal-guide) summary:active {opacity:1}
+}

@@ -179,11 +179,14 @@ h2 {font-size:17px}
 }
 #personal-editor::backdrop {background:rgb(11 18 16 / .52)}
 @media (prefers-reduced-motion:no-preference) {
-  .personal-arrive > .personal-sheet,
-  .personal-arrive > #personal-files-root {animation:personal-arrive .32s var(--arrive) both}
   #personal-editor[open] {animation:personal-editor 220ms var(--arrive) both}
   #personal-editor[open]::backdrop {animation:personal-veil 180ms ease both}
-  @keyframes personal-arrive {from {opacity:.94;transform:translateY(6px)} to {opacity:1;transform:translateY(0)}}
+  @keyframes personal-arrive {from {opacity:.82;transform:translateY(5px)} to {opacity:1;transform:none}}
+  .motion-arrive {animation:personal-arrive 200ms var(--arrive)}
+  .personal-app :is(.btn,.personal-context a,.personal-mobile-nav a,.personal-mobile-nav button) {
+    transition:background-color 140ms ease-out,border-color 140ms ease-out,color 140ms ease-out,transform 120ms ease-out;
+  }
+  .personal-app :is(.btn,.personal-context a,.personal-mobile-nav a,.personal-mobile-nav button):active:not(:disabled,[aria-disabled=true]) {transform:translateY(1px)}
   @keyframes personal-editor {from {opacity:.82;transform:translateY(8px) scale(.992)} to {opacity:1;transform:none}}
   @keyframes personal-veil {from {opacity:0} to {opacity:1}}
 }
@@ -276,17 +279,6 @@ h2 {font-size:17px}
 .personal-revalidating #personal-editor,
 .personal-revalidating #personal-account,
 .personal-revalidating #personal-owner-links {visibility:hidden}
-@media (prefers-reduced-motion:no-preference) {
-  .personal-arrive .personal-row:nth-child(-n+4) {animation:personal-row-in .28s var(--arrive) both}
-  .personal-arrive .personal-row:nth-child(2) {animation-delay:25ms}
-  .personal-arrive .personal-row:nth-child(3) {animation-delay:45ms}
-  .personal-arrive .personal-row:nth-child(4) {animation-delay:65ms}
-  @keyframes personal-row-in {from {opacity:.96;transform:translateY(4px)} to {opacity:1;transform:translateY(0)}}
-}
-@media (prefers-reduced-motion:no-preference) {
-  .personal-arrive > #personal-social-root,.personal-arrive > #personal-mail-root {animation:personal-arrive .32s var(--arrive) both}
-}
-
 .personal-planning-actions{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
 #personal-task-filters,#personal-schedule-modes{margin-block:8px}
 .personal-planning-actions [aria-pressed="true"],.personal-week-days [aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft);color:var(--teal);font-weight:680}

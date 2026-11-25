@@ -352,3 +352,25 @@
 .personal-ai-guide li+li {margin-block-start:6px}
 .personal-ai-guide p {margin:8px 0}
 .personal-ai-guide summary:focus-visible {outline:2px solid var(--teal);outline-offset:2px}
+/* Fable motion 2026-11-25: button-led feedback + opt-in surface entry (AI panel). */
+.personal-ai-handoff-nav button:hover:not([aria-current="page"]) {color:var(--ink)}
+.personal-ai-guide summary:hover {color:var(--teal)}
+.personal-ai-guide summary:active {opacity:.72}
+@media(prefers-reduced-motion:no-preference) {
+  .personal-ai-handoff-nav button {transition:color .16s ease,border-color .16s ease}
+  .personal-ai-guide summary {transition:color .16s ease,opacity .12s ease}
+  @supports (transition-behavior:allow-discrete) {
+    /* Entry only. [hidden] stays an instant display:none, so inputs are never blocked by an exit. */
+    :is(#personal-ai-settings,#personal-ai-handoff,[data-ai-handoff-pane]):not([hidden]) {
+      transition:opacity 180ms var(--arrive),transform 200ms var(--arrive);
+    }
+    @starting-style {
+      :is(#personal-ai-settings,#personal-ai-handoff,[data-ai-handoff-pane]):not([hidden]) {opacity:0;transform:translateY(4px)}
+    }
+    .personal-ai-guide[open] > :not(summary) {transition:opacity 160ms ease}
+    @starting-style {.personal-ai-guide[open] > :not(summary) {opacity:0}}
+  }
+}
+@media(forced-colors:active) {
+  .personal-ai-guide summary:active {opacity:1}
+}
